@@ -6,8 +6,8 @@ apply plugin: 'idea'
 sourceCompatibility = JavaVersion.VERSION_1_7
 targetCompatibility = JavaVersion.VERSION_1_7
 
-group = 'org.scm4j'
-version = '1.0-SNAPSHOT'
+group = ''
+version = new File('version').text
 
 dependencies {
 	testCompile 'junit:junit:4.12'

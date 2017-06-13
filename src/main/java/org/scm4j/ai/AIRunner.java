@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -31,6 +32,18 @@ public class AIRunner {
 		}
 		products = new Products(workingFolder);
 		repos = new Repos(workingFolder);
+	}
+	
+	public List<String> listProducts(String repoUrl) {
+		try {
+			URL url = new URL(new URL(repoUrl + "/"), "products");
+			InputStream is = url.openStream();
+			@SuppressWarnings("unchecked")
+			List<String> res = IOUtils.readLines(is, "UTF-8");
+			return res;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public List<String> listVersions(String productName) {

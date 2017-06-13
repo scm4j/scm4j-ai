@@ -70,14 +70,10 @@ public class AIRunnerTest {
 		workingFolder.delete();
 	}
 
-	@Test
-	public void testNoReposNoWork() {
+	@Test(expected = FileNotFoundException.class)
+	public void testNoReposNoWork() throws FileNotFoundException {
 		reposFile.delete();
-		try {
-			new AIRunner(workingFolder);
-			fail();
-		} catch (FileNotFoundException e) {
-		}
+		new AIRunner(workingFolder);
 	}
 
 	@Test
@@ -86,7 +82,6 @@ public class AIRunnerTest {
 		assertNotNull(vers);
 		assertTrue(vers.contains("22.0"));
 		assertTrue(vers.contains("20.0"));
-
 	}
 
 	@Test
@@ -97,16 +92,22 @@ public class AIRunnerTest {
 		FileUtils.contentEquals(artifact, new File(artifactoryFolder, relativeArtifactPath));
 	}
 
-	@Test
+	@Test(expected = EArtifactNotFound.class)
 	public void testUnknownRepo() throws IOException {
 		FileUtils.writeLines(reposFile, Arrays.asList("file:///c:/unexisting/artifactory/sdfsdff"));
-		try {
-			AIRunner runner = new AIRunner(workingFolder);
-			runner.download(TEST_PRODUCT_NAME, "20.0", ".jar");
-			fail();
-		} catch (EArtifactNotFound e) {
+		AIRunner runner = new AIRunner(workingFolder);
+		runner.download(TEST_PRODUCT_NAME, "20.0", ".jar");
+	}
 
-		}
+	@Test
+	public void testListProducts() throws IOException {
+		File productsFile = new File(workingFolder, "products");
+		productsFile.createNewFile();
+		FileUtils.writeLines(productsFile, Arrays.asList("unTill\r\nUBL\r\nunTillDb"));
+		AIRunner runner = new AIRunner(workingFolder);
+		List<String> products = runner.listProducts(TEST_ARTIFACTORY_PATH);
+		assertNotNull(products);
+		assertTrue(products.containsAll(Arrays.asList("unTill", "UBL", "unTilDb")));
 	}
 
 }

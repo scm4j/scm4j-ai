@@ -73,10 +73,11 @@ public class AIRunnerTest {
 		AIRunner mockedRunner = Mockito.spy(new AIRunner(env.getEnvFolder()));
 		File artifact = mockedRunner.download(TEST_PRODUCT_GUAVA, "20.0", ".jar");
 		assertTrue(artifact.exists());
-		String relativeArtifactPath = artifact.getPath().replace(env.getEnvFolder().getPath() + File.pathSeparator + "repository", "");
+		String relativeArtifactPath = artifact.getPath().replace(env.getEnvFolder().getPath() + File.separator + "repository", "");
 		FileUtils.contentEquals(artifact, new File(env.getArtifactory1Folder(), relativeArtifactPath));
-		assertTrue(artifact.getPath(), artifact.getPath().endsWith("repository\\com\\google\\guava\\guava\\20.0\\guava-20.0.jar"
-				.replace("\\", File.pathSeparator)));
+		String ethalon = "repository\\com\\google\\guava\\guava\\20.0\\guava-20.0.jar"
+				.replace("\\", File.separator);
+		assertTrue(artifact.getPath() + ";" + ethalon, artifact.getPath().endsWith(ethalon));
 		// no download second time
 		mockedRunner.download(TEST_PRODUCT_GUAVA, "20.0", ".jar");
 		Mockito.verify(mockedRunner, Mockito.times(1)).getContent("file://localhost/"
@@ -88,16 +89,17 @@ public class AIRunnerTest {
 	public void testDownloadFromArtifactory2() throws IOException {
 		File artifact = runner.download(TEST_PRODUCT_GUAVA, "25.0", ".jar");
 		assertTrue(artifact.exists());
-		String relativeArtifactPath = artifact.getPath().replace(env.getEnvFolder().getPath() + File.pathSeparator + "repository", "");
+		String relativeArtifactPath = artifact.getPath().replace(env.getEnvFolder().getPath() + File.separator + "repository", "");
 		FileUtils.contentEquals(artifact, new File(env.getArtifactory1Folder(), relativeArtifactPath));
-		assertTrue(artifact.getPath(), artifact.getPath().endsWith("repository\\com\\google\\guava\\guava\\25.0\\guava-25.0.jar"
-				.replace("\\", File.pathSeparator)));
+		String ethalon = "repository\\com\\google\\guava\\guava\\25.0\\guava-25.0.jar"
+				.replace("\\", File.separator);
+		assertTrue(artifact.getPath() + ";" + ethalon, artifact.getPath().endsWith(ethalon));
 
 		artifact = runner.download(TEST_PRODUCT_UBL, "18.5", ".jar");
 		assertTrue(artifact.exists());
 		relativeArtifactPath = artifact.getPath().replace(env.getEnvFolder().getPath() + "\\repository", "");
 		FileUtils.contentEquals(artifact, new File(env.getArtifactory2Folder(), relativeArtifactPath));
-		assertTrue(artifact.getPath().endsWith("repository\\eu\\untill\\UBL\\18.5\\UBL-18.5.jar".replace("\\", File.pathSeparator)));
+		assertTrue(artifact.getPath().endsWith("repository\\eu\\untill\\UBL\\18.5\\UBL-18.5.jar".replace("\\", File.separator)));
 	}
 
 	@Test

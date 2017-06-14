@@ -75,7 +75,7 @@ public class AIRunnerTest {
 		assertTrue(artifact.exists());
 		String relativeArtifactPath = artifact.getPath().replace(env.getEnvFolder().getPath() + "\\repository", "");
 		FileUtils.contentEquals(artifact, new File(env.getArtifactory1Folder(), relativeArtifactPath));
-		assertTrue(artifact.getPath().endsWith("repository\\com\\google\\guava\\guava\\20.0\\guava-20.0.jar"));
+		assertTrue(artifact.getPath(), artifact.getPath().endsWith("repository\\com\\google\\guava\\guava\\20.0\\guava-20.0.jar"));
 
 		// no download second time
 		mockedRunner.download(TEST_PRODUCT_GUAVA, "20.0", ".jar");
@@ -90,7 +90,7 @@ public class AIRunnerTest {
 		assertTrue(artifact.exists());
 		String relativeArtifactPath = artifact.getPath().replace(env.getEnvFolder().getPath() + "\\repository", "");
 		FileUtils.contentEquals(artifact, new File(env.getArtifactory1Folder(), relativeArtifactPath));
-		assertTrue(artifact.getPath().endsWith("repository\\com\\google\\guava\\guava\\25.0\\guava-25.0.jar"));
+		assertTrue(artifact.getPath(), artifact.getPath().endsWith("repository\\com\\google\\guava\\guava\\25.0\\guava-25.0.jar"));
 
 		artifact = runner.download(TEST_PRODUCT_UBL, "18.5", ".jar");
 		assertTrue(artifact.exists());

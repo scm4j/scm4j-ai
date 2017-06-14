@@ -1,4 +1,4 @@
-package org.scm4j.ai;
+package org.scm4j.ai.exceptions;
 
 public class EArtifactNotFound extends RuntimeException {
 

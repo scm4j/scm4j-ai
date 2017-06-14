@@ -28,7 +28,7 @@ public class AIRunnerTest {
 
 	private AITestEnvironment env;
 	private AIRunner runner;
-	
+
 	@After
 	public void tearDown() throws IOException {
 		FileUtils.deleteDirectory(env.getBaseTestFolder());
@@ -47,17 +47,17 @@ public class AIRunnerTest {
 		try {
 			new AIRunner(env.getEnvFolder());
 			fail();
-		} catch(ENoConfig e) {
-			
+		} catch (ENoConfig e) {
+
 		}
 	}
-	
+
 	@Test
 	public void testLoadRepos() {
 		List<Repository> repos = runner.getRepos();
 		assertNotNull(repos);
 		repos.containsAll(Arrays.asList(
-				Utils.appendSlash(env.getArtifactory1Url()), 
+				Utils.appendSlash(env.getArtifactory1Url()),
 				Utils.appendSlash(env.getArtifactory2Url())));
 	}
 
@@ -65,26 +65,25 @@ public class AIRunnerTest {
 	public void testListVersions() throws Exception {
 		List<String> vers = runner.listVersions(TEST_PRODUCT_GUAVA);
 		assertNotNull(vers);
-		assertTrue(vers.containsAll(Arrays.asList(
-				"22.0", "20.0", "24.0-rc1", "25.0")));
+		assertTrue(vers.containsAll(Arrays.asList("22.0", "20.0", "24.0-rc1", "25.0")));
 	}
 
 	@Test
 	public void testDownloadFromArtifactory1() throws Exception {
-		AIRunner mockedRunner = Mockito.spy(new AIRunner(env.getEnvFolder())); 
+		AIRunner mockedRunner = Mockito.spy(new AIRunner(env.getEnvFolder()));
 		File artifact = mockedRunner.download(TEST_PRODUCT_GUAVA, "20.0", ".jar");
 		assertTrue(artifact.exists());
 		String relativeArtifactPath = artifact.getPath().replace(env.getEnvFolder().getPath() + "\\repository", "");
 		FileUtils.contentEquals(artifact, new File(env.getArtifactory1Folder(), relativeArtifactPath));
 		assertTrue(artifact.getPath().endsWith("repository\\com\\google\\guava\\guava\\20.0\\guava-20.0.jar"));
-		
+
 		// no download second time
 		mockedRunner.download(TEST_PRODUCT_GUAVA, "20.0", ".jar");
-		Mockito.verify(mockedRunner, Mockito.times(1)).getContent("file:/" + new File(env.getArtifactory1Folder(), 
-				Utils.getProductRelativeUrl(TEST_PRODUCT_GUAVA, "20.0", ".jar")).getPath().replace("\\", "/"));
-		
+		Mockito.verify(mockedRunner, Mockito.times(1)).getContent("file:/"
+				+ new File(env.getArtifactory1Folder(), Utils.getProductRelativeUrl(TEST_PRODUCT_GUAVA, "20.0", ".jar"))
+						.getPath().replace("\\", "/"));
 	}
-	
+
 	@Test
 	public void testDownloadFromArtifactory2() throws IOException {
 		File artifact = runner.download(TEST_PRODUCT_GUAVA, "25.0", ".jar");
@@ -92,22 +91,16 @@ public class AIRunnerTest {
 		String relativeArtifactPath = artifact.getPath().replace(env.getEnvFolder().getPath() + "\\repository", "");
 		FileUtils.contentEquals(artifact, new File(env.getArtifactory1Folder(), relativeArtifactPath));
 		assertTrue(artifact.getPath().endsWith("repository\\com\\google\\guava\\guava\\25.0\\guava-25.0.jar"));
-		
+
 		artifact = runner.download(TEST_PRODUCT_UBL, "18.5", ".jar");
 		assertTrue(artifact.exists());
 		relativeArtifactPath = artifact.getPath().replace(env.getEnvFolder().getPath() + "\\repository", "");
 		FileUtils.contentEquals(artifact, new File(env.getArtifactory2Folder(), relativeArtifactPath));
 		assertTrue(artifact.getPath().endsWith("repository\\eu\\untill\\UBL\\18.5\\UBL-18.5.jar"));
 	}
-	
-	@Test
-	public void testArtifactCache() {
-		
-	}
 
 	@Test
-	public void testUnknownArtifact() throws IOException {
-		AIRunner runner = new AIRunner(env.getEnvFolder());
+	public void testDownloadUnknownArtifact() throws IOException {
 		try {
 			runner.download("unknown artifact", "20.0", ".jar");
 			fail();
@@ -123,18 +116,18 @@ public class AIRunnerTest {
 		assertTrue(products.contains(TEST_PRODUCT_UBL));
 		assertTrue(products.size() == 2);
 	}
-	
+
 	@Test
 	public void testUrls() throws Exception {
-		Repository repo = new Repository(env.getArtifactory1Url());
 		assertEquals(Utils.getProductRelativeUrl("guava", "20.0", ".jar"), "guava/20.0/guava-20.0.jar");
-		assertEquals(Utils.getProductRelativeUrl("com/google/guava/guava", "20.0", ".jar"), 
+		assertEquals(Utils.getProductRelativeUrl("com/google/guava/guava", "20.0", ".jar"),
 				"com/google/guava/guava/20.0/guava-20.0.jar");
 		
-		assertEquals(repo.getProductUrl("guava", "20.0", ".jar"), 
+		Repository repo = new Repository(env.getArtifactory1Url());
+		assertEquals(repo.getProductUrl("guava", "20.0", ".jar"),
 				Utils.appendSlash(env.getArtifactory1Url()) + "guava/20.0/guava-20.0.jar");
 	}
-	
+
 	@Test
 	public void testDownloadAndInstall() {
 		File product = runner.download(TEST_PRODUCT_GUAVA, "20.0", ".jar");

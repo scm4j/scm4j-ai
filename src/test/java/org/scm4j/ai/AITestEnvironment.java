@@ -52,7 +52,7 @@ public class AITestEnvironment {
 	}
 
 	private void createReposFile() throws IOException {
-		reposFile = new File(envFolder, "repos");
+		reposFile = new File(envFolder, Repository.REPOS_FILE_NAME);
 		reposFile.createNewFile();
 		FileUtils.writeLines(reposFile, Arrays.asList(artifactory1Url, artifactory2Url));
 	}

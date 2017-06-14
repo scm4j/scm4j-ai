@@ -22,6 +22,9 @@ import com.google.common.io.Files;
 
 public class Repository {
 	
+	public static final String PRODUCTS_FILE_NAME = "products";
+	public static final String REPOS_FILE_NAME = "repos";
+	public static final String METADATA_FILE_NAME = "maven-metadata.xml";
 	private URL url;
 	
 	public Repository(String url) {
@@ -33,7 +36,7 @@ public class Repository {
 	}
 	
 	public List<String> getProducts() {
-		try (InputStream is = new URL(url, "products").openStream();
+		try (InputStream is = new URL(url, PRODUCTS_FILE_NAME).openStream();
 			 InputStreamReader isr = new InputStreamReader(is);
 			 BufferedReader reader = new BufferedReader(isr)) {
 			
@@ -68,15 +71,19 @@ public class Repository {
 	}
 
 	private URL getProductMetaDataURL(String productName) throws MalformedURLException {
-		return new URL(new URL(url, Utils.removeLastSlash(productName) + "/"), "maven-metadata.xml");
+		return new URL(new URL(url, Utils.removeLastSlash(productName) + "/"), METADATA_FILE_NAME);
 	}
 
 	public static List<Repository> loadFromWorkingFolder(File workingFolder) {
 		List<String> repoUrls;
+		File reposFile = new File(workingFolder, REPOS_FILE_NAME);
+		if (!reposFile.exists()) {
+			throw new ENoConfig("repos file is not found in the working folder");
+		}
 		try {
-			repoUrls = Files.readLines(new File(workingFolder, "repos"), StandardCharsets.UTF_8);
+			repoUrls = Files.readLines(reposFile, StandardCharsets.UTF_8);
 		} catch (IOException e) {
-			throw new ENoConfig(e);
+			throw new RuntimeException(e);
 		}
 		List<Repository> res = new ArrayList<>();
 		for (String repoUrl : repoUrls) {

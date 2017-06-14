@@ -7,10 +7,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
@@ -20,7 +18,8 @@ import org.scm4j.ai.installers.InstallerFactory;
 
 public class AIRunner {
 
-	private Map<String, Repository> repos = new HashMap<>();
+	public static final String REPOSITORY_FOLDER_NAME = "repository";
+	private List<Repository> repos = new ArrayList<>();
 	private File repository;
 	private InstallerFactory installerFactory;
 	
@@ -29,7 +28,7 @@ public class AIRunner {
 	}
 
 	public AIRunner(File workingFolder) throws ENoConfig {
-		repository = new File(workingFolder, "repository");
+		repository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
 		try {
 			if (!repository.exists()) {
 				Files.createDirectory(repository.toPath());
@@ -37,19 +36,16 @@ public class AIRunner {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		List<Repository> repos = Repository.loadFromWorkingFolder(workingFolder);
-		for (Repository repo : repos) {
-			this.repos.put(repo.getUrl(), repo);
-		}
+		repos = Repository.loadFromWorkingFolder(workingFolder);
 	}
 
 	public List<Repository> getRepos() {
-		return new ArrayList<>(repos.values());
+		return repos;
 	}
 
 	public List<String> listProducts() {
 		Set<String> res = new HashSet<>();
-		for (Repository repo : repos.values()) {
+		for (Repository repo : repos) {
 			res.addAll(repo.getProducts());
 		}
 		return new ArrayList<>(res);
@@ -57,7 +53,7 @@ public class AIRunner {
 
 	public List<String> listVersions(String productName) {
 		Set<String> res = new HashSet<>();
-		for (Repository repo : repos.values()) {
+		for (Repository repo : repos) {
 			res.addAll(repo.getProductVersions(productName));
 		}
 		return new ArrayList<>(res);
@@ -68,7 +64,7 @@ public class AIRunner {
 	}
 
 	public File download(String productName, String version, String extension) {
-		for (Repository repo : repos.values()) {
+		for (Repository repo : repos) {
 			if (!repo.getProducts().contains(productName)) {
 				continue;
 			}

@@ -79,7 +79,7 @@ public class AIRunnerTest {
 
 		// no download second time
 		mockedRunner.download(TEST_PRODUCT_GUAVA, "20.0", ".jar");
-		Mockito.verify(mockedRunner, Mockito.times(1)).getContent("file:/"
+		Mockito.verify(mockedRunner, Mockito.times(1)).getContent("file://localhost/"
 				+ new File(env.getArtifactory1Folder(), Utils.getProductRelativeUrl(TEST_PRODUCT_GUAVA, "20.0", ".jar"))
 						.getPath().replace("\\", "/"));
 	}

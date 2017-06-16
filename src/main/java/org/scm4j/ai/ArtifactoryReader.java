@@ -20,14 +20,15 @@ import org.scm4j.ai.exceptions.EProductNotFound;
 
 import com.google.common.io.Files;
 
-public class Repository {
+public class ArtifactoryReader {
 	
-	public static final String PRODUCTS_FILE_NAME = "products";
-	public static final String REPOS_FILE_NAME = "repos";
+	public static final String PRODUCT_LIST_FILE_NAME = "product-list";
+	public static final String PRODUCT_LIST_FILE_PATH = "org/scm4j/product-list/product-list";
+	public static final String PRODUCT_LISTS_FILE_NAME = "product-lists"; 
 	public static final String METADATA_FILE_NAME = "maven-metadata.xml";
 	private URL url;
 	
-	public Repository(String url) {
+	public ArtifactoryReader(String url) {
 		try {
 			this.url = new URL(Utils.appendSlash(url));
 		} catch (Exception e) {
@@ -36,7 +37,7 @@ public class Repository {
 	}
 	
 	public List<String> getProducts() {
-		try (InputStream is = new URL(url, PRODUCTS_FILE_NAME).openStream();
+		try (InputStream is = new URL(url, PRODUCT_LIST_FILE_PATH).openStream();
 			 InputStreamReader isr = new InputStreamReader(is);
 			 BufferedReader reader = new BufferedReader(isr)) {
 			
@@ -71,12 +72,12 @@ public class Repository {
 	}
 
 	private URL getProductMetaDataURL(String productName) throws MalformedURLException {
-		return new URL(new URL(url, Utils.removeLastSlash(productName) + "/"), METADATA_FILE_NAME);
+		return new URL(new URL(url, Utils.productNameToUrlStructure(productName) + "/"), METADATA_FILE_NAME);
 	}
 
-	public static List<Repository> loadFromWorkingFolder(File workingFolder) {
+	public static List<ArtifactoryReader> loadFromWorkingFolder(File workingFolder) {
 		List<String> repoUrls;
-		File reposFile = new File(workingFolder, REPOS_FILE_NAME);
+		File reposFile = new File(workingFolder, PRODUCT_LISTS_FILE_NAME);
 		if (!reposFile.exists()) {
 			throw new ENoConfig("repos file is not found in the working folder");
 		}
@@ -85,9 +86,9 @@ public class Repository {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		List<Repository> res = new ArrayList<>();
+		List<ArtifactoryReader> res = new ArrayList<>();
 		for (String repoUrl : repoUrls) {
-			res.add(new Repository(repoUrl));
+			res.add(new ArtifactoryReader(repoUrl));
 		}
 		return res;
 	}

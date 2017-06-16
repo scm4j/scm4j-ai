@@ -19,7 +19,7 @@ import org.scm4j.ai.installers.InstallerFactory;
 public class AIRunner {
 
 	public static final String REPOSITORY_FOLDER_NAME = "repository";
-	private List<Repository> repos = new ArrayList<>();
+	private List<ArtifactoryReader> repos = new ArrayList<>();
 	private File repository;
 	private InstallerFactory installerFactory;
 	
@@ -36,16 +36,16 @@ public class AIRunner {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		repos = Repository.loadFromWorkingFolder(workingFolder);
+		repos = ArtifactoryReader.loadFromWorkingFolder(workingFolder);
 	}
 
-	public List<Repository> getRepos() {
+	public List<ArtifactoryReader> getRepos() {
 		return repos;
 	}
 
 	public List<String> listProducts() {
 		Set<String> res = new HashSet<>();
-		for (Repository repo : repos) {
+		for (ArtifactoryReader repo : repos) {
 			res.addAll(repo.getProducts());
 		}
 		return new ArrayList<>(res);
@@ -53,7 +53,7 @@ public class AIRunner {
 
 	public List<String> listVersions(String productName) {
 		Set<String> res = new HashSet<>();
-		for (Repository repo : repos) {
+		for (ArtifactoryReader repo : repos) {
 			res.addAll(repo.getProductVersions(productName));
 		}
 		return new ArrayList<>(res);
@@ -62,21 +62,46 @@ public class AIRunner {
 	public void install(File productDir) {
 		installerFactory.getInstaller(productDir).install();
 	}
+	
+	public File get(String productName, String version, String extension) throws EArtifactNotFound {
+		File res = queryLocal(productName, version, extension);
+		if (res == null) { 
+			res = download(productName, version, extension);
+			if (res == null) {
+				throw new EArtifactNotFound(
+						getArftifactStr(productName, version, extension) + " is not found in all known repositories");
+			}
+		} 
+		return res;
+	}
+	
+	public File queryLocal(String productName, String version, String extension) { 
+		String fileRelativeUrlStr = Utils.getProductRelativeUrl(productName, version, extension);
+		File res = new File(repository, fileRelativeUrlStr);
+		if (!res.exists()) {
+			return null;
+		}
+		return res;
+	}
 
-	public File download(String productName, String version, String extension) {
-		for (Repository repo : repos) {
+	private File download(String productName, String version, String extension) {
+		File cachedArtifact = queryLocal(productName, version, extension);
+		if (cachedArtifact != null) {
+			return cachedArtifact;
+		}
+		
+		String fileRelativeUrlStr = Utils.getProductRelativeUrl(productName, version, extension);
+		File res = new File(repository, fileRelativeUrlStr);
+		for (ArtifactoryReader repo : repos) {
+			
 			if (!repo.getProducts().contains(productName)) {
 				continue;
 			}
+			
 			if (!repo.getProductVersions(productName).contains(version)) {
 				continue;
 			}
-			String fileRelativeUrlStr = Utils.getProductRelativeUrl(productName, version, extension);
-
-			File res = new File(repository, fileRelativeUrlStr);
-			if (res.exists()) {
-				return res;
-			}
+			
 			try {
 				File parent = res.getParentFile();
 				if (!parent.exists()) {
@@ -95,8 +120,7 @@ public class AIRunner {
 			}
 			return res;
 		}
-		throw new EArtifactNotFound(
-				getArftifactStr(productName, version, extension) + " is not found in all known repositories");
+		return null;
 	}
 
 	private String getArftifactStr(String productName, String version, String extension) {

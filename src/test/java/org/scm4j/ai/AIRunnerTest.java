@@ -5,11 +5,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -25,47 +28,92 @@ public class AIRunnerTest {
 
 	private static final String TEST_PRODUCT_GUAVA = "com/google/guava/guava";
 	private static final String TEST_PRODUCT_UBL = "eu/untill/UBL";
+	private static final String TEST_ARTIFACTORY_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
+			.getPath();
 
 	private AITestEnvironment env;
-	private AIRunner runner;
-
-	@After
-	public void tearDown() throws IOException {
-		FileUtils.deleteDirectory(env.getBaseTestFolder());
-	}
-
+	
+	private String ublArtifactId = "UBL-" + UUID.randomUUID().toString();
+	private String guavaArtifactId = "guava-" + UUID.randomUUID().toString();
+	
 	@Before
 	public void setUp() throws IOException {
+		FileUtils.deleteDirectory(new File(TEST_ARTIFACTORY_DIR));
 		env = new AITestEnvironment();
 		env.prepareEnvironment();
-		runner = new AIRunner(env.getEnvFolder());
+		
+		ArtifactoryWriter aw = new ArtifactoryWriter(env.getArtifactory1Folder());
+		registerArtifactory(env.getArtifactory1Folder());
+		aw.install("eu.untill", ublArtifactId, "18.5", ".jar", "ubl 18.5 artifact content");
+		
+		aw = new ArtifactoryWriter(env.getArtifactory2Folder());
+		registerArtifactory(env.getArtifactory2Folder());
+		aw.install("eu.untill", ublArtifactId, "18.0", ".jar", "ubl 18.5 artifact content");
+		aw.install("com.google.guava", guavaArtifactId, "20.0-rc1", ".jar", "guava 20.0-rc1 artifact content");
+		aw.install("com.google.guava", guavaArtifactId, "21.0", ".jar", "guava 21.0 artifact content");
+	}
+	
+	@After
+	public void tearDown() throws IOException {
+		FileUtils.deleteDirectory(new File(TEST_ARTIFACTORY_DIR));
+		
+	}
+	
+	@Test
+	public void testGetProducts() throws IOException {
+		AIRunner runner = new AIRunner(env.getEnvFolder());
+		List<String> products = runner.listProducts();
+		assertNotNull(products);
+		assertTrue(products.containsAll(Arrays.asList(
+				"eu.untill:" + ublArtifactId, "com.google.guava:" + guavaArtifactId)));
+		assertTrue(products.size() == 2);
+	}
+	
+	@Test 
+	public void testGetVersions() {
+		AIRunner runner = new AIRunner(env.getEnvFolder());
+		List<String> versions = runner.listVersions("eu.untill:" + ublArtifactId);
+		assertNotNull(versions);
+		assertTrue(versions.containsAll(Arrays.asList(
+				"18.5", "18.0")));
+		assertTrue(versions.size() == 2);
+	}
+	
+	private void registerArtifactory(File artifactoryFolder) throws IOException {
+		try (BufferedWriter output = new BufferedWriter(new FileWriter(env.getProductListsFile(), true))) {
+			output.append(artifactoryFolder.toURI().toURL().toString() + "\r\n");
+		}
+	}
+
+	@Test
+	public void testListVersions() throws Exception {
+		// create repository writer, create and fill test repos by writers. Also write update local repos file by writer.
+		// 2 artifactory: 1 - products list, has artifact names and its urls. Artifacts themselves are located on artifactory 2
+		
+		/*
+			String a1Coords = productCoords("a1", ); // UUID.generateUUUID().soString() + ":p1:1.1" 
+			String a1Content = UUID.generateUUUID().soString()
+			
+			rw.install(a1Coords, a1Content);
+			
+			
+			
+		 */
+		
+		List<String> vers = runner.listVersions(TEST_PRODUCT_GUAVA);
+		assertNotNull(vers);
+		assertTrue(vers.containsAll(Arrays.asList("22.0", "20.0", "24.0-rc1", "25.0")));
 	}
 
 	@Test
 	public void testNoReposNoWork() throws FileNotFoundException {
-		env.getReposFile().delete();
+		env.getProductListsFile().delete();
 		try {
 			new AIRunner(env.getEnvFolder());
 			fail();
 		} catch (ENoConfig e) {
 
 		}
-	}
-
-	@Test
-	public void testLoadRepos() {
-		List<Repository> repos = runner.getRepos();
-		assertNotNull(repos);
-		repos.containsAll(Arrays.asList(
-				Utils.appendSlash(env.getArtifactory1Url()),
-				Utils.appendSlash(env.getArtifactory2Url())));
-	}
-
-	@Test
-	public void testListVersions() throws Exception {
-		List<String> vers = runner.listVersions(TEST_PRODUCT_GUAVA);
-		assertNotNull(vers);
-		assertTrue(vers.containsAll(Arrays.asList("22.0", "20.0", "24.0-rc1", "25.0")));
 	}
 
 	@Test
@@ -112,21 +160,12 @@ public class AIRunnerTest {
 	}
 
 	@Test
-	public void testListProducts() throws IOException {
-		List<String> products = runner.listProducts();
-		assertNotNull(products);
-		assertTrue(products.contains(TEST_PRODUCT_GUAVA));
-		assertTrue(products.contains(TEST_PRODUCT_UBL));
-		assertTrue(products.size() == 2);
-	}
-
-	@Test
 	public void testUrls() throws Exception {
 		assertEquals(Utils.getProductRelativeUrl("guava", "20.0", ".jar"), "guava/20.0/guava-20.0.jar");
 		assertEquals(Utils.getProductRelativeUrl("com/google/guava/guava", "20.0", ".jar"),
 				"com/google/guava/guava/20.0/guava-20.0.jar");
 		
-		Repository repo = new Repository(env.getArtifactory1Url());
+		ArtifactoryReader repo = new ArtifactoryReader(env.getArtifactory1Url());
 		assertEquals(repo.getProductUrl("guava", "20.0", ".jar"),
 				Utils.appendSlash(env.getArtifactory1Url()) + "guava/20.0/guava-20.0.jar");
 	}
@@ -140,6 +179,15 @@ public class AIRunnerTest {
 		runner.setInstallerFactory(iFac);
 		runner.install(product);
 		Mockito.verify(installer).install();
+	}
+	
+	@Test
+	public void testLoadRepos() {
+		List<ArtifactoryReader> repos = runner.getRepos();
+		assertNotNull(repos);
+		repos.containsAll(Arrays.asList(
+				Utils.appendSlash(env.getArtifactory1Url()),
+				Utils.appendSlash(env.getArtifactory2Url())));
 	}
 
 }

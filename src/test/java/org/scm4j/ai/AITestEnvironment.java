@@ -4,13 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
-import java.util.Arrays;
 
 import org.apache.commons.io.FileUtils;
 
 public class AITestEnvironment {
 	
-	private static final String TEST_ARTIFACTORIES_PATH = "org/scm4j/ai/RemoteArtifactories";
+	public static final String TEST_RESOURCES_PATH = "org/scm4j/ai/RemoteArtifactories";
 	
 	private File baseTestFolder;
 	private File envFolder;
@@ -19,7 +18,7 @@ public class AITestEnvironment {
 	private File artifactory2Folder;
 	private String artifactory1Url;
 	private String artifactory2Url;
-	private File reposFile;
+	private File productListsFile;
 	private ClassLoader cl;
 	
 	public void prepareEnvironment() throws IOException {
@@ -43,7 +42,7 @@ public class AITestEnvironment {
 				.toFile();
 		artifactory1Url = "file://localhost/" + artifactory1Folder.getPath().replace("\\", "/");
 		artifactory2Url = "file://localhost/" + artifactory2Folder.getPath().replace("\\", "/");
-		FileUtils.copyDirectory(getResourceFolder(TEST_ARTIFACTORIES_PATH), artifactoriesFolder);
+//		FileUtils.copyDirectory(getResourceFolder(TEST_RESOURCES_PATH), artifactoriesFolder);
 	}
 
 	private void createEnvironment() throws IOException {
@@ -52,9 +51,9 @@ public class AITestEnvironment {
 	}
 
 	private void createReposFile() throws IOException {
-		reposFile = new File(envFolder, Repository.REPOS_FILE_NAME);
-		reposFile.createNewFile();
-		FileUtils.writeLines(reposFile, Arrays.asList(artifactory1Url, artifactory2Url));
+		productListsFile = new File(envFolder, ArtifactoryReader.PRODUCT_LISTS_FILE_NAME);
+		productListsFile.createNewFile();
+		//FileUtils.writeLines(reposFile, Arrays.asList(artifactory1Url, artifactory2Url));
 	}
 	
 	private File getResourceFolder(String path) throws IOException {
@@ -90,8 +89,8 @@ public class AITestEnvironment {
 		return artifactory2Url;
 	}
 
-	public File getReposFile() {
-		return reposFile;
+	public File getProductListsFile() {
+		return productListsFile;
 	}
 
 }

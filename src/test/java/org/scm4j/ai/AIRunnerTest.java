@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.scm4j.ai.exceptions.EArtifactNotFound;
 import org.scm4j.ai.exceptions.ENoConfig;
+import org.scm4j.ai.exceptions.EProductNotFound;
 import org.scm4j.ai.installers.IInstaller;
 import org.scm4j.ai.installers.InstallerFactory;
 
@@ -36,8 +37,15 @@ public class AIRunnerTest {
 	private String ublArtifactId = "UBL-" + UUID.randomUUID().toString();
 	private String guavaArtifactId = "guava-" + UUID.randomUUID().toString();
 	
+	@After
+	public void tearDown() throws IOException {
+		FileUtils.deleteDirectory(new File(TEST_ARTIFACTORY_DIR));
+	}
+	
 	@Before
 	public void setUp() throws IOException {
+		// create repository writer, create and fill test repos by writers. Also write update local repos file by writer.
+		// 2 artifactory: 1 - products list, has artifact names and its urls. Artifacts themselves are located on artifactory 2
 		FileUtils.deleteDirectory(new File(TEST_ARTIFACTORY_DIR));
 		env = new AITestEnvironment();
 		env.prepareEnvironment();
@@ -51,12 +59,6 @@ public class AIRunnerTest {
 		aw.install("eu.untill", ublArtifactId, "18.0", ".jar", "ubl 18.5 artifact content");
 		aw.install("com.google.guava", guavaArtifactId, "20.0-rc1", ".jar", "guava 20.0-rc1 artifact content");
 		aw.install("com.google.guava", guavaArtifactId, "21.0", ".jar", "guava 21.0 artifact content");
-	}
-	
-	@After
-	public void tearDown() throws IOException {
-		FileUtils.deleteDirectory(new File(TEST_ARTIFACTORY_DIR));
-		
 	}
 	
 	@Test
@@ -86,26 +88,6 @@ public class AIRunnerTest {
 	}
 
 	@Test
-	public void testListVersions() throws Exception {
-		// create repository writer, create and fill test repos by writers. Also write update local repos file by writer.
-		// 2 artifactory: 1 - products list, has artifact names and its urls. Artifacts themselves are located on artifactory 2
-		
-		/*
-			String a1Coords = productCoords("a1", ); // UUID.generateUUUID().soString() + ":p1:1.1" 
-			String a1Content = UUID.generateUUUID().soString()
-			
-			rw.install(a1Coords, a1Content);
-			
-			
-			
-		 */
-		
-		List<String> vers = runner.listVersions(TEST_PRODUCT_GUAVA);
-		assertNotNull(vers);
-		assertTrue(vers.containsAll(Arrays.asList("22.0", "20.0", "24.0-rc1", "25.0")));
-	}
-
-	@Test
 	public void testNoReposNoWork() throws FileNotFoundException {
 		env.getProductListsFile().delete();
 		try {
@@ -129,7 +111,7 @@ public class AIRunnerTest {
 		// no download second time
 		mockedRunner.download(TEST_PRODUCT_GUAVA, "20.0", ".jar");
 		Mockito.verify(mockedRunner, Mockito.times(1)).getContent("file://localhost/"
-				+ new File(env.getArtifactory1Folder(), Utils.getProductRelativeUrl(TEST_PRODUCT_GUAVA, "20.0", ".jar"))
+				+ new File(env.getArtifactory1Folder(), Utils.getProductRelativePath(TEST_PRODUCT_GUAVA, "20.0", ".jar"))
 						.getPath().replace("\\", "/"));
 	}
 
@@ -151,9 +133,26 @@ public class AIRunnerTest {
 	}
 
 	@Test
-	public void testDownloadUnknownArtifact() throws IOException {
+	public void testUnknownArtifact() throws IOException {
+		AIRunner runner = new AIRunner(env.getEnvFolder());
 		try {
-			runner.download("unknown artifact", "20.0", ".jar");
+			runner.listVersions("unknown artifact");
+			fail();
+		} catch (EProductNotFound e) {
+		}
+		
+		try {
+			runner.get("unknown artifact", "version", "extension");
+			fail();
+		} catch (EArtifactNotFound e) {
+		}
+	}
+	
+	@Test
+	public void testUnknownVersion() {
+		AIRunner runner = new AIRunner(env.getEnvFolder());
+		try {
+			runner.get("eu.untill:" + ublArtifactId, "unknown version", ".jar");
 			fail();
 		} catch (EArtifactNotFound e) {
 		}
@@ -161,9 +160,9 @@ public class AIRunnerTest {
 
 	@Test
 	public void testUrls() throws Exception {
-		assertEquals(Utils.getProductRelativeUrl("guava", "20.0", ".jar"), "guava/20.0/guava-20.0.jar");
-		assertEquals(Utils.getProductRelativeUrl("com/google/guava/guava", "20.0", ".jar"),
-				"com/google/guava/guava/20.0/guava-20.0.jar");
+		assertEquals(Utils.getProductRelativePath("guava", "20.0", ".jar"), new File("guava/20.0/guava-20.0.jar").getPath());
+		assertEquals(Utils.getProductRelativePath("com/google/guava/guava", "20.0", ".jar"),
+				new File("com/google/guava/guava/20.0/guava-20.0.jar").getPath());
 		
 		ArtifactoryReader repo = new ArtifactoryReader(env.getArtifactory1Url());
 		assertEquals(repo.getProductUrl("guava", "20.0", ".jar"),
@@ -183,6 +182,7 @@ public class AIRunnerTest {
 	
 	@Test
 	public void testLoadRepos() {
+		AIRunner runner = new AIRunner(env.getEnvFolder());
 		List<ArtifactoryReader> repos = runner.getRepos();
 		assertNotNull(repos);
 		repos.containsAll(Arrays.asList(

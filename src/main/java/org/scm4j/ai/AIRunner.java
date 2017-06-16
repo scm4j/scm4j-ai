@@ -76,8 +76,8 @@ public class AIRunner {
 	}
 	
 	public File queryLocal(String productName, String version, String extension) { 
-		String fileRelativeUrlStr = Utils.getProductRelativeUrl(productName, version, extension);
-		File res = new File(repository, fileRelativeUrlStr);
+		String fileRelativePath = Utils.getProductRelativePath(productName, version, extension);
+		File res = new File(repository, fileRelativePath);
 		if (!res.exists()) {
 			return null;
 		}
@@ -90,8 +90,8 @@ public class AIRunner {
 			return cachedArtifact;
 		}
 		
-		String fileRelativeUrlStr = Utils.getProductRelativeUrl(productName, version, extension);
-		File res = new File(repository, fileRelativeUrlStr);
+		String fileRelativePath = Utils.getProductRelativePath(productName, version, extension);
+		File res = new File(repository, fileRelativePath);
 		for (ArtifactoryReader repo : repos) {
 			
 			if (!repo.getProducts().contains(productName)) {

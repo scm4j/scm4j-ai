@@ -23,7 +23,7 @@ public class Utils {
 		return removeLastSlash(url) + "/";
 	}
 	
-	public static String getProductRelativeUrl(String productName, String version, String extension) {
+	public static String getProductRelativePath(String productName, String version, String extension) {
 		return Utils.removeLastSlash(productName) + File.separator + version + File.separator 
 				+ productName.substring(productName.lastIndexOf(File.separator) + 1, productName.length()) 
 				+ "-" + version + extension;

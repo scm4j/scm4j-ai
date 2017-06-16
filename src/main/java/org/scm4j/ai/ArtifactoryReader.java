@@ -98,7 +98,7 @@ public class ArtifactoryReader {
 	}
 	
 	public String getProductUrl(String productName, String version, String extension) {
-		return this.url.toString() + Utils.getProductRelativeUrl(productName, version, extension);
+		return this.url.toString() + Utils.getProductRelativePath(productName, version, extension);
 	}
 
 	@Override

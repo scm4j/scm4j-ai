@@ -12,6 +12,9 @@ Maven Artifacts Installer
   - Example, one-line: https://www.company.com/artifacts/repo/com/company/product/
 - `product-list`: artifact which lists products
   
+# Data Structure
+
+Ref.
   
   
 

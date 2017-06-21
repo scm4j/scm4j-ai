@@ -7,7 +7,7 @@ Maven Artifacts Installer
 # Terms
 
 - `Product Artifact`: artifact which lists `Product Component Artifacts` and know how to deploy them
-- `Product Component Artifact` artifact which is deployed by Product Artifact and knows how to deploy its dependencies
+- `Product Component Artifact` artifact which is deployed by `Product Artifact` and knows how to deploy its dependencies
 - `product-lists`: file which lists product lists
   
 

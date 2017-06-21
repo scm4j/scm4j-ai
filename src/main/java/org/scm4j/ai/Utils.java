@@ -11,24 +11,6 @@ import org.apache.commons.io.IOUtils;
 
 public class Utils {
 	
-	public static String removeLastSlash(String url) {
-	    if(url.endsWith("/")) {
-	        return url.substring(0, url.lastIndexOf("/"));
-	    } else {
-	        return url;
-	    }
-	}
-
-	public static String appendSlash(String url) {
-		return removeLastSlash(url) + "/";
-	}
-	
-	public static String getProductRelativePath(String productName, String version, String extension) {
-		return Utils.removeLastSlash(productName) + File.separator + version + File.separator 
-				+ productName.substring(productName.lastIndexOf(File.separator) + 1, productName.length()) 
-				+ "-" + version + extension;
-	}
-	
 	@SuppressWarnings("unchecked")
 	public static List<String> readLines(InputStream is) {
 		try {
@@ -48,6 +30,10 @@ public class Utils {
 		return res;
 	}
 	
+	public static String coordsToString(String groupId, String artifactId, String version, String extension) {
+		return coordsToString(groupId, artifactId) + ":" + version + ":" + extension;
+	}
+	
 	public static String coordsToString(String groupId, String artifactId) {
 		return groupId + ":" + artifactId;
 	}
@@ -64,12 +50,12 @@ public class Utils {
 		return new File(coordsToFolderStructure(groupId, artifactId), version).getPath();
 	}
 	
-	public static String coordsToFilePath(String groupId, String artifactId, String version, String extension) {
+	public static String coordsToRelativeFilePath(String groupId, String artifactId, String version, String extension) {
 		return new File(coordsToFolderStructure(groupId, artifactId, version), 
 				coordsToFileName(artifactId, version, extension)).getPath();
 	}
 
-	public static String productNameToUrlStructure(String productName) {
-		return productName.replace(".", "/").replace(":", "/");
+	public static String coordsToUrlStructure(String groupId, String artifactId) {
+		return coordsToString(groupId, artifactId).replace(".", "/").replace(":", "/");
 	}
 }

@@ -2,7 +2,6 @@ package org.scm4j.ai;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 
 import org.apache.commons.io.FileUtils;
@@ -19,10 +18,8 @@ public class AITestEnvironment {
 	private String artifactory1Url;
 	private String artifactory2Url;
 	private File productListsFile;
-	private ClassLoader cl;
 	
 	public void prepareEnvironment() throws IOException {
-		cl = Thread.currentThread().getContextClassLoader();
 		File baseTestFolderFile = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test");
 		FileUtils.deleteDirectory(baseTestFolderFile);
 		baseTestFolder = Files.createDirectory(baseTestFolderFile.toPath()).toFile();
@@ -54,11 +51,6 @@ public class AITestEnvironment {
 		productListsFile = new File(envFolder, ArtifactoryReader.PRODUCT_LISTS_FILE_NAME);
 		productListsFile.createNewFile();
 		//FileUtils.writeLines(reposFile, Arrays.asList(artifactory1Url, artifactory2Url));
-	}
-	
-	private File getResourceFolder(String path) throws IOException {
-		final URL url = cl.getResource(path);
-		return new File(url.getFile());
 	}
 	
 	public File getBaseTestFolder() {

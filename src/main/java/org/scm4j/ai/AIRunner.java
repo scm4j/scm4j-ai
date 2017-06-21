@@ -2,9 +2,7 @@ package org.scm4j.ai;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -14,6 +12,7 @@ import java.util.Set;
 import org.apache.commons.io.IOUtils;
 import org.scm4j.ai.exceptions.EArtifactNotFound;
 import org.scm4j.ai.exceptions.ENoConfig;
+import org.scm4j.ai.exceptions.EProductNotFound;
 import org.scm4j.ai.installers.InstallerFactory;
 
 public class AIRunner {
@@ -22,7 +21,7 @@ public class AIRunner {
 	private List<ArtifactoryReader> repos = new ArrayList<>();
 	private File repository;
 	private InstallerFactory installerFactory;
-	
+
 	public void setInstallerFactory(InstallerFactory installerFactory) {
 		this.installerFactory = installerFactory;
 	}
@@ -33,10 +32,11 @@ public class AIRunner {
 			if (!repository.exists()) {
 				Files.createDirectory(repository.toPath());
 			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		} catch (Exception e) {
+			throw new RuntimeException (e);
 		}
-		repos = ArtifactoryReader.loadFromWorkingFolder(workingFolder);
+		
+		setRepos(ArtifactoryReader.loadFromWorkingFolder(workingFolder));
 	}
 
 	public List<ArtifactoryReader> getRepos() {
@@ -45,38 +45,47 @@ public class AIRunner {
 
 	public List<String> listProducts() {
 		Set<String> res = new HashSet<>();
-		for (ArtifactoryReader repo : repos) {
-			res.addAll(repo.getProducts());
+		try {
+			for (ArtifactoryReader repo : getRepos()) {
+				res.addAll(repo.getProducts().keySet());
+			}
+			return new ArrayList<>(res);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
-		return new ArrayList<>(res);
 	}
 
-	public List<String> listVersions(String productName) {
-		Set<String> res = new HashSet<>();
-		for (ArtifactoryReader repo : repos) {
-			res.addAll(repo.getProductVersions(productName));
+	public List<String> listVersions(String groupId, String artifactId) {
+		try {
+			for (ArtifactoryReader repo : getRepos()) {
+				if (repo.hasProduct(groupId, artifactId)) {
+					return repo.getProductVersions(groupId, artifactId);
+				}
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
-		return new ArrayList<>(res);
+		throw new EProductNotFound();
 	}
-	
+
 	public void install(File productDir) {
 		installerFactory.getInstaller(productDir).install();
 	}
-	
-	public File get(String productName, String version, String extension) throws EArtifactNotFound {
-		File res = queryLocal(productName, version, extension);
-		if (res == null) { 
-			res = download(productName, version, extension);
+
+	public File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
+		File res = queryLocal(groupId, artifactId, version, extension);
+		if (res == null) {
+			res = download(groupId, artifactId, version, extension);
 			if (res == null) {
-				throw new EArtifactNotFound(
-						getArftifactStr(productName, version, extension) + " is not found in all known repositories");
+				throw new EArtifactNotFound(Utils.coordsToString(groupId, artifactId, version, extension)
+						+ " is not found in all known repositories");
 			}
-		} 
+		}
 		return res;
 	}
-	
-	public File queryLocal(String productName, String version, String extension) { 
-		String fileRelativePath = Utils.getProductRelativePath(productName, version, extension);
+
+	public File queryLocal(String groupId, String artifactId, String version, String extension) {
+		String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
 		File res = new File(repository, fileRelativePath);
 		if (!res.exists()) {
 			return null;
@@ -84,24 +93,27 @@ public class AIRunner {
 		return res;
 	}
 
-	private File download(String productName, String version, String extension) {
-		File cachedArtifact = queryLocal(productName, version, extension);
-		if (cachedArtifact != null) {
-			return cachedArtifact;
-		}
-		
-		String fileRelativePath = Utils.getProductRelativePath(productName, version, extension);
+	private File download(String groupId, String artifactId, String version, String extension) {
+		String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
 		File res = new File(repository, fileRelativePath);
-		for (ArtifactoryReader repo : repos) {
-			
-			if (!repo.getProducts().contains(productName)) {
+		for (ArtifactoryReader repo : getRepos()) {
+
+			try {
+				if (!repo.getProducts().keySet().contains(Utils.coordsToString(groupId, artifactId))) {
+					continue;
+				}
+			} catch (Exception e) {
 				continue;
 			}
-			
-			if (!repo.getProductVersions(productName).contains(version)) {
+
+			try {
+				if (!repo.getProductVersions(groupId, artifactId).contains(version)) {
+					continue;
+				}
+			} catch (Exception e) {
 				continue;
 			}
-			
+
 			try {
 				File parent = res.getParentFile();
 				if (!parent.exists()) {
@@ -113,7 +125,7 @@ public class AIRunner {
 				throw new RuntimeException(e);
 			}
 			try (FileOutputStream out = new FileOutputStream(res);
-				 InputStream in = getContent(repo.getProductUrl(productName, version, extension))) {
+				 InputStream in = repo.getContentStream(groupId, artifactId, version, extension)) {
 				IOUtils.copy(in, out);
 			} catch (Exception e) {
 				continue;
@@ -122,15 +134,9 @@ public class AIRunner {
 		}
 		return null;
 	}
-
-	private String getArftifactStr(String productName, String version, String extension) {
-		return productName + "-" + version + extension;
-	}
-
-	public InputStream getContent(String fileUrlSr) throws Exception {
-		URL url = new URL(fileUrlSr);
-		return url.openStream();
-		
+	
+	public void setRepos(List<ArtifactoryReader> repos) {
+		this.repos = repos;
 	}
 
 }

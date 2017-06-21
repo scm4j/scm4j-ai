@@ -14,7 +14,7 @@ Maven Artifacts Installer
   
 # Data Structure
 
-Ref. Ref. [data-structure.md](data-structure.md)
+Ref. [data-structure.md](data-structure.md)
   
   
 

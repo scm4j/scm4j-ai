@@ -1,7 +1,5 @@
 # product-lists
 ```ini
-
-# 
 # Product group: com.company
 # Product name: product1
 # Product repository root: https://www.company.com/repo1

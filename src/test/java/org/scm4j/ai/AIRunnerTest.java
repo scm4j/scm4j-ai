@@ -54,13 +54,30 @@ public class AIRunnerTest {
 		env.prepareEnvironment();
 		
 		ArtifactoryWriter aw = new ArtifactoryWriter(env.getArtifactory1Folder());
-		appendProductLists(env.getArtifactory1Folder());
-		aw.install(TEST_UBL_GROUP_ID, ublArtifactId, "18.5", ".jar", "ubl 18.5 artifact content", env.getArtifactory1Folder());
-		aw.install(TEST_UBL_GROUP_ID, ublArtifactId, "18.0", ".jar", TEST_UBL_18_0_CONTENT, env.getArtifactory1Folder());
+		//appendProductLists(env.getArtifactory1Folder());
+		aw.installArtifact(TEST_UBL_GROUP_ID, ublArtifactId, "18.5", ".jar", "ubl 18.5 artifact content", env.getArtifactory1Folder());
+		aw.installArtifact(TEST_UBL_GROUP_ID, ublArtifactId, "18.0", ".jar", TEST_UBL_18_0_CONTENT, env.getArtifactory1Folder());
 		aw = new ArtifactoryWriter(env.getArtifactory2Folder());
-		appendProductLists(env.getArtifactory2Folder());
-		aw.install(TEST_GUAVA_GROUP_ID, guavaArtifactId, "20.0-rc1", ".jar", "guava 20.0-rc1 artifact content", env.getArtifactory2Folder());
-		aw.install(TEST_GUAVA_GROUP_ID, guavaArtifactId, "21.0", ".jar", TEST_GUAVA_21_0_CONTENT, env.getArtifactory2Folder());
+		//appendProductLists(env.getArtifactory2Folder());
+		aw.installArtifact(TEST_GUAVA_GROUP_ID, guavaArtifactId, "20.0-rc1", ".jar", "guava 20.0-rc1 artifact content", env.getArtifactory2Folder());
+		aw.installArtifact(TEST_GUAVA_GROUP_ID, guavaArtifactId, "21.0", ".jar", TEST_GUAVA_21_0_CONTENT, env.getArtifactory2Folder());
+		
+		aw.installProduct("eu.untill", "untill", )
+		/**
+		 * Устаовили несколько Product Component Artifact
+		 * Теперь создадим Product Artifact mdeps, который будет .txt с перечислением Product Component Artifacts 
+		 * и pom.xml, котоый будет содержать в себе плоский список артифактов,
+		 *  
+		 */
+		/**
+		 * установили Product Installer. Теперь установим ProductList
+		 * Это будет просто product-list.txt, с примерно таким содержимим:
+		 * untill=http://dev.untill.com/artifactory/repo/.../untill-ai 
+		 * agent=http://dev.../
+		 */
+		
+		
+		
 	}
 	
 	@Test

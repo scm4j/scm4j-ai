@@ -89,30 +89,33 @@ public class ArtifactoryWriter {
 		}
 	}
 	
-	public void install(String groupId, String artifactId, String version, String extension, 
+	public File installArtifact(String groupId, String artifactId, String version, String extension, 
 			String content, File productListLocation) {
 		try {
 			
 			File artifactRoot = new File(artifactoryFolder, Utils.coordsToFolderStructure(groupId, artifactId));
 			
-			writeArtifact(artifactId, version, extension, content, artifactRoot);
+			File artifactFile = writeArtifact(artifactId, version, extension, content, artifactRoot);
 			
 			appendMetadata(groupId, artifactId, version, artifactRoot);
 			
 			appendProductList(groupId, artifactId, version, extension, productListLocation);
+			
+			return artifactFile;
 			
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private void writeArtifact(String artifactId, String version, String extension, String content, File artifactRoot)
+	private File writeArtifact(String artifactId, String version, String extension, String content, File artifactRoot)
 			throws IOException {
 		File artifactVersionPath = new File(artifactRoot, version);
 		artifactVersionPath.mkdirs();
 		
 		File artifactFile = new File(artifactVersionPath, Utils.coordsToFileName(artifactId, version, extension));
 		FileUtils.writeStringToFile(artifactFile, content);
+		return artifactFile;
 	}
 
 	private void appendProductList(String groupId, String artifactId, String version, String extension, 

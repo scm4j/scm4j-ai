@@ -33,6 +33,8 @@ dependencies {
 	compile 'org.apache.commons:commons-lang3:3.5'
 	
 	compile 'org.apache.maven:maven-aether-provider:3.3.9'
+	compile 'commons-cli:commons-cli:1.4'
+	
 
 /*    
     compile 'org.apache.maven.resolver:maven-resolver:1.0.3'

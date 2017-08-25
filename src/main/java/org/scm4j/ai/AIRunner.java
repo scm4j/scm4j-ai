@@ -71,6 +71,7 @@ public class AIRunner {
 	public void install(File productDir) {
 		installerFactory.getInstaller(productDir).install();
 	}
+	
 
 	public File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
 		File res = queryLocal(groupId, artifactId, version, extension);

@@ -62,21 +62,13 @@ public class AIRunnerTest {
 		aw.installArtifact(TEST_GUAVA_GROUP_ID, guavaArtifactId, "20.0-rc1", ".jar", "guava 20.0-rc1 artifact content", env.getArtifactory2Folder());
 		aw.installArtifact(TEST_GUAVA_GROUP_ID, guavaArtifactId, "21.0", ".jar", TEST_GUAVA_21_0_CONTENT, env.getArtifactory2Folder());
 		
-		aw.installProduct("eu.untill", "untill", )
+		//aw.installArtifact("eu.untill", "untill", )
 		/**
-		 * Устаовили несколько Product Component Artifact
-		 * Теперь создадим Product Artifact mdeps, который будет .txt с перечислением Product Component Artifacts 
-		 * и pom.xml, котоый будет содержать в себе плоский список артифактов,
+		 * Few Product Component Artifact installed
+		 * Now create Product Artifact mdeps wich is a .txt with set of Product Component Artifacts 
+		 * and pom.xml which will contain flat artifact list
 		 *  
 		 */
-		/**
-		 * установили Product Installer. Теперь установим ProductList
-		 * Это будет просто product-list.txt, с примерно таким содержимим:
-		 * untill=http://dev.untill.com/artifactory/repo/.../untill-ai 
-		 * agent=http://dev.../
-		 */
-		
-		
 		
 	}
 	

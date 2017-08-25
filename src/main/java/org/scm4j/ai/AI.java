@@ -18,15 +18,14 @@ public class AI implements IAI {
 	@Override
 	public void install(String productCoords) {
 		/**
-		 * скачаем Product Artifact там один deployer на продукт. В нем
-		 * захардкожены все компоненты. Версии - из ресурсов.
+		 * Download Product Artifact. It contains one deployer per product. All components are hardcoded within it. All versions are taken from resources
 		 */
 		AIRunner runner = new AIRunner(workingFolder);
 		DepCoords coords = new DepCoords(productCoords);
 		File jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
 				coords.getExtension());
 		/**
-		 * возьмем все классы из этой jar
+		 * Take all classes from this jar
 		 */
 		String deployerClassName = getExportedClassName(jarFile);
 		if (deployerClassName == null) {

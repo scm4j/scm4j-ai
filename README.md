@@ -9,8 +9,8 @@ This component automates installation of products which are represented by artif
 # Terms
 
 - `product list`: artifact (yaml file) which lists `product artifacts` and repositories which will be used to search artifacts
-- `product artifact`: artifact (yaml file) which lists `component artifacts` and `component installers`
-- `component installer`: is represented by class name and parameters. Class is instantiated with given parameters and should implement `IAIinstaller` interface
+- `product artifact`: artifact which describes a product. It is a yaml file which lists `component artifacts` and `component installers`
+- `component installer`: is represented by class name and parameters. Class is instantiated by given name with given parameters and should implement `IAIinstaller` interface
   
 # Data Structure
 

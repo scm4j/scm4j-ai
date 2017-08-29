@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/scm4j/scm4j-ai/badge.png)](https://coveralls.io/r/scm4j/scm4j-ai)
 
 # Overview
-This component automates installation of a product which represents by artifacts in maven repositories. 
+This component automates installation of a products which are represented by artifacts in maven repositories. 
 
 # Terms
 

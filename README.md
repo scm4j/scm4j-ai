@@ -8,7 +8,7 @@ This component automates installation of products which are represented by artif
 
 # Terms
 
-- `product list`: artifact (yaml file) which lists `product artifacts` and repositories which will be used to search for artifacts
+- `product list`: artifact (yaml file) which lists `product artifacts` and repositories which will be used to search artifacts
 - `product artifact`: artifact (yaml file) which lists `component artifacts` and `component installers`
 - `component installer`: is represented by class name and parameters. Class is instantiated with given parameters and should implement `IAIinstaller` interface
   

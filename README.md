@@ -2,14 +2,13 @@
 [![Coverage Status](https://coveralls.io/repos/scm4j/scm4j-ai/badge.png)](https://coveralls.io/r/scm4j/scm4j-ai)
 
 # Overview
-Maven Artifacts Installer
+This component automates installation of a product which represents by artifacts in maven repositories. 
 
 # Terms
 
-- `Product Artifact`: artifact which lists `Product Component Artifacts` and knows how to deploy them
-- `Product Component Artifact` artifact which is deployed by `Product Artifact` and knows how to deploy its dependencies
-- `product-lists`: file which lists `product list` items
-- `product-list`: artifact which lists products
+- `product list`: artifact (yaml file) which lists `product artifacts` and repositories which will be used to search for artifacts
+- `product artifact`: artifact (yaml file) which lists `component artifacts` and `component installers`
+- `component installer`: is represented by class name and parameters. Class is instantiated with given parameters and should implement `IAIinstaller` interface
   
 # Data Structure
 

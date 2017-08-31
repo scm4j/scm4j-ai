@@ -41,8 +41,8 @@ public class AI implements IAI {
 			} else {
 				throw new RuntimeException("Provided " + deployerClassName + " does not implements IDeployer");
 			}
-			// 
-			
+			//
+
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(deployerClassName + " class not found");
 		} catch (NoSuchMethodException e) {

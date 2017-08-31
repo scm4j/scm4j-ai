@@ -1,13 +1,13 @@
 package org.scm4j.ai;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.yaml.snakeyaml.Yaml;
 
 public class Utils {
 	
@@ -28,6 +28,18 @@ public class Utils {
 			res.put(entry[0], entry[1]);
 		}
 		return res;
+	}
+
+	public static Map<String,ArrayList<String>> readYml(InputStream is) {
+		try {
+			Yaml yaml = new Yaml();
+			@SuppressWarnings("unchecked")
+			Map<String, ArrayList<String>> res = yaml.loadAs(is, HashMap.class);
+			is.close();
+			return res;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	public static String coordsToString(String groupId, String artifactId, String version, String extension) {

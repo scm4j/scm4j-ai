@@ -19,7 +19,7 @@ public class AITestEnvironment {
 	private String artifactory2Url;
 	private File productListsFile;
 	private File productListArtifact;
-	
+
 	public void prepareEnvironment() throws IOException {
 		File baseTestFolderFile = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test");
 		FileUtils.deleteDirectory(baseTestFolderFile);

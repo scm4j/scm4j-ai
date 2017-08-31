@@ -41,6 +41,7 @@ public class AIRunnerTest {
 	
 	private String ublArtifactId = "UBL-" + UUID.randomUUID().toString();
 	private String guavaArtifactId = "guava-" + UUID.randomUUID().toString();
+	private String untillId = "unTILL";
 	
 	@After
 	public void tearDown() throws IOException {
@@ -54,11 +55,12 @@ public class AIRunnerTest {
 		env.prepareEnvironment();
 		
 		ArtifactoryWriter aw = new ArtifactoryWriter(env.getArtifactory1Folder());
-		//appendProductLists(env.getArtifactory1Folder());
+		appendProductLists(env.getArtifactory1Folder());
+		aw.installArtifact(TEST_UBL_GROUP_ID, untillId, "123.4", ".yml", "", env.getArtifactory1Folder());
 		aw.installArtifact(TEST_UBL_GROUP_ID, ublArtifactId, "18.5", ".jar", "ubl 18.5 artifact content", env.getArtifactory1Folder());
 		aw.installArtifact(TEST_UBL_GROUP_ID, ublArtifactId, "18.0", ".jar", TEST_UBL_18_0_CONTENT, env.getArtifactory1Folder());
 		aw = new ArtifactoryWriter(env.getArtifactory2Folder());
-		//appendProductLists(env.getArtifactory2Folder());
+		appendProductLists(env.getArtifactory2Folder());
 		aw.installArtifact(TEST_GUAVA_GROUP_ID, guavaArtifactId, "20.0-rc1", ".jar", "guava 20.0-rc1 artifact content", env.getArtifactory2Folder());
 		aw.installArtifact(TEST_GUAVA_GROUP_ID, guavaArtifactId, "21.0", ".jar", TEST_GUAVA_21_0_CONTENT, env.getArtifactory2Folder());
 		
@@ -67,10 +69,12 @@ public class AIRunnerTest {
 		 * Few Product Component Artifact installed
 		 * Now create Product Artifact mdeps wich is a .txt with set of Product Component Artifacts 
 		 * and pom.xml which will contain flat artifact list
-		 *  
 		 */
 		
 	}
+
+	//TODO testGetProductsFromYml
+	//TODO testDownloadDependenciesFromPom
 	
 	@Test
 	public void testGetProducts() throws IOException {
@@ -79,7 +83,7 @@ public class AIRunnerTest {
 		assertNotNull(products);
 		assertTrue(products.containsAll(Arrays.asList(
 				"eu.untill:" + ublArtifactId, "com.google.guava:" + guavaArtifactId)));
-		assertTrue(products.size() == 2);
+		assertTrue(products.size() == 3);
 	}
 	
 	@Test 
@@ -121,8 +125,8 @@ public class AIRunnerTest {
 		AIRunner mockedRunner = Mockito.spy(new AIRunner(env.getEnvFolder()));
 		ArtifactoryReader mockedReader1 = Mockito.spy(new ArtifactoryReader(env.getArtifactory1Url(), null, null));
 		ArtifactoryReader mockedReader2 = Mockito.spy(new ArtifactoryReader(env.getArtifactory2Url(), null, null));
-		mockedRunner.setRepos(Arrays.asList(mockedReader1, mockedReader2));
-		
+		mockedRunner.setRepos(Arrays.asList(mockedReader1,mockedReader2));
+
 		File artifact = mockedRunner.get(TEST_GUAVA_GROUP_ID, guavaArtifactId, "21.0", ".jar");
 		assertTrue(artifact.exists());
 		assertEquals(FileUtils.readFileToString(artifact), TEST_GUAVA_21_0_CONTENT);
@@ -144,7 +148,7 @@ public class AIRunnerTest {
 		AIRunner mockedRunner = Mockito.spy(new AIRunner(env.getEnvFolder()));
 		ArtifactoryReader mockedReader1 = Mockito.spy(new ArtifactoryReader(env.getArtifactory1Url(), null, null));
 		ArtifactoryReader mockedReader2 = Mockito.spy(new ArtifactoryReader(env.getArtifactory2Url(), null, null));
-		mockedRunner.setRepos(Arrays.asList(mockedReader1, mockedReader2));
+		mockedRunner.setRepos(Arrays.asList(mockedReader1,mockedReader2));
 		
 		File artifact = mockedRunner.get(TEST_UBL_GROUP_ID, ublArtifactId, "18.0", ".jar");
 		assertTrue(artifact.exists());

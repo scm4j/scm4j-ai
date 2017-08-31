@@ -10,8 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
@@ -22,6 +20,7 @@ import org.scm4j.ai.exceptions.ENoConfig;
 import org.scm4j.ai.exceptions.EProductNotFound;
 
 import com.google.common.io.Files;
+import org.yaml.snakeyaml.Yaml;
 
 public class ArtifactoryReader {
 	
@@ -29,7 +28,6 @@ public class ArtifactoryReader {
 	public static final String METADATA_FILE_NAME = "maven-metadata.xml";
 	public static final String PRODUCT_LIST_GROUP_ID = "org.scm4j.ai";
 	public static final String PRODUCT_LIST_ARTIFACT_ID = "product-list";
-	public static final String PRODUCT_LIST_FILE_NAME = "product-list.txt";
 	
 	private final URL url;
 	private final String password;
@@ -67,25 +65,27 @@ public class ArtifactoryReader {
 		return getContentStream(getProductUrl(groupId, artifactId, version, extension));
 	}
 
-	public Map<String, String> getProducts() throws Exception {
+	public Map<String, ArrayList<String>> getProducts() throws Exception {
+
 		String productListReleaseVersion = getArtifactReleaseVersion(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID);
-		
-		Map<String, String> products = new HashMap<>();
-		URL productUrl = getProductUrl(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID, productListReleaseVersion, ".zip");
-		try (InputStream is = getContentStream(productUrl)) {
-			ZipInputStream zis = new ZipInputStream(is);
-			ZipEntry entry;
-			while ((entry = zis.getNextEntry()) != null) {
-				if (entry.getName().equals(PRODUCT_LIST_FILE_NAME)) {
-					return Utils.readMap(zis);
-				}
+
+		URL productListUrl = getProductUrl(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID, productListReleaseVersion, ".yml");
+
+		try (InputStream is = getContentStream(productListUrl)) {
+			Yaml yaml = new Yaml();
+			@SuppressWarnings("unchecked")
+			Map<String, ArrayList<String>> res = yaml.loadAs(is, HashMap.class);
+			if (res == null) {
+				res = new HashMap<>();
+				res.put("products",new ArrayList<>());
+				res.put("repositories", new ArrayList<>());
 			}
-			return products;
+			return res;
 		}
 	}
 	
-	public Boolean hasProduct(String groupId, String artifactId) throws Exception {
-		return getProducts().keySet().contains(Utils.coordsToString(groupId, artifactId));
+	public boolean hasProduct(String groupId, String artifactId) throws Exception {
+		return getProducts().get("products").contains(Utils.coordsToString(groupId, artifactId));
 	}
 	
 	public List<String> getProductVersions(String groupId, String artifactId) throws Exception {
@@ -122,7 +122,7 @@ public class ArtifactoryReader {
 		}
 	}
 
-	private static ArtifactoryReader getByUrl(String repoUrl) throws Exception {
+	public static ArtifactoryReader getByUrl(String repoUrl) throws Exception {
 		URL url = new URL(repoUrl);
 		String userInfoStr = url.getUserInfo();
 		if (userInfoStr != null) {

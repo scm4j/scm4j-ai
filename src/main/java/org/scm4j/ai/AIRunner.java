@@ -3,6 +3,7 @@ package org.scm4j.ai;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -35,7 +36,7 @@ public class AIRunner {
 		} catch (Exception e) {
 			throw new RuntimeException (e);
 		}
-		
+
 		setRepos(ArtifactoryReader.loadFromWorkingFolder(workingFolder));
 	}
 
@@ -47,13 +48,16 @@ public class AIRunner {
 		Set<String> res = new HashSet<>();
 		try {
 			for (ArtifactoryReader repo : getRepos()) {
-				res.addAll(repo.getProducts().keySet());
+				res.addAll(repo.getProducts().get("products"));
 			}
 			return new ArrayList<>(res);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
+
+	//TODO List Product Artifact Components with installer dep's
+	//TODO Download Product Artifact Component's with their dep's from pom.xml
 
 	public List<String> listVersions(String groupId, String artifactId) {
 		try {
@@ -98,9 +102,8 @@ public class AIRunner {
 		String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
 		File res = new File(repository, fileRelativePath);
 		for (ArtifactoryReader repo : getRepos()) {
-
 			try {
-				if (!repo.getProducts().keySet().contains(Utils.coordsToString(groupId, artifactId))) {
+				if (!repo.getProducts().get("products").contains(Utils.coordsToString(groupId, artifactId))) {
 					continue;
 				}
 			} catch (Exception e) {
@@ -139,5 +142,4 @@ public class AIRunner {
 	public void setRepos(List<ArtifactoryReader> repos) {
 		this.repos = repos;
 	}
-
 }

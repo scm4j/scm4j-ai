@@ -1,11 +1,17 @@
 package org.scm4j.ai;
 
 import java.io.*;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.io.Files;
+import com.google.common.io.Resources;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.Versioning;
@@ -18,14 +24,18 @@ import org.yaml.snakeyaml.Yaml;
 public class ArtifactoryWriter {
 
 	private static final String PRODUCT_LIST_DEFAULT_VERSION = "1.1.0";
+	private static final String TEST_RESOURCES = "org/scm4j/ai/poms";
 	private File artifactoryFolder;
 	private File productListFile;
+	private static Yaml YAML;
 
 	public ArtifactoryWriter(File artifactoryFolder) {
 		this.artifactoryFolder = artifactoryFolder;
 		artifactoryFolder.mkdirs();
 		generateProductListArtifact();
 	}
+
+	//TODO rewrite AW with Artifact Resolver
 
 	private void generateProductListArtifact() {
 		try {
@@ -56,7 +66,7 @@ public class ArtifactoryWriter {
 	}
 
 	private Metadata getProductListArtifactMetadata() {
-		Metadata metaData = cereateArtifactMetadata(ArtifactoryReader.PRODUCT_LIST_GROUP_ID,
+		Metadata metaData = createArtifactMetadata(ArtifactoryReader.PRODUCT_LIST_GROUP_ID,
 				ArtifactoryReader.PRODUCT_LIST_ARTIFACT_ID);
 		List<String> versions = metaData.getVersioning().getVersions();
 		versions.add(PRODUCT_LIST_DEFAULT_VERSION);
@@ -64,7 +74,7 @@ public class ArtifactoryWriter {
 		return metaData;
 	}
 
-	private Metadata cereateArtifactMetadata(String groupId, String artifactId) {
+	private Metadata createArtifactMetadata(String groupId, String artifactId) {
 		Metadata metaData = new Metadata();
 		Versioning vers = new Versioning();
 		metaData.setVersioning(vers);
@@ -89,16 +99,17 @@ public class ArtifactoryWriter {
 
 			File artifactRoot = new File(artifactoryFolder, Utils.coordsToFolderStructure(groupId, artifactId));
 
-			if(extension.equals(".yml")) {
-				File artifactFile = writeProduct(artifactId,version,extension,artifactRoot);
-			} else {
-				File artifactFile = writeArtifact(artifactId, version, extension, content, artifactRoot);
-			}
+
+			File artifactFile = writeArtifact(artifactId, version, extension, content, artifactRoot);
 
 			appendMetadata(groupId, artifactId, version, artifactRoot);
 
 			//TODO Product List only appends for products, not for Product Component Artifacts
-			appendProductList(groupId, artifactId, version, extension, productListLocation);
+			if(Utils.isYml(extension)) {
+				appendProductList(groupId, artifactId, version, extension, productListLocation);
+			} else {
+				appendProduct(artifactId,version,artifactId + "installer.jar",productListLocation);
+			}
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -106,35 +117,44 @@ public class ArtifactoryWriter {
 	}
 
 	private File writeArtifact(String artifactId, String version, String extension, String content, File artifactRoot)
-			throws IOException {
+			throws IOException, URISyntaxException {
 		File artifactVersionPath = new File(artifactRoot, version);
 		artifactVersionPath.mkdirs();
 
 		File artifactFile = new File(artifactVersionPath, Utils.coordsToFileName(artifactId, version, extension));
 
-		FileUtils.writeStringToFile(artifactFile, content);
+		File artifactPom = new File(artifactVersionPath, Utils.coordsToFileName(artifactId,version,".pom"));
+
+		if(!Utils.isYml(extension)) {
+			FileUtils.writeStringToFile(artifactFile, content);
+		} else {
+			artifactFile.createNewFile();
+		}
+
+		File resource = new File(getClass().getClassLoader().getResource(TEST_RESOURCES +
+				Utils.coordsToFileName(artifactId,version,".pom")).getFile());
+
+		Files.copy(resource, artifactPom);
+
 		return artifactFile;
 	}
 
-	private File writeProduct(String artifactId, String version, String extension, File artifactRoot) throws IOException {
-		File artifactVersionPath = new File(artifactRoot, version);
-		artifactVersionPath.mkdirs();
-
-		File artifactFile = new File(artifactVersionPath, Utils.coordsToFileName(artifactId, version, extension));
-
-		artifactFile.createNewFile();
-
-		return artifactFile;
+	private void appendProduct(String artifactId, String version, String installer, File productFile) throws IOException {
+		YAML = new Yaml();
+		Map<String,String> res;
+		try(FileReader is = new FileReader(productFile)) {
+			res = YAML.loadAs(is, HashMap.class);
+		}
+		if (res == null) {
+			res = new HashMap<>();
+		}
+		res.put(Utils.coordsToString(artifactId, version), installer);
+		String yamlOutput = YAML.dumpAsMap(res);
+		FileWriter writer = new FileWriter(productFile);
+		writer.write(yamlOutput);
+		writer.flush();
+		writer.close();
 	}
-
-	private void appendProduct(String artifactId, String version) {
-		Yaml yaml = new Yaml();
-		Map<String, String> productContent;
-
-	}
-
-	//TODO write products yml's
-	//TODO write Product Artifact Components pom's
 
 	private void appendProductList(String groupId, String artifactId, String version, String extension,
 			File productListLocation) throws Exception  {
@@ -145,8 +165,8 @@ public class ArtifactoryWriter {
 
 		Map<String, ArrayList<String>> products = getProductListContent(remoteProductListFileLocation);
 
-        if (!products.get("products").contains(Utils.coordsToString(groupId, artifactId, version,extension))) {
-				products.get("products").add(Utils.coordsToString(groupId, artifactId));
+        if (!products.get(ArtifactoryReader.PRODUCTS).contains(Utils.coordsToString(groupId, artifactId, version,extension))) {
+				products.get(ArtifactoryReader.PRODUCTS).add(Utils.coordsToString(groupId, artifactId));
 				remoteProductListFileLocation.delete();
 				remoteProductListFileLocation.createNewFile();
 				writeProductListContent(products, remoteProductListFileLocation);
@@ -157,8 +177,8 @@ public class ArtifactoryWriter {
 			throws Exception {
 		DumperOptions options = new DumperOptions();
 		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-		Yaml yaml = new Yaml(options);
-		String yamlOutput = yaml.dump(products);
+		YAML = new Yaml(options);
+		String yamlOutput = YAML.dump(products);
 		FileWriter fw = new FileWriter(remoteProductListFileLocation);
 		fw.write(yamlOutput);
 		fw.flush();
@@ -168,13 +188,13 @@ public class ArtifactoryWriter {
 	private Map<String, ArrayList<String>> getProductListContent(File remoteProductListFileLocation)
 			throws IOException{
 		try (FileReader reader = new FileReader(remoteProductListFileLocation)) {
-			Yaml yaml = new Yaml();
+			YAML = new Yaml();
 			@SuppressWarnings("unchecked")
-			Map<String, ArrayList<String>> res = yaml.loadAs(reader, HashMap.class);
+			Map<String, ArrayList<String>> res = YAML.loadAs(reader, HashMap.class);
 			if (res == null) {
 				res = new HashMap<>();
-				res.put("products",new ArrayList<>());
-				res.put("repositories", new ArrayList<>());
+				res.put(ArtifactoryReader.PRODUCTS,new ArrayList<>());
+				res.put(ArtifactoryReader.REPOSITORIES, new ArrayList<>());
 			}
 			return res;
 		} catch (IOException e) {
@@ -188,7 +208,7 @@ public class ArtifactoryWriter {
 
 		Metadata metaData;
 		if (!mavenMetadataFile.exists()) {
-			metaData = cereateArtifactMetadata(groupId, artifactId);
+			metaData = createArtifactMetadata(groupId, artifactId);
 		} else {
 			metaData = readArtifactMetadata(mavenMetadataFile);
 		}

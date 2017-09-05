@@ -1,49 +1,26 @@
 package org.scm4j.ai;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
-import org.yaml.snakeyaml.Yaml;
+import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
+import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
+import org.eclipse.aether.impl.DefaultServiceLocator;
+import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
+import org.eclipse.aether.spi.connector.transport.TransporterFactory;
+import org.eclipse.aether.transport.file.FileTransporterFactory;
+import org.eclipse.aether.transport.http.HttpTransporterFactory;
 
 public class Utils {
 	
-	@SuppressWarnings("unchecked")
-	public static List<String> readLines(InputStream is) {
-		try {
-			return IOUtils.readLines(is);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-	
-	public static Map<String, String> readMap(InputStream is) {
-		Map<String, String> res = new HashMap<>();
-		List<String> lines = readLines(is);
-		for (String line : lines) {
-			String[] entry = line.split("=");
-			res.put(entry[0], entry[1]);
-		}
-		return res;
-	}
-
-	public static Map<String,ArrayList<String>> readYml(InputStream is) {
-		try {
-			Yaml yaml = new Yaml();
-			@SuppressWarnings("unchecked")
-			Map<String, ArrayList<String>> res = yaml.loadAs(is, HashMap.class);
-			is.close();
-			return res;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-	
 	public static String coordsToString(String groupId, String artifactId, String version, String extension) {
 		return coordsToString(groupId, artifactId) + ":" + version + ":" + extension;
+	}
+
+	public static String coordsToString(String groupId, String artifactId, String version) {
+		return coordsToString(groupId, artifactId) + ":" + version;
 	}
 	
 	public static String coordsToString(String groupId, String artifactId) {
@@ -69,5 +46,39 @@ public class Utils {
 
 	public static String coordsToUrlStructure(String groupId, String artifactId) {
 		return coordsToString(groupId, artifactId).replace(".", "/").replace(":", "/");
+	}
+
+	public static String coordsToUrlStructure(String groupId, String artifactId, String version) {
+		return coordsToString(groupId,artifactId,version).replace(".","/").replace(":","/");
+	}
+
+	public static boolean isYml(String extension) {
+		if(extension.equals(".yml")) {
+			return true;
+		}
+		return false;
+	}
+
+	public static RepositorySystem newRepositorySystem() {
+		DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
+		locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
+		locator.addService(TransporterFactory.class, FileTransporterFactory.class);
+		locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
+
+		locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
+			@Override
+			public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
+				exception.printStackTrace();
+			}
+		});
+		return locator.getService(RepositorySystem.class);
+	}
+
+	public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system, File repository) {
+		DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
+		LocalRepository localRepo = new LocalRepository(repository);
+		session.setLocalRepositoryManager(system.newLocalRepositoryManager(session,localRepo));
+
+		return session;
 	}
 }

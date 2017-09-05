@@ -12,14 +12,18 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.scm4j.ai.exceptions.EArtifactNotFound;
@@ -30,18 +34,24 @@ import org.scm4j.ai.installers.InstallerFactory;
 
 public class AIRunnerTest {
 
-	private static final String TEST_UBL_18_0_CONTENT = "ubl 18.0 artifact content";
-	private static final String TEST_GUAVA_21_0_CONTENT = "guava 21.0 artifact content";
-	private static final String TEST_GUAVA_GROUP_ID = "com.google.guava";
+	private static final String TEST_UBL_22_2_CONTENT = "ubl 22.2 artifact content";
+	private static final String TEST_JOOQ_3_1_0_CONTENT = "jooq 3.1.0 artifact content";
+	private static final String TEST_AXIS_1_4_CONTENT = "axis 1.4 artifact content";
 	private static final String TEST_UBL_GROUP_ID = "eu.untill";
+	private static final String TEST_JOOQ_GROUP_ID = "org.jooq";
+	private static final String TEST_AXIS_GROUP_ID = "axis";
 	private static final String TEST_ARTIFACTORY_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
 			.getPath();
+	private static final String TEST_GUAVA_21_0_CONTENT = "guava 21.0 artifact content";
+	private static final String TEST_GUAVA_GROUP_ID = "com.google.guava";
 
 	private AITestEnvironment env;
 	
-	private String ublArtifactId = "UBL-" + UUID.randomUUID().toString();
-	private String guavaArtifactId = "guava-" + UUID.randomUUID().toString();
-	private String untillId = "unTILL";
+	private String ublArtifactId = "UBL";
+	private String untillArtifactId = "unTILL";
+	private String jooqArtifact = "jooq";
+	private String axisArtifact = "axis";
+	private String guavaArtifactId = "guava";
 	
 	@After
 	public void tearDown() throws IOException {
@@ -53,16 +63,18 @@ public class AIRunnerTest {
 		FileUtils.deleteDirectory(new File(TEST_ARTIFACTORY_DIR));
 		env = new AITestEnvironment();
 		env.prepareEnvironment();
-		
 		ArtifactoryWriter aw = new ArtifactoryWriter(env.getArtifactory1Folder());
 		appendProductLists(env.getArtifactory1Folder());
-		aw.installArtifact(TEST_UBL_GROUP_ID, untillId, "123.4", ".yml", "", env.getArtifactory1Folder());
-		aw.installArtifact(TEST_UBL_GROUP_ID, ublArtifactId, "18.5", ".jar", "ubl 18.5 artifact content", env.getArtifactory1Folder());
-		aw.installArtifact(TEST_UBL_GROUP_ID, ublArtifactId, "18.0", ".jar", TEST_UBL_18_0_CONTENT, env.getArtifactory1Folder());
-		aw = new ArtifactoryWriter(env.getArtifactory2Folder());
-		appendProductLists(env.getArtifactory2Folder());
-		aw.installArtifact(TEST_GUAVA_GROUP_ID, guavaArtifactId, "20.0-rc1", ".jar", "guava 20.0-rc1 artifact content", env.getArtifactory2Folder());
-		aw.installArtifact(TEST_GUAVA_GROUP_ID, guavaArtifactId, "21.0", ".jar", TEST_GUAVA_21_0_CONTENT, env.getArtifactory2Folder());
+		File pathToUntill = new File(env.getArtifactory1Folder(),Utils.coordsToRelativeFilePath(TEST_UBL_GROUP_ID, untillArtifactId, "123.4", ".yml" ));
+		aw.installArtifact(TEST_UBL_GROUP_ID, untillArtifactId, "123.4", ".yml", "", env.getArtifactory1Folder());
+		aw.installArtifact(TEST_UBL_GROUP_ID, ublArtifactId, "22.2",".war",TEST_UBL_22_2_CONTENT, pathToUntill);
+		aw.installArtifact(TEST_JOOQ_GROUP_ID, jooqArtifact, "3.1.0", ".jar", TEST_JOOQ_3_1_0_CONTENT, pathToUntill);
+		aw.installArtifact(TEST_AXIS_GROUP_ID, axisArtifact, "1.4",".jar", TEST_AXIS_1_4_CONTENT, pathToUntill);
+//		aw.installArtifact(TEST_UBL_GROUP_ID, ublArtifactId, "18.0", ".jar", TEST_UBL_18_0_CONTENT, pathToUntill);
+//		aw = new ArtifactoryWriter(env.getArtifactory2Folder());
+//		appendProductLists(env.getArtifactory2Folder());
+//		aw.installArtifact(TEST_GUAVA_GROUP_ID, guavaArtifactId, "20.0-rc1", ".jar", "guava 20.0-rc1 artifact content", env.getArtifactory2Folder());
+//		aw.installArtifact(TEST_GUAVA_GROUP_ID, guavaArtifactId, "21.0", ".jar", TEST_GUAVA_21_0_CONTENT, env.getArtifactory2Folder());
 		
 		//aw.installArtifact("eu.untill", "untill", )
 		/**
@@ -70,7 +82,6 @@ public class AIRunnerTest {
 		 * Now create Product Artifact mdeps wich is a .txt with set of Product Component Artifacts 
 		 * and pom.xml which will contain flat artifact list
 		 */
-		
 	}
 
 	//TODO testGetProductsFromYml
@@ -82,8 +93,8 @@ public class AIRunnerTest {
 		List<String> products = runner.listProducts();
 		assertNotNull(products);
 		assertTrue(products.containsAll(Arrays.asList(
-				"eu.untill:" + ublArtifactId, "com.google.guava:" + guavaArtifactId)));
-		assertTrue(products.size() == 3);
+				"eu.untill:unTILL")));
+		assertTrue(products.size() == 1);
 	}
 	
 	@Test 
@@ -152,7 +163,7 @@ public class AIRunnerTest {
 		
 		File artifact = mockedRunner.get(TEST_UBL_GROUP_ID, ublArtifactId, "18.0", ".jar");
 		assertTrue(artifact.exists());
-		assertEquals(FileUtils.readFileToString(artifact), TEST_UBL_18_0_CONTENT);
+		assertEquals(FileUtils.readFileToString(artifact), TEST_UBL_22_2_CONTENT);
 		String ethalon = String.format("\\repository\\eu\\untill\\%s\\18.0\\%s-18.0.jar", ublArtifactId, ublArtifactId)
 				.replace("\\", File.separator);
 		assertEquals(StringUtils.removeEnd(artifact.getPath(), ethalon), env.getEnvFolder().getPath());
@@ -226,4 +237,11 @@ public class AIRunnerTest {
 				StringUtils.appendIfMissing(env.getArtifactory2Url(), "/")));
 	}
 
+	@Test
+	public void testDownloadComponents() throws Exception {
+		AIRunner runner = new AIRunner(env.getEnvFolder());
+		List<Artifact> artifacts = new ArrayList<>();
+		artifacts.add(new DefaultArtifact("org.eclipse.aether:aether-util:1.0.0.v20140518"));
+		runner.downloadComponents(artifacts);
+	}
 }

@@ -8,8 +8,8 @@ This component automates installation of products which are represented by artif
 
 # Terms
 
-- `product list`: artifact which main class implements `IProductList` interface. Describes `products` and maven repositories
-- `product`: artifact which main class implements `IProduct` interface. Describes `components` and their `installation procedures`
+- `product list`: artifact whose main class implements `IProductList` interface. Describes `products` and maven repositories
+- `product`: artifact whose main class implements `IProduct` interface. Describes `components` and their `installation procedures`
 - `component`: represented by component artifact, can have one-level dependencies
 - `installation procedure`: list of `actions`, every `action` is represented by `installer` class and paremeters. 
 - `installer`: class which implements `IInstaller` interface. Is instantiated during `installation procdure`, action paremeters are passed

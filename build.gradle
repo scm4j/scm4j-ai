@@ -9,7 +9,8 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 
 repositories {
-    jcenter()
+	maven { url "https://jitpack.io" }
+	mavenCentral()
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -33,6 +34,7 @@ dependencies {
 	compile 'org.apache.commons:commons-lang3:3.5'
 	compile 'org.yaml:snakeyaml:1.18'
 	compile 'commons-cli:commons-cli:1.4'
+	compile 'com.github.scm4j:scm4j-commons:master-SNAPSHOT'
 
 	compile 'org.apache.maven.resolver:maven-resolver-api:1.1.0'
     compile 'org.apache.maven.resolver:maven-resolver-util:1.1.0'

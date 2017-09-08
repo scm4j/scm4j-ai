@@ -20,7 +20,7 @@ public class AI implements IAI {
 		/**
 		 * Download Product Artifact. It contains one deployer per product. All components are hardcoded within it. All versions are taken from resources
 		 */
-		AIRunner runner = new AIRunner(workingFolder);
+		AIRunner runner = new AIRunner(workingFolder, null, null, null);
 		DepCoords coords = new DepCoords(productCoords);
 		File jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
 				coords.getExtension());

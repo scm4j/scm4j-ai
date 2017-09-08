@@ -9,7 +9,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 
 public class Cli {
-	
+
 	public static void main(String args[]) throws Exception {
 		Options options = new Options();
 		options.addOption(Option.builder("install")
@@ -27,11 +27,11 @@ public class Cli {
 				.optionalArg(false)
 				.required(false)
 				.build());
-		
+
 		CommandLineParser cmdLineParser = new DefaultParser();
-		
+
 		CommandLine commandLine = cmdLineParser.parse(options, args);
-		
+
 		// TODO: add working folder providing
 		IAI ai = new AI(new File(""));
 		if (commandLine.hasOption("install")) {

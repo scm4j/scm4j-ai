@@ -184,8 +184,9 @@ public class AIRunnerTest {
 				new File("com/google/guava/guava/20.0/guava-20.0.jar").getPath());
 		
 		ArtifactoryReader repo = new ArtifactoryReader(env.getArtifactory1Url(), null, null);
-		assertEquals(repo.getProductUrl("com.google.guava", "guava", "20.0", ".jar"),
-				new URL(env.getArtifactory1Folder().toURI().toURL(), "com/google/guava/guava/20.0/guava-20.0.jar"));
+		URL url = new URL(env.getArtifactory1Folder().toURI().toURL(), "com/google/guava/guava/20.0/guava-20.0.jar");
+		URL expectedURL = repo.getProductUrl("com.google.guava", "guava", "20.0", ".jar");
+		assertEquals(expectedURL, url);
 	}
 
 	@Ignore

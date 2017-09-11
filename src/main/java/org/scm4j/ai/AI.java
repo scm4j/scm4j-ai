@@ -17,39 +17,39 @@ public class AI implements IAI {
 
 	@Override
 	public void install(String productCoords) {
-		/**
-		 * Download Product Artifact. It contains one deployer per product. All components are hardcoded within it. All versions are taken from resources
-		 */
-		AIRunner runner = new AIRunner(workingFolder, null, null, null);
-		DepCoords coords = new DepCoords(productCoords);
-		File jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
-				coords.getExtension());
-		/**
-		 * Take all classes from this jar
-		 */
-		String deployerClassName = getExportedClassName(jarFile);
-		if (deployerClassName == null) {
-			throw new RuntimeException("Deployer class name is not located within jar");
-		}
-		try {
-			Class<?> deployerClass = Class.forName(deployerClassName);
-			Constructor<?> constructor = deployerClass.getConstructor();
-			Object result = constructor.newInstance();
-			IDeployer deployer;
-			if (result.getClass().isAssignableFrom(IDeployer.class)) {
-				deployer = (IDeployer) result;
-			} else {
-				throw new RuntimeException("Provided " + deployerClassName + " does not implements IDeployer");
-			}
-			//
-
-		} catch (ClassNotFoundException e) {
-			throw new RuntimeException(deployerClassName + " class not found");
-		} catch (NoSuchMethodException e) {
-			throw new RuntimeException(deployerClassName + " class has no constructor");
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+//		/**
+//		 * Download Product Artifact. It contains one deployer per product. All components are hardcoded within it. All versions are taken from resources
+//		 */
+//		AIRunner runner = new AIRunner(workingFolder, null, null, null);
+//		DepCoords coords = new DepCoords(productCoords);
+//		File jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
+//				coords.getExtension());
+//		/**
+//		 * Take all classes from this jar
+//		 */
+//		String deployerClassName = getExportedClassName(jarFile);
+//		if (deployerClassName == null) {
+//			throw new RuntimeException("Deployer class name is not located within jar");
+//		}
+//		try {
+//			Class<?> deployerClass = Class.forName(deployerClassName);
+//			Constructor<?> constructor = deployerClass.getConstructor();
+//			Object result = constructor.newInstance();
+//			IDeployer deployer;
+//			if (result.getClass().isAssignableFrom(IDeployer.class)) {
+//				deployer = (IDeployer) result;
+//			} else {
+//				throw new RuntimeException("Provided " + deployerClassName + " does not implements IDeployer");
+//			}
+//			//
+//
+//		} catch (ClassNotFoundException e) {
+//			throw new RuntimeException(deployerClassName + " class not found");
+//		} catch (NoSuchMethodException e) {
+//			throw new RuntimeException(deployerClassName + " class has no constructor");
+//		} catch (Exception e) {
+//			throw new RuntimeException(e);
+//		}
 
 	}
 

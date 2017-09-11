@@ -44,8 +44,8 @@ public class AITestEnvironment {
 		artifactory2Folder = Files
 				.createDirectory(new File(artifactoriesFolder, "RemoteArtifactory2").toPath())
 				.toFile();
-		artifactory1Url = "file://localhost/" + artifactory1Folder.getPath().replace("\\", "/");
-		artifactory2Url = "file://localhost/" + artifactory2Folder.getPath().replace("\\", "/");
+		artifactory1Url = artifactory1Folder.toURI().toURL().toString();
+		artifactory2Url = artifactory2Folder.toURI().toURL().toString();
 	}
 
 	private void createEnvironment() throws IOException {

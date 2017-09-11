@@ -8,10 +8,13 @@ This component automates installation of products which are represented by artif
 
 # Terms
 
-- `product list`: artifact (yaml file) which lists `product artifacts` and repositories which will be used to search artifacts
-- `product artifact`: artifact which describes a product. It is a yaml file which lists `component artifacts` and `component installers`
-- `component installer`: is represented by class name and parameters. Class is instantiated by given name with given parameters and should implement `IAIinstaller` interface
-  
+- `product list`: yaml filr which describes `products` and maven repositories
+- `product`: jar-artifact whose main class implements `IProduct` interface. Describes `components` and their `installation procedures`. Each `component` has exactly one `installation procedure`
+- `component`: represented by component artifact, artifact can have dependencies
+- `installation procedure`: list of `actions`, every `action` is represented by `installer` class and parameters. 
+- `installer`: class which implements `IInstaller` interface. Is instantiated during `installation procdure`, action paremeters are passed
+
+
 # Data Structure
 
 Ref. [data-structure.md](data-structure.md)

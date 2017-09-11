@@ -14,4 +14,3 @@ script: ./gradlew build --info
 
 after_success:
 - ./gradlew jacocoTestReport coveralls
-after_failure: ./travis/junit-errors-to-stdout.sh

@@ -26,6 +26,13 @@ jacocoTestReport {
     }
 }
 
+test {
+    testLogging {
+        events "failed"
+        exceptionFormat "short"
+    }
+}
+
 dependencies {
 	
 	compile 'com.google.guava:guava:20.0'

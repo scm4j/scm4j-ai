@@ -10,9 +10,8 @@ This component automates installation of products which are represented by artif
 
 - `product list`: yaml filr which describes `products` and maven repositories
 - `product`: jar-artifact whose main class implements `IProduct` interface. Describes `components`
-- `component` is represented by `artifact coordinates`, `installer` class name, and `params` (actually a map)
-- `component`: represented by component artifact, artifact can have dependencies
-- `installation procedure`: list of `actions`, every `action` is represented by `installer` class and parameters. 
+- `component` is represented by `artifact coordinates`, and `installation procedure`
+- `installation procedure`: list of `actions`, every `action` is represented by `installer` class name, and `params` (actually a map). All installer classes must be in `product` dependencies.
 - `installer`: class which implements `IInstaller` interface. Is instantiated during `installation procdure`, action paremeters are passed
 
 

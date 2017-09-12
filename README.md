@@ -4,7 +4,7 @@
 Status: in development
 
 # Overview
-This component automates installation of products which are represented by artifacts in maven repositories. 
+This component automates installation (deployment) of products which are represented by artifacts in maven repositories. 
 
 # Terms
 

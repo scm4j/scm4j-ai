@@ -9,19 +9,15 @@ This component automates installation (deployment) of products which are represe
 # Terms
 
 - `product list`: yaml filr which describes `products` and maven repositories
-- `product`: jar-artifact whose main class implements `IProduct` interface. Describes `components`
-- `component` is represented by `artifact coordinates`, and `installation procedure`
-- `installation procedure`: list of `actions`, every `action` is represented by `installer` class name, and `params` (actually a map). All installer classes must be in `product` dependencies.
+- `product`: jar-artifact whose main class has public static `getProjectStructure` method which returns  `IProductStructure` interface. IProjectStructure lists `IComponents`
+- `IComponent` keeps `artifact coordinates`and lists `IInstallationProcedure`
+- `IInstallationProcedure`: lists `IAction`, every `action` is represented by `installer` class and `params`. All installer classes must be in `product` dependencies.
 - `installer`: class which implements `IInstaller` interface. Is instantiated during `installation procdure`, action paremeters are passed
 
+Thus all dependencies of product artifcat are "installers" i.e. implement installation logic.
 
 # Data Structure
 
 Ref. [data-structure.md](data-structure.md)
-  
-  
-
-
-
 
 

@@ -14,7 +14,7 @@ This component automates installation (deployment) of products which are represe
 - `IInstallationProcedure`: lists `IAction`, every `action` is represented by `installer` class and `params`. All installer classes must be in `product` dependencies.
 - `installer`: class which implements `IInstaller` interface. Is instantiated during `installation procdure`, action paremeters are passed
 
-Thus all dependencies of product artifcat are "installers" i.e. implement installation logic.
+Thus all dependencies of product artifcat are "installers" i.e. implement installation logic. Installation "data" is represented by artifacts which are listed by `IProductStructure` interface.
 
 # Data Structure
 

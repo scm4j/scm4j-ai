@@ -1,4 +1,4 @@
-package org.scm4j.ai.installers;
+package org.scm4j.ai.api;
 
 public interface IInstaller {
 	

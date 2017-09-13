@@ -33,7 +33,7 @@ public class Cli {
 		CommandLine commandLine = cmdLineParser.parse(options, args);
 
 		// TODO: add working folder providing
-		IAI ai = new AI(new File(""));
+		IAI ai = new AI(new File(""),"");
 		if (commandLine.hasOption("install")) {
 			ai.install(commandLine.getOptionValue("install"));
 		} else if (commandLine.hasOption("upgrade")) {

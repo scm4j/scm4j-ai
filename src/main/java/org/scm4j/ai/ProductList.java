@@ -1,5 +1,8 @@
 package org.scm4j.ai;
 
+import lombok.Cleanup;
+import lombok.Data;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.yaml.snakeyaml.Yaml;
 
@@ -8,9 +11,10 @@ import java.io.FileReader;
 import java.net.URL;
 import java.util.*;
 
+@Data
 public class ProductList {
 
-    private static ArtifactoryReader productListReader;
+    private ArtifactoryReader productListReader;
     private List<ArtifactoryReader> repos = new ArrayList<>();
     private Set<String> products = new HashSet<>();
     private File localRepo;
@@ -43,12 +47,13 @@ public class ProductList {
     //TODO change remote repositories on local repo after downloading
 
     @SuppressWarnings("unchecked")
-    public void getProductListEntry() throws Exception {
+    @SneakyThrows
+    public void getProductListEntry(){
         Map<String, ArrayList<String>> productListEntry;
-        try (FileReader reader = new FileReader(localProductList)) {
+        @Cleanup
+        FileReader reader = new FileReader(localProductList);
             Yaml yaml = new Yaml();
             productListEntry = yaml.loadAs(reader, HashMap.class);
-        }
         List<String> reposNames = productListEntry.get(REPOSITORIES);
         for(String repoName: reposNames) {
             repos.add(ArtifactoryReader.getByUrl(repoName));
@@ -58,17 +63,5 @@ public class ProductList {
 
     public boolean hasProduct(String groupId, String artifactId) throws Exception {
         return getProducts().contains(Utils.coordsToString(groupId, artifactId));
-    }
-
-    public Set<String> getProducts() {
-        return products;
-    }
-
-    public List<ArtifactoryReader> getRepos() {
-        return repos;
-    }
-
-    public ArtifactoryReader getProductListReader() {
-        return productListReader;
     }
 }

@@ -5,6 +5,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import lombok.Cleanup;
+import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.repository.metadata.Metadata;
@@ -25,15 +27,16 @@ public class ArtifactoryReader {
 		this.password = password;
 		this.url = new URL(StringUtils.appendIfMissing(url, "/"));
 	}
-	
-	public String getProductListReleaseVersion() throws Exception {
-		try (InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID,
-				ProductList.PRODUCT_LIST_ARTIFACT_ID))) {
+
+	@SneakyThrows
+	public String getProductListReleaseVersion() {
+		@Cleanup
+		InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID,
+				ProductList.PRODUCT_LIST_ARTIFACT_ID));
 			MetadataXpp3Reader reader = new MetadataXpp3Reader();
 			Metadata meta = reader.read(is);
 			Versioning vers = meta.getVersioning();
 			return vers.getRelease();
-		} 
 	}
 	
 	public InputStream getContentStream(URL url) throws Exception {
@@ -51,10 +54,6 @@ public class ArtifactoryReader {
 	
 	public InputStream getContentStream(String groupId, String artifactId, String version, String extension) throws Exception {
 		return getContentStream(getProductUrl(groupId, artifactId, version, extension));
-	}
-
-	public URL getProductPomURL(String groupId, String artifactId, String version) throws MalformedURLException {
-		return new URL(new URL(url, Utils.coordsToUrlStructure(groupId, artifactId, version) + "/"), Utils.coordsToFileName(artifactId, version, POM_FILE_EXTENTION));
 	}
 
 	public URL getProductMetaDataURL(String groupId, String artifactId) throws MalformedURLException {

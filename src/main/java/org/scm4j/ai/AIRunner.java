@@ -2,11 +2,15 @@ package org.scm4j.ai;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.stream.Collectors;
 
+import lombok.Data;
+import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.Versioning;
@@ -18,10 +22,12 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyFilter;
+import org.eclipse.aether.installation.InstallRequest;
+import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.DependencyRequest;
-import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.eclipse.aether.resolution.*;
 import org.eclipse.aether.util.artifact.JavaScopes;
+import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
 import org.scm4j.ai.exceptions.EArtifactNotFound;
 import org.scm4j.ai.exceptions.ENoConfig;
@@ -29,160 +35,159 @@ import org.scm4j.ai.exceptions.EProductNotFound;
 import org.scm4j.ai.installers.InstallerFactory;
 import org.yaml.snakeyaml.Yaml;
 
+@Data
 public class AIRunner {
 
-	public static final String REPOSITORY_FOLDER_NAME = "repository";
-	private File repository;
-	private InstallerFactory installerFactory;
-	private RepositorySystem system;
-	private RepositorySystemSession session;
-	private ProductList productList;
+    private static final String REPOSITORY_FOLDER_NAME = "repository";
+    private File tmpRepository;
+    private File repository;
+    private InstallerFactory installerFactory;
+    private RepositorySystem system;
+    private RepositorySystemSession session;
+    private ProductList productList;
 
-	public void setInstallerFactory(InstallerFactory installerFactory) {
-		this.installerFactory = installerFactory;
-	}
+    public void setInstallerFactory(InstallerFactory installerFactory) {
+        this.installerFactory = installerFactory;
+    }
 
-	//TODO Download ProductList
-	public AIRunner(File workingFolder, String productListArtifactoryUrl, String userName, String password) throws ENoConfig {
-		repository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
-		productList = new ProductList(repository);
-		try {
-			if (!repository.exists()) {
-				Files.createDirectory(repository.toPath());
-			}
-			productList.downloadProductList(productListArtifactoryUrl, userName, password);
-		} catch (Exception e) {
-			throw new RuntimeException (e);
-		}
+    @SneakyThrows
+    public AIRunner(File workingFolder, String productListArtifactoryUrl, String userName, String password) {
+        repository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
+        productList = new ProductList(repository);
 
-		system = Utils.newRepositorySystem();
-		session = Utils.newRepositorySystemSession(system,repository);
-	}
+        if (!repository.exists()) {
+            Files.createDirectory(repository.toPath());
+        }
+        productList.downloadProductList(productListArtifactoryUrl, userName, password);
 
-	public List<String> getProductVersions(String groupId, String artifactId) throws Exception{
-		if (!productList.hasProduct(groupId, artifactId)) {
-			throw new EProductNotFound();
-		}
-		MetadataXpp3Reader reader = new MetadataXpp3Reader();
-		try (InputStream is = productList.getProductListReader().getProductMetaDataURL(groupId, artifactId).openStream()) {
-			Metadata meta = reader.read(is);
-			Versioning vers = meta.getVersioning();
-			return vers.getVersions();
-		}
-	}
+        tmpRepository = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test");
+        system = Utils.newRepositorySystem();
+    }
 
-	public void install(File productDir) {
-		installerFactory.getInstaller(productDir).install();
-	}
+    @SneakyThrows
+    public List<String> getProductVersions(String groupId, String artifactId){
+        if (!productList.hasProduct(groupId, artifactId)) {
+            throw new EProductNotFound();
+        }
+        MetadataXpp3Reader reader = new MetadataXpp3Reader();
+        try (InputStream is = productList.getProductListReader().getProductMetaDataURL(groupId, artifactId).openStream()) {
+            Metadata meta = reader.read(is);
+            Versioning vers = meta.getVersioning();
+            return vers.getVersions();
+        }
+    }
 
-	public File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
-		File res = queryLocal(groupId, artifactId, version, extension);
-		if (res == null) {
-			res = download(groupId, artifactId, version, extension);
-			if (res == null) {
-				throw new EArtifactNotFound(Utils.coordsToString(groupId, artifactId, version, extension)
-						+ " is not found in all known repositories");
-			}
-		}
-		return res;
-	}
+    public void install(File productDir) {
+        installerFactory.getInstaller(productDir).install();
+    }
 
-	public File queryLocal(String groupId, String artifactId, String version, String extension) {
-		String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
-		File res = new File(repository, fileRelativePath);
-		if (!res.exists()) {
-			return null;
-		}
-		return res;
-	}
+    public File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
+        File res = queryLocal(groupId, artifactId, version, extension);
+        if (res == null) {
+            res = download(groupId, artifactId, version, extension);
+            if (res == null) {
+                throw new EArtifactNotFound(Utils.coordsToString(groupId, artifactId, version, extension)
+                        + " is not found in all known repositories");
+            }
+        }
+        return res;
+    }
 
-	public File download(String groupId, String artifactId, String version, String extension){
-		String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
-		File res = new File(repository, fileRelativePath);
-		File pom = new File(res.getParent(), Utils.coordsToFileName(artifactId, version, ArtifactoryReader.POM_FILE_EXTENTION));
-		for (ArtifactoryReader repo : productList.getRepos()) {
-			try {
-				if (!productList.getProducts().contains(Utils.coordsToString(groupId, artifactId))) {
-					continue;
-				}
-			} catch (Exception e) {
-				continue;
-			}
+    public File queryLocal(String groupId, String artifactId, String version, String extension) {
+        String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
+        File res = new File(repository, fileRelativePath);
+        if (!res.exists()) {
+            return null;
+        }
+        return res;
+    }
 
-			try {
-				if (!getProductVersions(groupId, artifactId).contains(version)) {
-					continue;
-				}
-			} catch (Exception e) {
-				continue;
-			}
+    public File download(String groupId, String artifactId, String version, String extension) {
+        String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
+        File res = new File(repository, fileRelativePath);
+        File pom = new File(res.getParent(), Utils.coordsToFileName(artifactId, version, ArtifactoryReader.POM_FILE_EXTENTION));
+        for (ArtifactoryReader repo : productList.getRepos()) {
 
-			try {
-				File parent = res.getParentFile();
-				if (!parent.exists()) {
-					parent.mkdirs();
-				}
-				res.createNewFile();
-				pom.createNewFile();
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+            try {
+                if (!productList.getProducts().contains(Utils.coordsToString(groupId, artifactId))
+                        || !getProductVersions(groupId, artifactId).contains(version)) {
+                    return null;
+                }
+            } catch (Exception e) {
+                return null;
+            }
 
-			//TODO Divide exceptions on write exception and read exception
-			try (FileOutputStream out = new FileOutputStream(res);
-				 InputStream in = repo.getContentStream(groupId, artifactId, version, extension)) {
-				IOUtils.copy(in, out);
-			} catch (Exception e1) {
-				continue;
-			}
-			try(FileOutputStream outPom = new FileOutputStream(pom);
-				InputStream inPom = repo.getContentStream(groupId, artifactId, version, ArtifactoryReader.POM_FILE_EXTENTION)) {
-				IOUtils.copy(inPom,outPom);
-			} catch (Exception e2) {
-				continue;
-			}
-			try {
-				List<Artifact> artifacts = getComponents(groupId, artifactId, version);
-				downloadComponents(artifacts);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-			return res;
-		}
-		return null;
-	}
+            try {
+                File parent = res.getParentFile();
+                if (!parent.exists()) {
+                    parent.mkdirs();
+                }
+                res.createNewFile();
+                pom.createNewFile();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
-	//TODO install artifacts in local-repo
-	public void downloadComponents(List<Artifact> artifacts) throws DependencyResolutionException {
-		CollectRequest collectRequest = new CollectRequest();
-		for(ArtifactoryReader reader : productList.getRepos()) {
-			collectRequest.addRepository(new RemoteRepository.Builder("","default", reader.toString()).build());
-		}
-		for(Artifact artifact : artifacts) {
-			DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
-			collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
-			DependencyRequest dependencyRequest = new DependencyRequest(collectRequest,filter);
-			system.resolveDependencies(session,dependencyRequest);
-		}
-	}
+            //TODO Divide exceptions on write exception and read exception
+            //TODO delete jar if can't download pom
+            try (FileOutputStream out = new FileOutputStream(res);
+                 InputStream in = repo.getContentStream(groupId, artifactId, version, extension)) {
+                IOUtils.copy(in, out);
+            } catch (Exception e1) {
+                continue;
+            }
+            try (FileOutputStream outPom = new FileOutputStream(pom);
+                 InputStream inPom = repo.getContentStream(groupId, artifactId, version, ArtifactoryReader.POM_FILE_EXTENTION)) {
+                IOUtils.copy(inPom, outPom);
+            } catch (Exception e2) {
+                continue;
+            }
+            try {
+                List<Artifact> artifacts = getComponents(groupId, artifactId, version);
+                artifacts = downloadComponents(artifacts);
+                deployComponents(artifacts);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            return res;
+        }
+        return null;
+    }
 
-	public List<Artifact> getComponents(String groupId, String artifactId, String version) throws Exception {
-		List<Artifact> artifacts = new ArrayList<>();
-		Map<String, String> product;
-		URL productUrl = productList.getProductListReader().getProductUrl(groupId, artifactId, version, ".yml");
-		try (InputStream is = productList.getProductListReader().getContentStream(productUrl)) {
-			Yaml yaml = new Yaml();
-			product = yaml.loadAs(is, HashMap.class);
-		}
-		Set<String> components = product.keySet();
-		for(String component : components) {
-			Artifact artifact = new DefaultArtifact(component);
-			artifacts.add(artifact);
-		}
-		return artifacts;
-	}
+    public List<Artifact> downloadComponents(List<Artifact> artifacts) throws DependencyResolutionException {
+        session = Utils.newRepositorySystemSession(system, tmpRepository);
+        CollectRequest collectRequest = new CollectRequest();
+        productList.getRepos().forEach(artifactoryReader -> collectRequest.addRepository
+                (new RemoteRepository.Builder("","default",artifactoryReader.toString()).build()));
+        DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
+        artifacts.forEach((artifact -> collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE))));
+        DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
+        List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
+        artifacts.clear();
+        artifactResults.forEach((artifactResult) -> artifacts.add(artifactResult.getArtifact()));
+        return artifacts;
+    }
 
-	public ProductList getProductList() {
-		return productList;
-	}
+    public void deployComponents(List<Artifact> artifacts) throws InstallationException, ArtifactDescriptorException {
+        session = Utils.newRepositorySystemSession(system, repository);
+        InstallRequest installRequest = new InstallRequest();
+        for (Artifact artifact : artifacts) {
+            Artifact pomArtifact = new SubArtifact(artifact, "", "pom");
+            pomArtifact = pomArtifact.setFile(new File(tmpRepository, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
+                    artifact.getArtifactId(), artifact.getVersion(), ".pom")));
+            installRequest.addArtifact(artifact).addArtifact(pomArtifact);
+        }
+        system.install(session, installRequest);
+    }
+
+    public List<Artifact> getComponents(String groupId, String artifactId, String version) throws Exception {
+        Map<String, String> product;
+        URL productUrl = productList.getProductListReader().getProductUrl(groupId, artifactId, version, ".yml");
+        try (InputStream is = productList.getProductListReader().getContentStream(productUrl)) {
+            Yaml yaml = new Yaml();
+            product = yaml.loadAs(is, HashMap.class);
+        }
+        Set<String> components = product.keySet();
+        return components.stream().map(DefaultArtifact::new).collect(Collectors.toList());
+    }
 }

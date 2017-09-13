@@ -1,5 +1,8 @@
 package org.scm4j.ai;
 
+import org.scm4j.ai.api.IInstaller;
+import org.scm4j.commons.Coords;
+
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.util.Iterator;
@@ -10,47 +13,42 @@ import java.util.jar.Manifest;
 public class AI implements IAI {
 
 	private File workingFolder;
+	private String productListArtifactoryUrl;
 
-	public AI(File workingFolder) {
+	public AI(File workingFolder, String productListArtifactoryUrl) {
 		this.workingFolder = workingFolder;
+		this.productListArtifactoryUrl = productListArtifactoryUrl;
 	}
 
 	@Override
 	public void install(String productCoords) {
-//		/**
-//		 * Download Product Artifact. It contains one deployer per product. All components are hardcoded within it. All versions are taken from resources
-//		 */
-//		AIRunner runner = new AIRunner(workingFolder, null, null, null);
-//		DepCoords coords = new DepCoords(productCoords);
-//		File jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
-//				coords.getExtension());
-//		/**
-//		 * Take all classes from this jar
-//		 */
-//		String deployerClassName = getExportedClassName(jarFile);
-//		if (deployerClassName == null) {
-//			throw new RuntimeException("Deployer class name is not located within jar");
-//		}
-//		try {
-//			Class<?> deployerClass = Class.forName(deployerClassName);
-//			Constructor<?> constructor = deployerClass.getConstructor();
-//			Object result = constructor.newInstance();
-//			IDeployer deployer;
-//			if (result.getClass().isAssignableFrom(IDeployer.class)) {
-//				deployer = (IDeployer) result;
-//			} else {
-//				throw new RuntimeException("Provided " + deployerClassName + " does not implements IDeployer");
-//			}
-//			//
-//
-//		} catch (ClassNotFoundException e) {
-//			throw new RuntimeException(deployerClassName + " class not found");
-//		} catch (NoSuchMethodException e) {
-//			throw new RuntimeException(deployerClassName + " class has no constructor");
-//		} catch (Exception e) {
-//			throw new RuntimeException(e);
-//		}
+		AIRunner runner = new AIRunner(workingFolder, productListArtifactoryUrl, null, null);
+		Coords coords = new Coords(productCoords);
+		File jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
+				coords.getExtension());
+		String installerClassName = getExportedClassName(jarFile);
+		if (installerClassName == null) {
+			throw new RuntimeException("Installer class name is not located within jar");
+		}
+		try {
+			Class<?> installerClass = Class.forName(installerClassName);
+			Constructor<?> constructor = installerClass.getConstructor();
+			Object result = constructor.newInstance();
+			IInstaller installer;
+			if (result.getClass().isAssignableFrom(IInstaller.class)) {
+				installer = (IInstaller) result;
+			} else {
+				throw new RuntimeException("Provided " + installerClassName + " does not implements IInstaller");
+			}
+			//
 
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(installerClassName + " class not found");
+		} catch (NoSuchMethodException e) {
+			throw new RuntimeException(installerClassName + " class has no constructor");
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
@@ -69,7 +67,7 @@ public class AI implements IAI {
 			Manifest manifest = jarfile.getManifest();
 
 			// Get the main attributes in the manifest
-			Attributes attrs = (Attributes) manifest.getMainAttributes();
+			Attributes attrs = manifest.getMainAttributes();
 			for (Iterator<Object> it = attrs.keySet().iterator(); it.hasNext();) {
 				// Get attribute name
 				Attributes.Name attrName = (Attributes.Name) it.next();

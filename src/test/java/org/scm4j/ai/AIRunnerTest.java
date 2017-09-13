@@ -9,9 +9,7 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -19,19 +17,15 @@ import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.scm4j.ai.exceptions.EArtifactNotFound;
-import org.scm4j.ai.exceptions.ENoConfig;
 import org.scm4j.ai.exceptions.EProductNotFound;
-import org.scm4j.ai.installers.IInstaller;
+import org.scm4j.ai.api.IInstaller;
 import org.scm4j.ai.installers.InstallerFactory;
-
-import javax.naming.MalformedLinkException;
 
 public class AIRunnerTest {
 
@@ -42,8 +36,6 @@ public class AIRunnerTest {
 	private static final String TEST_AXIS_GROUP_ID = "org.apache.axis";
 	private static final String TEST_ARTIFACTORY_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
 			.getPath();
-	private static final String TEST_GUAVA_21_0_CONTENT = "guava 21.0 artifact content";
-	private static final String TEST_GUAVA_GROUP_ID = "com.google.guava";
 
 	private AITestEnvironment env;
 	
@@ -52,7 +44,6 @@ public class AIRunnerTest {
 	private String jooqArtifact = "jooq";
 	private String axisArtifact = "axis";
 	private String axisJaxrpcArtifact = "axis-jaxrpc";
-	private String guavaArtifactId = "guava";
 	
 	@After
 	public void tearDown() throws IOException {
@@ -106,50 +97,6 @@ public class AIRunnerTest {
 		}
 	}
 
-	@Ignore
-	public void testDownloadFromArtifactory2() throws Exception {
-		AIRunner mockedRunner = Mockito.spy(new AIRunner(env.getEnvFolder(), env.getArtifactory1Url(), null, null));
-		ArtifactoryReader mockedReader1 = Mockito.spy(new ArtifactoryReader(env.getArtifactory1Url(), null, null));
-		ArtifactoryReader mockedReader2 = Mockito.spy(new ArtifactoryReader(env.getArtifactory2Url(), null, null));
-
-		File artifact = mockedRunner.get(TEST_GUAVA_GROUP_ID, guavaArtifactId, "21.0", ".jar");
-		assertTrue(artifact.exists());
-		assertEquals(FileUtils.readFileToString(artifact), TEST_GUAVA_21_0_CONTENT);
-		String ethalon = String.format("\\repository\\com\\google\\guava\\%s\\21.0\\%s-21.0.jar", 
-				guavaArtifactId, guavaArtifactId).replace("\\", File.separator);
-		assertEquals(StringUtils.removeEnd(artifact.getPath(), ethalon), env.getEnvFolder().getPath());
-		
-		// no download second time
-		artifact = mockedRunner.get(TEST_GUAVA_GROUP_ID, guavaArtifactId, "21.0", ".jar");
-		assertTrue(artifact.exists());
-		Mockito.verify(mockedReader2, Mockito.times(1))
-				.getContentStream(TEST_GUAVA_GROUP_ID, guavaArtifactId, "21.0", ".jar");
-		Mockito.verify(mockedReader1, Mockito.never())
-				.getContentStream(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
-	}
-
-	@Ignore
-	public void testDownloadFromArtifactory1() throws Exception {
-		AIRunner mockedRunner = Mockito.spy(new AIRunner(env.getEnvFolder(), env.getArtifactory1Url(), null, null));
-		ArtifactoryReader mockedReader1 = Mockito.spy(new ArtifactoryReader(env.getArtifactory1Url(), null, null));
-		ArtifactoryReader mockedReader2 = Mockito.spy(new ArtifactoryReader(env.getArtifactory2Url(), null, null));
-		
-		File artifact = mockedRunner.get(TEST_UNTILL_GROUP_ID, ublArtifactId, "22.2", ".jar");
-		assertTrue(artifact.exists());
-		assertEquals(FileUtils.readFileToString(artifact), TEST_UBL_22_2_CONTENT);
-		String ethalon = String.format("\\repository\\eu\\untill\\%s\\22.2\\%s-22.2.jar", ublArtifactId, ublArtifactId)
-				.replace("\\", File.separator);
-		assertEquals(StringUtils.removeEnd(artifact.getPath(), ethalon), env.getEnvFolder().getPath());
-
-		// no download second time
-		artifact = mockedRunner.get(TEST_UNTILL_GROUP_ID, ublArtifactId, "22.2", ".jar");
-		assertTrue(artifact.exists());
-		Mockito.verify(mockedReader1, Mockito.times(1))
-				.getContentStream(TEST_UNTILL_GROUP_ID, ublArtifactId, "22.2", ".jar");
-		Mockito.verify(mockedReader2, Mockito.never())
-				.getContentStream(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
-	}
-
 	@Test
 	public void testUnknownArtifact() throws Exception {
 		AIRunner runner = new AIRunner(env.getEnvFolder(), env.getArtifactory1Url(), null, null);
@@ -192,7 +139,7 @@ public class AIRunnerTest {
 	@Ignore
 	public void testDownloadAndInstall() {
 		AIRunner runner = new AIRunner(env.getEnvFolder(), env.getArtifactory1Url(), null, null);
-		File product = runner.get(TEST_GUAVA_GROUP_ID, guavaArtifactId, "21.0", ".jar");
+		File product = runner.get(TEST_UNTILL_GROUP_ID, ublArtifactId, "22.2", ".jar");
 		InstallerFactory iFac = Mockito.mock(InstallerFactory.class);
 		IInstaller installer = Mockito.mock(IInstaller.class);
 		Mockito.doReturn(installer).when(iFac).getInstaller(product);
@@ -224,18 +171,26 @@ public class AIRunnerTest {
 		AIRunner runner = new AIRunner(env.getEnvFolder(), env.getArtifactory1Url(), null, null);
 		List<Artifact> artifacts = runner.getComponents(TEST_UNTILL_GROUP_ID,untillArtifactId,"123.4");
 		runner.downloadComponents(artifacts);
-		File repository = new File(env.getEnvFolder(), "repository");
-		File artifact1 = new File(repository,Utils.coordsToRelativeFilePath(TEST_JOOQ_GROUP_ID,jooqArtifact,"3.1.0",".jar"));
-		File pom = new File(repository, Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,axisArtifact,"1.4",".pom"));
+		File artifact1 = new File(runner.getTmpRepository(),Utils.coordsToRelativeFilePath(TEST_JOOQ_GROUP_ID,jooqArtifact,"3.1.0",".jar"));
+		File pom = new File(runner.getTmpRepository(), Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,axisArtifact,"1.4",".pom"));
 		assertEquals(FileUtils.readFileToString(artifact1),TEST_DEP_CONTENT);
-		assertNotNull(FileUtils.readFileToString(pom));
+		assertTrue(pom.exists());
 	}
 
-	//TODO test local repo for deps and other stuff
 	@Test
-	public void testDownloadProduct() throws Exception {
+	public void testDownloadAndDeployProduct() throws Exception {
 		AIRunner runner = new AIRunner(env.getEnvFolder(), env. getArtifactory1Url(), null, null);
 		File product = runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", ".yml");
-		assertNotNull(FileUtils.readFileToString(product));
+		assertEquals(FileUtils.readFileToString(product), FileUtils.readFileToString(new File(env.getArtifactory1Folder(),
+				Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
+				untillArtifactId, "123.4", ".yml"))));
+		File ublComponent = new File(runner.getRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
+				"22.2", ".jar"));
+		assertTrue(ublComponent.exists());
+		assertEquals(FileUtils.readFileToString(ublComponent), TEST_UBL_22_2_CONTENT);
+		File transitiveDep = new File(runner.getRepository(), Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,
+				axisJaxrpcArtifact, "1.4", ".jar"));
+		assertTrue(transitiveDep.exists());
+		assertEquals(FileUtils.readFileToString(transitiveDep), TEST_DEP_CONTENT);
 	}
 }

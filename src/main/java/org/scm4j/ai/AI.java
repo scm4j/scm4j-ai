@@ -26,7 +26,7 @@ public class AI implements IAI {
 		Coords coords = new Coords(productCoords);
 		File jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
 				coords.getExtension());
-		String installerClassName = getExportedClassName(jarFile);
+		String installerClassName = Utils.getExportedClassName(jarFile);
 		if (installerClassName == null) {
 			throw new RuntimeException("Installer class name is not located within jar");
 		}
@@ -58,26 +58,5 @@ public class AI implements IAI {
 
 	@Override
 	public void upgrade(String newProductCoords) {
-	}
-
-	private String getExportedClassName(File jarFile) {
-		try (JarFile jarfile = new JarFile(jarFile)) {
-
-			// Get the manifest
-			Manifest manifest = jarfile.getManifest();
-
-			// Get the main attributes in the manifest
-			Attributes attrs = manifest.getMainAttributes();
-			for (Iterator<Object> it = attrs.keySet().iterator(); it.hasNext();) {
-				// Get attribute name
-				Attributes.Name attrName = (Attributes.Name) it.next();
-				if (attrName.equals("Main-Class")) {
-					return attrs.getValue(attrName);
-				}
-			}
-			return null;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
 	}
 }

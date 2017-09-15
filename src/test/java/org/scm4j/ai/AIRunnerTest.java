@@ -17,10 +17,7 @@ import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.Mockito;
 import org.scm4j.ai.exceptions.EArtifactNotFound;
 import org.scm4j.ai.exceptions.EProductNotFound;
@@ -37,34 +34,47 @@ public class AIRunnerTest {
 	private static final String TEST_ARTIFACTORY_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
 			.getPath();
 
-	private AITestEnvironment env;
+	private static AITestEnvironment env = new AITestEnvironment();
 	
-	private String ublArtifactId = "UBL";
-	private String untillArtifactId = "unTILL";
-	private String jooqArtifact = "jooq";
-	private String axisArtifact = "axis";
-	private String axisJaxrpcArtifact = "axis-jaxrpc";
+	private static String ublArtifactId = "UBL";
+	private static String untillArtifactId = "unTILL";
+	private static String jooqArtifact = "jooq";
+	private static String axisArtifact = "axis";
+	private static String axisJaxrpcArtifact = "axis-jaxrpc";
 	
 	@After
 	public void tearDown() throws IOException {
+		FileUtils.deleteDirectory(new File(env.getEnvFolder().getPath()));
+	}
+
+	@AfterClass
+	public static void after() throws IOException {
 		FileUtils.deleteDirectory(new File(TEST_ARTIFACTORY_DIR));
 	}
-	
+
 	@Before
-	public void setUp() throws IOException {
-		FileUtils.deleteDirectory(new File(TEST_ARTIFACTORY_DIR));
-		env = new AITestEnvironment();
+	public void before() throws IOException {
+		env.createEnvironment();
+	}
+	
+	@BeforeClass
+	public static void setUp() throws IOException {
 		env.prepareEnvironment();
 		ArtifactoryWriter aw = new ArtifactoryWriter(env.getArtifactory1Folder());
 		aw.generateProductListArtifact();
-		File pathToUntill = new File(env.getArtifactory1Folder(),Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", ".yml" ));
-		aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", ".yml", "", env.getArtifactory1Folder());
-		aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "124.5", ".yml", "", env.getArtifactory1Folder());
-		aw.installArtifact(TEST_UNTILL_GROUP_ID, ublArtifactId, "22.2",".jar",TEST_UBL_22_2_CONTENT, pathToUntill);
-		aw.installArtifact(TEST_JOOQ_GROUP_ID, jooqArtifact, "3.1.0", ".jar", TEST_DEP_CONTENT, pathToUntill);
+		aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", ".jar",
+				"ProductStructureDataLoader", env.getArtifactory1Folder());
+		aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "124.5", ".jar",
+				"ProductStructureDataLoader", env.getArtifactory1Folder());
+		aw.installArtifact(TEST_UNTILL_GROUP_ID, ublArtifactId, "22.2",".war",
+				TEST_UBL_22_2_CONTENT, env.getArtifactory1Folder());
+		aw.installArtifact(TEST_JOOQ_GROUP_ID, jooqArtifact, "3.1.0", ".jar",
+				TEST_DEP_CONTENT, env.getArtifactory1Folder());
 		aw = new ArtifactoryWriter(env.getArtifactory2Folder());
-		aw.installArtifact(TEST_AXIS_GROUP_ID, axisArtifact, "1.4",".jar", TEST_DEP_CONTENT, pathToUntill);
-		aw.installArtifact(TEST_AXIS_GROUP_ID, axisJaxrpcArtifact,"1.4",".jar", TEST_DEP_CONTENT, pathToUntill);
+		aw.installArtifact(TEST_AXIS_GROUP_ID, axisArtifact, "1.4",".jar",
+				TEST_DEP_CONTENT, env.getArtifactory2Folder());
+		aw.installArtifact(TEST_AXIS_GROUP_ID, axisJaxrpcArtifact,"1.4",".jar",
+				TEST_DEP_CONTENT, env.getArtifactory2Folder());
 	}
 	
 	@Test
@@ -180,10 +190,10 @@ public class AIRunnerTest {
 	@Test
 	public void testDownloadAndDeployProduct() throws Exception {
 		AIRunner runner = new AIRunner(env.getEnvFolder(), env. getArtifactory1Url(), null, null);
-		File product = runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", ".yml");
+		File product = runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", ".jar");
 		assertEquals(FileUtils.readFileToString(product), FileUtils.readFileToString(new File(env.getArtifactory1Folder(),
 				Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
-				untillArtifactId, "123.4", ".yml"))));
+				untillArtifactId, "123.4", ".jar"))));
 		File ublComponent = new File(runner.getRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
 				"22.2", ".jar"));
 		assertTrue(ublComponent.exists());

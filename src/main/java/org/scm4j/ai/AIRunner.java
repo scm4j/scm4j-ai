@@ -4,11 +4,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import lombok.Cleanup;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
@@ -29,6 +31,9 @@ import org.eclipse.aether.resolution.*;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
+import org.scm4j.ai.api.IComponent;
+import org.scm4j.ai.api.IInstaller;
+import org.scm4j.ai.api.IProductStructure;
 import org.scm4j.ai.exceptions.EArtifactNotFound;
 import org.scm4j.ai.exceptions.ENoConfig;
 import org.scm4j.ai.exceptions.EProductNotFound;
@@ -180,14 +185,45 @@ public class AIRunner {
         system.install(session, installRequest);
     }
 
+//    public List<Artifact> getComponents(String groupId, String artifactId, String version) throws Exception {
+//        Map<String, String> product;
+//        URL productUrl = productList.getProductListReader().getProductUrl(groupId, artifactId, version, ".jar");
+//        @Cleanup
+//        InputStream is = productList.getProductListReader().getContentStream(productUrl);
+//        Yaml yaml = new Yaml();
+//        product = yaml.loadAs(is, HashMap.class);
+//        Set<String> components = product.keySet();
+//        return components.stream().map(DefaultArtifact::new).collect(Collectors.toList());
+//    }
+
     public List<Artifact> getComponents(String groupId, String artifactId, String version) throws Exception {
-        Map<String, String> product;
-        URL productUrl = productList.getProductListReader().getProductUrl(groupId, artifactId, version, ".yml");
-        try (InputStream is = productList.getProductListReader().getContentStream(productUrl)) {
-            Yaml yaml = new Yaml();
-            product = yaml.loadAs(is, HashMap.class);
+        File productFile = new File(Utils.coordsToRelativeFilePath(groupId, artifactId, version, ".jar"));
+        List<IComponent> components = getProductStructure(productFile).getComponents();
+        return components.stream()
+                .map(IComponent::getArtifactCoords)
+                .map(DefaultArtifact::new)
+                .collect(Collectors.toList());
+    }
+
+    public IProductStructure getProductStructure(File productFile) {
+        String mainClassName = Utils.getExportedClassName(productFile);
+        try {
+            Class<?> productStructureClass = Class.forName(mainClassName);
+            Constructor<?> constructor = productStructureClass.getConstructor();
+            Object result = constructor.newInstance();
+            IProductStructure productStructure;
+            if (result.getClass().isAssignableFrom(IProductStructure.class)) {
+                productStructure = (IProductStructure) result;
+            } else {
+                throw new RuntimeException("Provided " + mainClassName + " does not implements IInstaller");
+            }
+            return productStructure;
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(mainClassName + " class not found");
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(mainClassName + " class has no constructor");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        Set<String> components = product.keySet();
-        return components.stream().map(DefaultArtifact::new).collect(Collectors.toList());
     }
 }

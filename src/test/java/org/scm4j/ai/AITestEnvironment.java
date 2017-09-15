@@ -29,7 +29,6 @@ public class AITestEnvironment {
 		FileUtils.deleteDirectory(baseTestFolderFile);
 		baseTestFolder = Files.createDirectory(baseTestFolderFile.toPath()).toFile();
 		createArtifactories();
-		createEnvironment();
 		writeReposInProductList(ArtifactoryWriter.PRODUCT_LIST_DEFAULT_VERSION);
 		writeReposInProductList(ArtifactoryWriter.PRODUCT_LIST_VERSION);
 	}
@@ -48,7 +47,7 @@ public class AITestEnvironment {
 		artifactory2Url = artifactory2Folder.toURI().toURL().toString();
 	}
 
-	private void createEnvironment() throws IOException {
+	public void createEnvironment() throws IOException {
 		envFolder = Files.createDirectory(new File(baseTestFolder, "env").toPath()).toFile();
 	}
 

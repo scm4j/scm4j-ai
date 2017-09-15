@@ -88,9 +88,9 @@ public class Utils {
         JarFile jarfile = new JarFile(jarFile);
         Manifest manifest = jarfile.getManifest();
         Attributes attrs = manifest.getMainAttributes();
-        for (Iterator<Object> it = attrs.keySet().iterator(); it.hasNext(); ) {
-            Attributes.Name attrName = (Attributes.Name) it.next();
-            if (attrName.equals("Main-Class")) {
+        for (Object obj : attrs.keySet()) {
+            Attributes.Name attrName = (Attributes.Name) obj;
+            if (attrName.equals(Attributes.Name.MAIN_CLASS)) {
                 return attrs.getValue(attrName);
             }
         }

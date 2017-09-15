@@ -7,14 +7,20 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
+import com.google.common.base.Utf8;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.CharSet;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
 import org.junit.*;
@@ -23,6 +29,7 @@ import org.scm4j.ai.exceptions.EArtifactNotFound;
 import org.scm4j.ai.exceptions.EProductNotFound;
 import org.scm4j.ai.api.IInstaller;
 import org.scm4j.ai.installers.InstallerFactory;
+import org.scm4j.ai.installers.UnzipArtifact;
 
 public class AIRunnerTest {
 
@@ -41,6 +48,7 @@ public class AIRunnerTest {
 	private static String jooqArtifact = "jooq";
 	private static String axisArtifact = "axis";
 	private static String axisJaxrpcArtifact = "axis-jaxrpc";
+	private static File pathToUntill;
 	
 	@After
 	public void tearDown() throws IOException {
@@ -75,6 +83,8 @@ public class AIRunnerTest {
 				TEST_DEP_CONTENT, env.getArtifactory2Folder());
 		aw.installArtifact(TEST_AXIS_GROUP_ID, axisJaxrpcArtifact,"1.4",".jar",
 				TEST_DEP_CONTENT, env.getArtifactory2Folder());
+		pathToUntill = new File(env.getArtifactory1Folder(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
+				untillArtifactId, "123.4", ".jar"));
 	}
 	
 	@Test
@@ -145,18 +155,6 @@ public class AIRunnerTest {
 		URL expectedURL = repo.getProductUrl("com.google.guava", "guava", "20.0", ".jar");
 		assertEquals(expectedURL, url);
 	}
-
-	@Ignore
-	public void testDownloadAndInstall() {
-		AIRunner runner = new AIRunner(env.getEnvFolder(), env.getArtifactory1Url(), null, null);
-		File product = runner.get(TEST_UNTILL_GROUP_ID, ublArtifactId, "22.2", ".jar");
-		InstallerFactory iFac = Mockito.mock(InstallerFactory.class);
-		IInstaller installer = Mockito.mock(IInstaller.class);
-		Mockito.doReturn(installer).when(iFac).getInstaller(product);
-		runner.setInstallerFactory(iFac);
-		runner.install(product);
-		Mockito.verify(installer).install();
-	}
 	
 	@Test
 	public void testLoadRepos() {
@@ -169,38 +167,35 @@ public class AIRunnerTest {
 	}
 
 	@Test
-	public void testGetComponents() throws Exception {
-		AIRunner runner = new AIRunner(env.getEnvFolder(), env.getArtifactory1Url(), null, null);
-		List<Artifact> artifacts = runner.getComponents(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4");
-		assertFalse(artifacts.isEmpty());
-		assertTrue(artifacts.size() == 1);
-	}
-
-	@Test
-	public void testDownloadComponents() throws Exception {
-		AIRunner runner = new AIRunner(env.getEnvFolder(), env.getArtifactory1Url(), null, null);
-		List<Artifact> artifacts = runner.getComponents(TEST_UNTILL_GROUP_ID,untillArtifactId,"123.4");
-		runner.downloadComponents(artifacts);
-		File artifact1 = new File(runner.getTmpRepository(),Utils.coordsToRelativeFilePath(TEST_JOOQ_GROUP_ID,jooqArtifact,"3.1.0",".jar"));
-		File pom = new File(runner.getTmpRepository(), Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,axisArtifact,"1.4",".pom"));
-		assertEquals(FileUtils.readFileToString(artifact1),TEST_DEP_CONTENT);
-		assertTrue(pom.exists());
-	}
-
-	@Test
 	public void testDownloadAndDeployProduct() throws Exception {
 		AIRunner runner = new AIRunner(env.getEnvFolder(), env. getArtifactory1Url(), null, null);
 		File product = runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", ".jar");
-		assertEquals(FileUtils.readFileToString(product), FileUtils.readFileToString(new File(env.getArtifactory1Folder(),
+		assertEquals(FileUtils.readFileToString(product, Charset.forName("UTF-8")), FileUtils.readFileToString(new File(env.getArtifactory1Folder(),
 				Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
-				untillArtifactId, "123.4", ".jar"))));
+				untillArtifactId, "123.4", ".jar")), Charset.forName("UTF-8")));
 		File ublComponent = new File(runner.getRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
-				"22.2", ".jar"));
+				"22.2", ".war"));
 		assertTrue(ublComponent.exists());
-		assertEquals(FileUtils.readFileToString(ublComponent), TEST_UBL_22_2_CONTENT);
+		assertEquals(FileUtils.readFileToString(ublComponent, Charset.forName("UTF-8")), TEST_UBL_22_2_CONTENT);
 		File transitiveDep = new File(runner.getRepository(), Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,
 				axisJaxrpcArtifact, "1.4", ".jar"));
 		assertTrue(transitiveDep.exists());
-		assertEquals(FileUtils.readFileToString(transitiveDep), TEST_DEP_CONTENT);
+		assertEquals(FileUtils.readFileToString(transitiveDep, Charset.forName("UTF-8")), TEST_DEP_CONTENT);
+	}
+
+	@Test
+	public void testUnzip() throws Exception {
+		IInstaller unziper = new UnzipArtifact(new File(TEST_ARTIFACTORY_DIR), pathToUntill);
+		unziper.install();
+		File metainf = new File(TEST_ARTIFACTORY_DIR, "META-INF");
+		Manifest mf = new Manifest();
+		assertTrue(metainf.exists());
+		mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+		mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, "ProductStructureDataLoader");
+		Manifest unzipMf;
+		try(FileInputStream fis = new FileInputStream(new File(metainf, "MANIFEST.MF"))) {
+			unzipMf = new Manifest(fis);
+		}
+		assertEquals(mf.getMainAttributes(), unzipMf.getMainAttributes());
 	}
 }

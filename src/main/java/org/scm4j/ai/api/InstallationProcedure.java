@@ -12,6 +12,6 @@ public class InstallationProcedure implements IInstallationProcedure {
 
     @Override
     public List<IAction> getActions() {
-        return null;
+        return actions;
     }
 }

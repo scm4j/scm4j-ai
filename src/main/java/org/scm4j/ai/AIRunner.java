@@ -2,10 +2,9 @@ package org.scm4j.ai;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -14,6 +13,7 @@ import lombok.Cleanup;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
@@ -31,14 +31,10 @@ import org.eclipse.aether.resolution.*;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
-import org.scm4j.ai.api.IComponent;
-import org.scm4j.ai.api.IInstaller;
-import org.scm4j.ai.api.IProductStructure;
+import org.scm4j.ai.api.*;
 import org.scm4j.ai.exceptions.EArtifactNotFound;
-import org.scm4j.ai.exceptions.ENoConfig;
 import org.scm4j.ai.exceptions.EProductNotFound;
 import org.scm4j.ai.installers.InstallerFactory;
-import org.yaml.snakeyaml.Yaml;
 
 @Data
 public class AIRunner {
@@ -70,7 +66,7 @@ public class AIRunner {
     }
 
     @SneakyThrows
-    public List<String> getProductVersions(String groupId, String artifactId){
+    public List<String> getProductVersions(String groupId, String artifactId) {
         if (!productList.hasProduct(groupId, artifactId)) {
             throw new EProductNotFound();
         }
@@ -107,12 +103,12 @@ public class AIRunner {
         return res;
     }
 
+    //TODO write product-list and product metadata in local repo
     public File download(String groupId, String artifactId, String version, String extension) {
         String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
         File res = new File(repository, fileRelativePath);
-        File pom = new File(res.getParent(), Utils.coordsToFileName(artifactId, version, ArtifactoryReader.POM_FILE_EXTENTION));
+        File temp = new File(tmpRepository, fileRelativePath);
         for (ArtifactoryReader repo : productList.getRepos()) {
-
             try {
                 if (!productList.getProducts().contains(Utils.coordsToString(groupId, artifactId))
                         || !getProductVersions(groupId, artifactId).contains(version)) {
@@ -123,32 +119,28 @@ public class AIRunner {
             }
 
             try {
-                File parent = res.getParentFile();
+                File parent = temp.getParentFile();
                 if (!parent.exists()) {
                     parent.mkdirs();
                 }
-                res.createNewFile();
-                pom.createNewFile();
+                temp.createNewFile();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
             //TODO Divide exceptions on write exception and read exception
             //TODO delete jar if can't download pom
-            try (FileOutputStream out = new FileOutputStream(res);
+            try (FileOutputStream out = new FileOutputStream(temp);
                  InputStream in = repo.getContentStream(groupId, artifactId, version, extension)) {
                 IOUtils.copy(in, out);
             } catch (Exception e1) {
                 continue;
             }
-            try (FileOutputStream outPom = new FileOutputStream(pom);
-                 InputStream inPom = repo.getContentStream(groupId, artifactId, version, ArtifactoryReader.POM_FILE_EXTENTION)) {
-                IOUtils.copy(inPom, outPom);
-            } catch (Exception e2) {
-                continue;
-            }
             try {
-                List<Artifact> artifacts = getComponents(groupId, artifactId, version);
+                List<Artifact> artifacts = getComponents(temp);
+                Artifact productArtifact = new DefaultArtifact(groupId, artifactId, StringUtils.substringAfter(extension, "."),
+                        version);
+                artifacts.add(productArtifact);
                 artifacts = downloadComponents(artifacts);
                 deployComponents(artifacts);
             } catch (Exception e) {
@@ -160,20 +152,22 @@ public class AIRunner {
     }
 
     public List<Artifact> downloadComponents(List<Artifact> artifacts) throws DependencyResolutionException {
+        List<Artifact> components = new ArrayList<>();
         session = Utils.newRepositorySystemSession(system, tmpRepository);
         CollectRequest collectRequest = new CollectRequest();
         productList.getRepos().forEach(artifactoryReader -> collectRequest.addRepository
-                (new RemoteRepository.Builder("","default",artifactoryReader.toString()).build()));
+                (new RemoteRepository.Builder("", "default", artifactoryReader.toString()).build()));
         DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
-        artifacts.forEach((artifact -> collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE))));
-        DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
-        List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
-        artifacts.clear();
-        artifactResults.forEach((artifactResult) -> artifacts.add(artifactResult.getArtifact()));
-        return artifacts;
+        for(Artifact artifact : artifacts) {
+            collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
+            DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
+            List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
+            artifactResults.forEach((artifactResult) -> components.add(artifactResult.getArtifact()));
+        }
+        return components;
     }
 
-    public void deployComponents(List<Artifact> artifacts) throws InstallationException, ArtifactDescriptorException {
+    private void deployComponents(List<Artifact> artifacts) throws InstallationException, ArtifactDescriptorException {
         session = Utils.newRepositorySystemSession(system, repository);
         InstallRequest installRequest = new InstallRequest();
         for (Artifact artifact : artifacts) {
@@ -185,45 +179,24 @@ public class AIRunner {
         system.install(session, installRequest);
     }
 
-//    public List<Artifact> getComponents(String groupId, String artifactId, String version) throws Exception {
-//        Map<String, String> product;
-//        URL productUrl = productList.getProductListReader().getProductUrl(groupId, artifactId, version, ".jar");
-//        @Cleanup
-//        InputStream is = productList.getProductListReader().getContentStream(productUrl);
-//        Yaml yaml = new Yaml();
-//        product = yaml.loadAs(is, HashMap.class);
-//        Set<String> components = product.keySet();
-//        return components.stream().map(DefaultArtifact::new).collect(Collectors.toList());
-//    }
-
-    public List<Artifact> getComponents(String groupId, String artifactId, String version) throws Exception {
-        File productFile = new File(Utils.coordsToRelativeFilePath(groupId, artifactId, version, ".jar"));
-        List<IComponent> components = getProductStructure(productFile).getComponents();
-        return components.stream()
+    private List<Artifact> getComponents(File productFile) throws Exception {
+        return getProductStructure(productFile).getComponents().stream()
                 .map(IComponent::getArtifactCoords)
                 .map(DefaultArtifact::new)
                 .collect(Collectors.toList());
     }
 
-    public IProductStructure getProductStructure(File productFile) {
+    public IProductStructure getProductStructure(File productFile) throws Exception {
         String mainClassName = Utils.getExportedClassName(productFile);
-        try {
-            Class<?> productStructureClass = Class.forName(mainClassName);
-            Constructor<?> constructor = productStructureClass.getConstructor();
-            Object result = constructor.newInstance();
-            IProductStructure productStructure;
-            if (result.getClass().isAssignableFrom(IProductStructure.class)) {
-                productStructure = (IProductStructure) result;
-            } else {
-                throw new RuntimeException("Provided " + mainClassName + " does not implements IInstaller");
-            }
-            return productStructure;
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(mainClassName + " class not found");
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(mainClassName + " class has no constructor");
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        @Cleanup
+        URLClassLoader classLoader = URLClassLoader.newInstance(new URL[]{productFile.toURI().toURL()});
+        Class<?> loadedClass = Class.forName(mainClassName, true, classLoader);
+        Object obj = loadedClass.newInstance();
+        if(obj instanceof IProduct) {
+            IProduct product = (IProduct) obj;
+            return product.getProductStructure();
+        } else {
+            throw new RuntimeException();
         }
     }
 }

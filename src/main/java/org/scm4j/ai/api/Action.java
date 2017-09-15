@@ -18,12 +18,12 @@ public class Action implements IAction {
 
     @Override
     public String getInstallerClass() {
-        return null;
+        return installerClass;
     }
 
     @Override
     public Map<String, Object> getParams() {
-        return null;
+        return params;
     }
 
 }

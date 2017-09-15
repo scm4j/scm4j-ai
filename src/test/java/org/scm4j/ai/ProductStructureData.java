@@ -14,7 +14,7 @@ public class ProductStructureData {
         List<IAction> actions = new ArrayList<>();
         actions.add(action);
         IInstallationProcedure installationProcedure = new InstallationProcedure(actions);
-        IComponent component = new Component("eu.untill:UBL:22.2:.jar", installationProcedure);
+        IComponent component = new Component("eu.untill:UBL:war:22.2", installationProcedure);
         List<IComponent> components = new ArrayList<>();
         components.add(component);
         productStructure = new ProductStructure(components);

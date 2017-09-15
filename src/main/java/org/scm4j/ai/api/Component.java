@@ -12,11 +12,11 @@ public class Component implements IComponent {
 
     @Override
     public String getArtifactCoords() {
-        return null;
+        return artifactCoords;
     }
 
     @Override
     public IInstallationProcedure getInstalationProcedure() {
-        return null;
+        return iInstallationProcedure;
     }
 }

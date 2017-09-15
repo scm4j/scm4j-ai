@@ -1,6 +1,8 @@
 package org.scm4j.ai;
 
 import java.io.*;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
@@ -17,13 +19,12 @@ import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
-import javax.tools.*;
-
 public class ArtifactoryWriter {
 
     public static final String PRODUCT_LIST_DEFAULT_VERSION = "1.1.0";
     public static final String PRODUCT_LIST_VERSION = "1.2.0";
     private static final String TEST_POMS = "org/scm4j/ai/poms/";
+    private static final String TEST_CLASS = "org/scm4j/ai/testclass/";
     private File artifactoryFolder;
     private static Yaml YAML;
 
@@ -87,7 +88,7 @@ public class ArtifactoryWriter {
 
             appendMetadata(groupId, artifactId, version, artifactRoot);
 
-            if (extension.equals(".yml")) {
+            if (content.contains("Data")) {
                 appendProductList(groupId, artifactId, version, extension, productListLocation);
             }
 
@@ -109,7 +110,7 @@ public class ArtifactoryWriter {
         if(content.contains("Data"))
             createProductJar(content,artifactFile);
         else
-            FileUtils.writeStringToFile(artifactFile, content);
+            FileUtils.writeStringToFile(artifactFile, content, Charset.forName("UTF-8"));
 
         File resource = new File(getClass().getClassLoader().getResource(TEST_POMS +
                 Utils.coordsToFileName(artifactId, version, ".pom")).getFile());
@@ -119,35 +120,11 @@ public class ArtifactoryWriter {
         return artifactFile;
     }
 
-    private void appendProduct(String groupId, String artifactId, String version, String installer, File productFile) throws IOException {
-        YAML = new Yaml();
-        Map<String, String> res;
-        try (FileReader is = new FileReader(productFile)) {
-            res = YAML.loadAs(is, HashMap.class);
-        }
-        if (res == null) {
-            res = new HashMap<>();
-        }
-        res.put(Utils.coordsToString(groupId, artifactId, version), installer);
-        String yamlOutput = YAML.dumpAsMap(res);
-        FileWriter writer = new FileWriter(productFile);
-        writer.write(yamlOutput);
-        writer.flush();
-        writer.close();
-    }
-
     public void createProductJar(String className, File artifactFile) throws Exception {
         Manifest mf = new Manifest();
         mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
         mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, className);
-        File javaClass = new File(getClass().getClassLoader().getResource(className + ".java").getFile());
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
-        Iterable<String> options = Arrays.asList("-d", artifactFile.getParent());
-        Iterable<? extends JavaFileObject> compilationUnit = fileManager
-                .getJavaFileObjectsFromFiles(Arrays.asList(javaClass));
-        compiler.getTask(null, null, null, options, null, compilationUnit).call();
-        File testProduct = new File(artifactFile.getParent(), className + ".class");
+        File testProduct = new File(getClass().getClassLoader().getResource(TEST_CLASS + className + ".class").getFile());
         try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(artifactFile), mf);
              BufferedInputStream bin = new BufferedInputStream(new FileInputStream(testProduct))) {
             JarEntry entry = new JarEntry(className + ".class");
@@ -230,5 +207,4 @@ public class ArtifactoryWriter {
             return reader.read(is);
         }
     }
-
 }

@@ -124,7 +124,8 @@ public class ArtifactoryWriter {
         Manifest mf = new Manifest();
         mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
         mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, className);
-        File testProduct = new File(getClass().getClassLoader().getResource(TEST_CLASS + className + ".class").getFile());
+        File testProduct = new File(getClass().getClassLoader().getResource(TEST_CLASS +
+                "ProductStructureDataLoader.class").getFile());
         try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(artifactFile), mf);
              BufferedInputStream bin = new BufferedInputStream(new FileInputStream(testProduct))) {
             JarEntry entry = new JarEntry(className + ".class");

@@ -41,24 +41,33 @@ public class AIRunnerTest {
 	private static final String TEST_ARTIFACTORY_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
 			.getPath();
 
-	private AITestEnvironment env = new AITestEnvironment();
+	private static AITestEnvironment env = new AITestEnvironment();
 	
-	private String ublArtifactId = "UBL";
-	private String untillArtifactId = "unTILL";
-	private String jooqArtifact = "jooq";
-	private String axisArtifact = "axis";
-	private String axisJaxrpcArtifact = "axis-jaxrpc";
-	private File pathToUntill;
+	private static String ublArtifactId = "UBL";
+	private static String untillArtifactId = "unTILL";
+	private static String jooqArtifact = "jooq";
+	private static String axisArtifact = "axis";
+	private static String axisJaxrpcArtifact = "axis-jaxrpc";
+	private static File pathToUntill;
 
 	@After
-	public void after() throws IOException {
+	public void tearDown() throws IOException {
+		FileUtils.deleteDirectory(new File(env.getEnvFolder().getPath()));
+	}
+
+	@AfterClass
+	public static void after() throws IOException {
 		FileUtils.deleteDirectory(new File(TEST_ARTIFACTORY_DIR));
 	}
 
 	@Before
-	public void setUp() throws IOException {
-		env.prepareEnvironment();
+	public void before() throws IOException {
 		env.createEnvironment();
+	}
+
+	@BeforeClass
+	public static void setUp() throws IOException {
+		env.prepareEnvironment();
 		ArtifactoryWriter aw = new ArtifactoryWriter(env.getArtifactory1Folder());
 		aw.generateProductListArtifact();
 		aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", ".jar",

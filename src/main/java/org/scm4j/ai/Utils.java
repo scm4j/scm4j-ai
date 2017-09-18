@@ -25,10 +25,6 @@ public class Utils {
         return coordsToString(groupId, artifactId) + ":" + version + ":" + extension;
     }
 
-    public static String coordsToString(String groupId, String artifactId, String version) {
-        return coordsToString(groupId, artifactId) + ":" + version;
-    }
-
     public static String coordsToString(String groupId, String artifactId) {
         return groupId + ":" + artifactId;
     }
@@ -52,10 +48,6 @@ public class Utils {
 
     public static String coordsToUrlStructure(String groupId, String artifactId) {
         return coordsToString(groupId, artifactId).replace(".", "/").replace(":", "/");
-    }
-
-    public static String coordsToUrlStructure(String groupId, String artifactId, String version) {
-        return coordsToString(groupId, artifactId, version).replace(".", "/").replace(":", "/");
     }
 
     public static RepositorySystem newRepositorySystem() {

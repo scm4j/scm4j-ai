@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import lombok.Cleanup;
 import lombok.Data;
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.repository.metadata.Metadata;
@@ -25,7 +26,6 @@ import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.installation.InstallRequest;
-import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.*;
 import org.eclipse.aether.util.artifact.JavaScopes;
@@ -61,7 +61,7 @@ public class AIRunner {
         }
         productList.downloadProductList(productListArtifactoryUrl, userName, password);
 
-        tmpRepository = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test");
+        tmpRepository = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp");
         system = Utils.newRepositorySystem();
     }
 
@@ -103,7 +103,6 @@ public class AIRunner {
         return res;
     }
 
-    //TODO write product-list and product metadata in local repo
     public File download(String groupId, String artifactId, String version, String extension) {
         String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
         File res = new File(repository, fileRelativePath);
@@ -129,7 +128,6 @@ public class AIRunner {
             }
 
             //TODO Divide exceptions on write exception and read exception
-            //TODO delete jar if can't download pom
             try (FileOutputStream out = new FileOutputStream(temp);
                  InputStream in = repo.getContentStream(groupId, artifactId, version, extension)) {
                 IOUtils.copy(in, out);
@@ -143,9 +141,14 @@ public class AIRunner {
                 artifacts.add(productArtifact);
                 artifacts = downloadComponents(artifacts);
                 deployComponents(artifacts);
+                File localMetadataFolder = new File(repository, Utils.coordsToFolderStructure(groupId, artifactId));
+                File localMetadata = new File(localMetadataFolder, ArtifactoryReader.LOCAL_METADATA_FILE_NAME);
+                if(!localMetadata.renameTo(new File(localMetadataFolder, ArtifactoryReader.METADATA_FILE_NAME)))
+                    throw new RuntimeException();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+            productList.changeRemoteRepoOnLocal();
             return res;
         }
         return null;
@@ -167,7 +170,7 @@ public class AIRunner {
         return components;
     }
 
-    private void deployComponents(List<Artifact> artifacts) throws InstallationException, ArtifactDescriptorException {
+    private void deployComponents(List<Artifact> artifacts) throws Exception {
         session = Utils.newRepositorySystemSession(system, repository);
         InstallRequest installRequest = new InstallRequest();
         for (Artifact artifact : artifacts) {
@@ -177,6 +180,7 @@ public class AIRunner {
             installRequest.addArtifact(artifact).addArtifact(pomArtifact);
         }
         system.install(session, installRequest);
+        FileUtils.deleteDirectory(tmpRepository);
     }
 
     private List<Artifact> getComponents(File productFile) throws Exception {
@@ -186,7 +190,7 @@ public class AIRunner {
                 .collect(Collectors.toList());
     }
 
-    public IProductStructure getProductStructure(File productFile) throws Exception {
+    private IProductStructure getProductStructure(File productFile) throws Exception {
         String mainClassName = Utils.getExportedClassName(productFile);
         @Cleanup
         URLClassLoader classLoader = URLClassLoader.newInstance(new URL[]{productFile.toURI().toURL()});
@@ -199,4 +203,5 @@ public class AIRunner {
             throw new RuntimeException();
         }
     }
+
 }

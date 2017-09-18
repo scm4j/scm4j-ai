@@ -16,7 +16,7 @@ import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 public class ArtifactoryReader {
 
 	public static final String METADATA_FILE_NAME = "maven-metadata.xml";
-	public static final String POM_FILE_EXTENTION = ".pom";
+	public static final String LOCAL_METADATA_FILE_NAME = "maven-metadata-local.xml";
 	
 	private final URL url;
 	private final String password;

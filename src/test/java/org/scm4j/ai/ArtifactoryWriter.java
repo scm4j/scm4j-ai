@@ -1,7 +1,6 @@
 package org.scm4j.ai;
 
 import java.io.*;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.jar.Attributes;
@@ -89,7 +88,7 @@ public class ArtifactoryWriter {
             appendMetadata(groupId, artifactId, version, artifactRoot);
 
             if (content.contains("Data")) {
-                appendProductList(groupId, artifactId, version, extension, productListLocation);
+                appendProductList(groupId, artifactId, productListLocation);
             }
 
         } catch (Exception e) {
@@ -97,6 +96,7 @@ public class ArtifactoryWriter {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private File writeArtifact(String artifactId, String version, String extension, String content, File artifactRoot)
             throws Exception {
         File artifactVersionPath = new File(artifactRoot, version);
@@ -139,8 +139,7 @@ public class ArtifactoryWriter {
         }
     }
 
-    private void appendProductList(String groupId, String artifactId, String version, String extension,
-                                   File productListLocation) throws Exception {
+    private void appendProductList(String groupId, String artifactId, File productListLocation) throws Exception {
 
         File remoteProductListFileLocation = new File(productListLocation,
                 Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
@@ -148,7 +147,7 @@ public class ArtifactoryWriter {
 
         Map<String, ArrayList<String>> products = getProductListContent(remoteProductListFileLocation);
 
-        if (!products.get(ProductList.PRODUCTS).contains(Utils.coordsToString(groupId, artifactId, version, extension))) {
+        if (!products.get(ProductList.PRODUCTS).contains(Utils.coordsToString(groupId, artifactId))) {
             products.get(ProductList.PRODUCTS).add(Utils.coordsToString(groupId, artifactId));
             remoteProductListFileLocation.delete();
             remoteProductListFileLocation.createNewFile();
@@ -162,10 +161,9 @@ public class ArtifactoryWriter {
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         YAML = new Yaml(options);
         String yamlOutput = YAML.dump(products);
-        FileWriter fw = new FileWriter(remoteProductListFileLocation);
-        fw.write(yamlOutput);
-        fw.flush();
-        fw.close();
+        try (FileWriter fw = new FileWriter(remoteProductListFileLocation)) {
+            fw.write(yamlOutput);
+        }
     }
 
     private Map<String, ArrayList<String>> getProductListContent(File remoteProductListFileLocation)

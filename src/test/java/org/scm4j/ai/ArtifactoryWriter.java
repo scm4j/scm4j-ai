@@ -120,7 +120,7 @@ public class ArtifactoryWriter {
         return artifactFile;
     }
 
-    public void createProductJar(String className, File artifactFile) throws Exception {
+    private void createProductJar(String className, File artifactFile) throws Exception {
         Manifest mf = new Manifest();
         mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
         mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, className);

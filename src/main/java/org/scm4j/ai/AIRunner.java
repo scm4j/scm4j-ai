@@ -79,7 +79,7 @@ public class AIRunner {
     }
 
     public void install(File productDir) {
-        installerFactory.getInstaller(productDir).install();
+        installerFactory.getInstaller(productDir).deploy();
     }
 
     public File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
@@ -190,12 +190,9 @@ public class AIRunner {
                 .collect(Collectors.toList());
     }
 
-    private IProductStructure getProductStructure(File productFile) throws Exception {
+    public IProductStructure getProductStructure(File productFile) throws Exception {
         String mainClassName = Utils.getExportedClassName(productFile);
-        @Cleanup
-        URLClassLoader classLoader = URLClassLoader.newInstance(new URL[]{productFile.toURI().toURL()});
-        Class<?> loadedClass = Class.forName(mainClassName, true, classLoader);
-        Object obj = loadedClass.newInstance();
+        Object obj = Utils.loadClassFromJar(productFile, mainClassName);
         if(obj instanceof IProduct) {
             IProduct product = (IProduct) obj;
             return product.getProductStructure();

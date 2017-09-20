@@ -52,8 +52,6 @@ public class ProductList {
         loadProductListEntry();
     }
 
-    //TODO change remote repositories on local repo after downloading
-
     @SuppressWarnings("unchecked")
     @SneakyThrows
     private void loadProductListEntry() {

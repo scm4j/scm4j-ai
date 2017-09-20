@@ -23,7 +23,7 @@ public class ArtifactoryWriter {
     public static final String PRODUCT_LIST_DEFAULT_VERSION = "1.1.0";
     public static final String PRODUCT_LIST_VERSION = "1.2.0";
     private static final String TEST_POMS = "org/scm4j/ai/poms/";
-    private static final String TEST_CLASS = "org/scm4j/ai/testclass/";
+    private static final String TEST_CLASS = "org/scm4j/ai/testclasses/";
     private File artifactoryFolder;
     private static Yaml YAML;
 
@@ -97,7 +97,7 @@ public class ArtifactoryWriter {
     }
 
     @SuppressWarnings("unchecked")
-    private File writeArtifact(String artifactId, String version, String extension, String content, File artifactRoot)
+    private void writeArtifact(String artifactId, String version, String extension, String content, File artifactRoot)
             throws Exception {
         File artifactVersionPath = new File(artifactRoot, version);
         artifactVersionPath.mkdirs();
@@ -107,7 +107,7 @@ public class ArtifactoryWriter {
 
         File artifactPom = new File(artifactVersionPath, Utils.coordsToFileName(artifactId, version, ".pom"));
 
-        if(content.contains("Data"))
+        if(content.contains("Data") || content.contains("Runner"))
             createProductJar(content,artifactFile);
         else
             FileUtils.writeStringToFile(artifactFile, content, Charset.forName("UTF-8"));
@@ -116,8 +116,6 @@ public class ArtifactoryWriter {
                 Utils.coordsToFileName(artifactId, version, ".pom")).getFile());
 
         Files.copy(resource, artifactPom);
-
-        return artifactFile;
     }
 
     private void createProductJar(String className, File artifactFile) throws Exception {

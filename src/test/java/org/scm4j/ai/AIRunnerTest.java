@@ -12,17 +12,12 @@ import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-import com.google.common.base.Utf8;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.CharSet;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.aether.artifact.Artifact;
 import org.junit.*;
-import org.mockito.Mockito;
+import org.scm4j.ai.api.IDeployer;
 import org.scm4j.ai.exceptions.EArtifactNotFound;
 import org.scm4j.ai.exceptions.EProductNotFound;
-import org.scm4j.ai.api.IInstaller;
-import org.scm4j.ai.installers.InstallerFactory;
 import org.scm4j.ai.installers.UnzipArtifact;
 
 import static org.junit.Assert.*;
@@ -45,6 +40,7 @@ public class AIRunnerTest {
     private static String axisArtifact = "axis";
     private static String axisJaxrpcArtifact = "axis-jaxrpc";
     private static File pathToUntill;
+    private static String installersArtifactId = "installers";
 
     @After
     public void tearDown() throws IOException {
@@ -70,6 +66,8 @@ public class AIRunnerTest {
                 "ProductStructureDataLoader", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "124.5", ".jar",
                 "ProductStructureDataLoader", env.getArtifactory1Folder());
+        aw.installArtifact(TEST_UNTILL_GROUP_ID, installersArtifactId, "1.1.0", ".jar",
+                "ExeRunner", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, ublArtifactId, "22.2", ".war",
                 TEST_UBL_22_2_CONTENT, env.getArtifactory1Folder());
         aw.installArtifact(TEST_JOOQ_GROUP_ID, jooqArtifact, "3.1.0", ".jar",
@@ -190,8 +188,8 @@ public class AIRunnerTest {
 
     @Test
     public void testUnzip() throws Exception {
-        IInstaller unziper = new UnzipArtifact(new File(TEST_ARTIFACTORY_DIR), pathToUntill);
-        unziper.install();
+        IDeployer unziper = new UnzipArtifact(new File(TEST_ARTIFACTORY_DIR), pathToUntill);
+        unziper.deploy();
         File metainf = new File(TEST_ARTIFACTORY_DIR, "META-INF");
         Manifest mf = new Manifest();
         assertTrue(metainf.exists());

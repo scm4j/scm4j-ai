@@ -7,7 +7,7 @@ import java.util.List;
 
 public class ProductStructureData {
 
-    public static ProductStructure productStructure;
+    private static ProductStructure productStructure;
 
     private static void enterProduct() {
         IAction action = new Action("ExeRunner");

@@ -1,22 +1,11 @@
 package org.scm4j.ai.api;
 
+import lombok.Data;
+
+@Data
 public class Component implements IComponent {
 
-    private String artifactCoords;
-    private IInstallationProcedure iInstallationProcedure;
+    final private String artifactCoords;
+    final private IInstallationProcedure installationProcedure;
 
-    public Component(String artifactCoords, IInstallationProcedure iInstallationProcedure) {
-        this.artifactCoords = artifactCoords;
-        this.iInstallationProcedure = iInstallationProcedure;
-    }
-
-    @Override
-    public String getArtifactCoords() {
-        return artifactCoords;
-    }
-
-    @Override
-    public IInstallationProcedure getInstalationProcedure() {
-        return iInstallationProcedure;
-    }
 }

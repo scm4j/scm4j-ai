@@ -4,15 +4,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
     <groupId>eu.untill</groupId>
-    <artifactId>unTILL</artifactId>
-    <version>123.4</version>
+    <artifactId>installers</artifactId>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
-    <dependencies>
-    <dependency>
-        <groupId>eu.untill</groupId>
-        <artifactId>installers</artifactId>
-        <version>1.1.0</version>
-        <scope>compile</scope>
-    </dependency>
-    </dependencies>
 </project>

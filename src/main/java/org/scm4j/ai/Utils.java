@@ -1,10 +1,13 @@
 package org.scm4j.ai;
 
 import java.io.*;
-import java.util.Iterator;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import lombok.Cleanup;
 import lombok.SneakyThrows;
@@ -86,6 +89,42 @@ public class Utils {
                 return attrs.getValue(attrName);
             }
         }
-        return null;
+        throw new RuntimeException();
+    }
+
+    @SneakyThrows
+    public static Object loadClassFromJar(File jarFile, String className) {
+        @Cleanup
+        URLClassLoader loader = URLClassLoader.newInstance(new URL[] {jarFile.toURI().toURL()});
+        Class<?> loadedClass = Class.forName(className, true, loader);
+        return loadedClass.newInstance();
+    }
+
+    public static void unzip(File outputFile, File zipFile) {
+        if (!outputFile.exists()) outputFile.mkdirs();
+        byte[] buffer = new byte[1024];
+        try {
+            @Cleanup
+            FileInputStream fis = new FileInputStream(zipFile);
+            @Cleanup
+            ZipInputStream zis = new ZipInputStream(fis);
+            ZipEntry ze = zis.getNextEntry();
+            while (ze != null) {
+                String fileName = ze.getName();
+                File newFile = new File(outputFile + File.separator + fileName);
+                new File(newFile.getParent()).mkdirs();
+                @Cleanup
+                FileOutputStream fos = new FileOutputStream(newFile);
+                int len;
+                while ((len = zis.read(buffer)) > 0) {
+                    fos.write(buffer, 0, len);
+                }
+                zis.closeEntry();
+                ze = zis.getNextEntry();
+            }
+            zis.closeEntry();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

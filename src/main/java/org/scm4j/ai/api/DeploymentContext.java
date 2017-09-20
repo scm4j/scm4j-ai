@@ -10,10 +10,10 @@ import java.util.Map;
 @Data
 public class DeploymentContext implements IDeploymentContext {
 
-    final private Map<String, File> artifacts;
-    final private String mainArtifact;
-    final private List<String> deps;
-    final private URL deploymentURL;
-    final private Map<String,Object> params;
+    private Map<String, File> artifacts;
+    private String mainArtifact;
+    private List<String> deps;
+    private URL deploymentURL;
+    private Map<String,Object> params;
 
 }

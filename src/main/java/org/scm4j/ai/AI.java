@@ -52,7 +52,7 @@ public class AI implements IAI {
     }
 
     @Override
-    public void unIninstall(String productCoors) {
+    public void uninstall(String productCoors) {
 
     }
 

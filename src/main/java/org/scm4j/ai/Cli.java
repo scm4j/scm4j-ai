@@ -7,6 +7,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.scm4j.ai.api.IAI;
 
 public class Cli {
 
@@ -39,7 +40,7 @@ public class Cli {
 		} else if (commandLine.hasOption("upgrade")) {
 			ai.upgrade(commandLine.getOptionValue("upgrade"));
 		} else if (commandLine.hasOption("uninstall")) {
-			ai.unIninstall(commandLine.getOptionValue("uninstall"));
+			ai.uninstall(commandLine.getOptionValue("uninstall"));
 		}
 	}
 

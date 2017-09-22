@@ -1,4 +1,4 @@
-package org.scm4j.ai;
+package org.scm4j.deployer.engine;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;

@@ -1,6 +1,6 @@
-package org.scm4j.ai;
+package org.scm4j.deployer.engine;
 
-import org.scm4j.ai.api.*;
+import org.scm4j.deployer.api.*;
 
 import java.util.ArrayList;
 import java.util.List;

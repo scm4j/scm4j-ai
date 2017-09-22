@@ -1,4 +1,4 @@
-package org.scm4j.ai;
+package org.scm4j.deployer.engine;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,10 +15,9 @@ import java.util.jar.Manifest;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
-import org.scm4j.ai.api.IDeployer;
-import org.scm4j.ai.exceptions.EArtifactNotFound;
-import org.scm4j.ai.exceptions.EProductNotFound;
-import org.scm4j.ai.installers.UnzipArtifact;
+import org.scm4j.deployer.installers.IDeployer;
+import org.scm4j.deployer.installers.UnzipArtifact;
+import org.scm4j.deployer.engine.exceptions.*;
 
 import static org.junit.Assert.*;
 

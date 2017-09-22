@@ -1,6 +1,7 @@
-package org.scm4j.ai;
+package org.scm4j.deployer.engine;
 
 import java.io.*;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.jar.Attributes;
@@ -15,6 +16,9 @@ import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
 
+import org.scm4j.deployer.engine.ArtifactoryReader;
+import org.scm4j.deployer.engine.ProductList;
+import org.scm4j.deployer.engine.Utils;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -22,8 +26,8 @@ public class ArtifactoryWriter {
 
     public static final String PRODUCT_LIST_DEFAULT_VERSION = "1.1.0";
     public static final String PRODUCT_LIST_VERSION = "1.2.0";
-    private static final String TEST_POMS = "org/scm4j/ai/poms/";
-    private static final String TEST_CLASS = "org/scm4j/ai/testclasses/";
+    private static final String TEST_POMS = "org/scm4j/deployer/engine/poms/";
+    private static final String TEST_CLASS = "org/scm4j/deployer/engine/testclasses/";
     private File artifactoryFolder;
     private static Yaml YAML;
 
@@ -122,6 +126,7 @@ public class ArtifactoryWriter {
         Manifest mf = new Manifest();
         mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
         mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, className);
+        URL url = getClass().getClassLoader().getResource(TEST_CLASS + className + ".class");
         File testProduct = new File(getClass().getClassLoader().getResource(TEST_CLASS + className + ".class").getFile());
         try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(artifactFile), mf);
              BufferedInputStream bin = new BufferedInputStream(new FileInputStream(testProduct))) {

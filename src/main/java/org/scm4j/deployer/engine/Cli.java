@@ -1,4 +1,4 @@
-package org.scm4j.ai;
+package org.scm4j.deployer.engine;
 
 import java.io.File;
 
@@ -7,7 +7,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.scm4j.ai.api.IAI;
+import org.scm4j.deployer.installers.IAI;
 
 public class Cli {
 

@@ -1,15 +1,12 @@
-package org.scm4j.ai;
+package org.scm4j.deployer.engine;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import lombok.Cleanup;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
@@ -31,10 +28,9 @@ import org.eclipse.aether.resolution.*;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
-import org.scm4j.ai.api.*;
-import org.scm4j.ai.exceptions.EArtifactNotFound;
-import org.scm4j.ai.exceptions.EProductNotFound;
-import org.scm4j.ai.installers.InstallerFactory;
+import org.scm4j.deployer.api.*;
+import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
+import org.scm4j.deployer.installers.InstallerFactory;
 
 @Data
 public class AIRunner {
@@ -46,6 +42,7 @@ public class AIRunner {
     private RepositorySystem system;
     private RepositorySystemSession session;
     private ProductList productList;
+    private IDeploymentContext depCtx;
 
     public void setInstallerFactory(InstallerFactory installerFactory) {
         this.installerFactory = installerFactory;
@@ -68,7 +65,7 @@ public class AIRunner {
     @SneakyThrows
     public List<String> getProductVersions(String groupId, String artifactId) {
         if (!productList.hasProduct(groupId, artifactId)) {
-            throw new EProductNotFound();
+            throw new org.scm4j.deployer.engine.exceptions.EProductNotFound();
         }
         MetadataXpp3Reader reader = new MetadataXpp3Reader();
         try (InputStream is = productList.getProductListReader().getProductMetaDataURL(groupId, artifactId).openStream()) {
@@ -104,6 +101,7 @@ public class AIRunner {
     }
 
     public File download(String groupId, String artifactId, String version, String extension) {
+        depCtx = new DeploymentContext();
         String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
         File res = new File(repository, fileRelativePath);
         File temp = new File(tmpRepository, fileRelativePath);
@@ -140,7 +138,7 @@ public class AIRunner {
                         version);
                 artifacts.add(productArtifact);
                 artifacts = downloadComponents(artifacts);
-                deployComponents(artifacts);
+                saveComponents(artifacts);
                 File localMetadataFolder = new File(repository, Utils.coordsToFolderStructure(groupId, artifactId));
                 File localMetadata = new File(localMetadataFolder, ArtifactoryReader.LOCAL_METADATA_FILE_NAME);
                 if(!localMetadata.renameTo(new File(localMetadataFolder, ArtifactoryReader.METADATA_FILE_NAME)))
@@ -154,7 +152,8 @@ public class AIRunner {
         return null;
     }
 
-    public List<Artifact> downloadComponents(List<Artifact> artifacts) throws DependencyResolutionException {
+    @SneakyThrows
+    public List<Artifact> downloadComponents(List<Artifact> artifacts){
         List<Artifact> components = new ArrayList<>();
         session = Utils.newRepositorySystemSession(system, tmpRepository);
         CollectRequest collectRequest = new CollectRequest();
@@ -170,7 +169,8 @@ public class AIRunner {
         return components;
     }
 
-    private void deployComponents(List<Artifact> artifacts) throws Exception {
+    @SneakyThrows
+    private void saveComponents(List<Artifact> artifacts) {
         session = Utils.newRepositorySystemSession(system, repository);
         InstallRequest installRequest = new InstallRequest();
         for (Artifact artifact : artifacts) {
@@ -183,14 +183,21 @@ public class AIRunner {
         FileUtils.deleteDirectory(tmpRepository);
     }
 
-    private List<Artifact> getComponents(File productFile) throws Exception {
-        return getProductStructure(productFile).getComponents().stream()
+    private List<Artifact> getComponents(File productFile) {
+        List<Artifact> artifacts = getProductStructure(productFile).getComponents().stream()
                 .map(IComponent::getArtifactCoords)
                 .map(DefaultArtifact::new)
                 .collect(Collectors.toList());
+        Map<String, File> mainArtifacts = new HashMap<>();
+        for (Artifact artifact : artifacts) {
+            mainArtifacts.put(artifact.getArtifactId(), new File(repository, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
+                    artifact.getArtifactId(), artifact.getVersion(), artifact.getExtension())));
+        }
+        depCtx.setArtifacts(mainArtifacts);
+        return artifacts;
     }
 
-    public IProductStructure getProductStructure(File productFile) throws Exception {
+    public IProductStructure getProductStructure(File productFile) {
         String mainClassName = Utils.getExportedClassName(productFile);
         Object obj = Utils.loadClassFromJar(productFile, mainClassName);
         if(obj instanceof IProduct) {

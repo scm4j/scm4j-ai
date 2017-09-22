@@ -1,19 +1,22 @@
-package org.scm4j.ai;
+package org.scm4j.deployer.engine;
 
-import org.scm4j.ai.api.*;
+import org.scm4j.deployer.api.IAction;
+import org.scm4j.deployer.api.IComponent;
+import org.scm4j.deployer.api.IInstallationProcedure;
 import org.scm4j.commons.Coords;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.scm4j.deployer.installers.IAI;
+import org.scm4j.deployer.installers.IDeployer;
 
 public class AI implements IAI {
 
     private File workingFolder;
     private String productListArtifactoryUrl;
     private AIRunner runner;
-    private DeploymentContext context;
 
     public AI(File workingFolder, String productListArtifactoryUrl) {
         this.workingFolder = workingFolder;
@@ -60,14 +63,14 @@ public class AI implements IAI {
     public void upgrade(String newProductCoords) {
     }
 
-    private List<IInstallationProcedure> getInstallationProcedure(File productFile) throws Exception {
+    private List<IInstallationProcedure> getInstallationProcedures(File productFile) throws Exception {
         return runner.getProductStructure(productFile).getComponents().stream()
                 .map(IComponent::getInstallationProcedure)
                 .collect(Collectors.toList());
     }
 
     private void installComponent(IInstallationProcedure procedure, File jarFile) {
-        for(IAction action : procedure.getActions()) {
+        for(IAction action : procedure.getActions()){
             String installerClassName = action.getInstallerClass();
             Object obj = Utils.loadClassFromJar(jarFile, installerClassName);
             if(obj instanceof IDeployer) {

@@ -1,5 +1,6 @@
 package org.scm4j.deployer.engine;
 
+import lombok.SneakyThrows;
 import org.scm4j.deployer.api.IAction;
 import org.scm4j.deployer.api.IComponent;
 import org.scm4j.deployer.api.IInstallationProcedure;
@@ -69,10 +70,11 @@ public class AI implements IAI {
                 .collect(Collectors.toList());
     }
 
+    @SneakyThrows
     private void installComponent(IInstallationProcedure procedure, File jarFile) {
         for(IAction action : procedure.getActions()){
-            String installerClassName = action.getInstallerClass();
-            Object obj = Utils.loadClassFromJar(jarFile, installerClassName);
+            Class<?> installerClassName = action.getInstallerClass();
+            Object obj = installerClassName.newInstance();
             if(obj instanceof IDeployer) {
                 IDeployer installer = (IDeployer) obj;
                 installer.deploy();

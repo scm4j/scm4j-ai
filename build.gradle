@@ -45,7 +45,7 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok:1.16.18'
 
 	compile 'com.github.scm4j:scm4j-commons:master-SNAPSHOT'
-	compile 'com.github.scm4j:scm4j-deployer-api:dev-SNAPSHOT'
+	compile 'com.github.scm4j:scm4j-deployer-api:e10d9b0225'
 	compile 'com.github.scm4j:scm4j-deployer-installers:-SNAPSHOT'
 
 	compile 'org.apache.maven.resolver:maven-resolver-api:1.1.0'

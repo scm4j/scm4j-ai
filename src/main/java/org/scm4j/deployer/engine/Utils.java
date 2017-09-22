@@ -96,7 +96,7 @@ public class Utils {
     public static Object loadClassFromJar(File jarFile, String className) {
         @Cleanup
         URLClassLoader loader = URLClassLoader.newInstance(new URL[] {jarFile.toURI().toURL()});
-        Class<?> loadedClass = Class.forName(className, true, loader);
+        Class<?> loadedClass = loader.loadClass(className);
         return loadedClass.newInstance();
     }
 }

@@ -1,6 +1,7 @@
 package org.scm4j.deployer.engine;
 
 import org.scm4j.deployer.api.*;
+import org.scm4j.deployer.installers.ExeRunner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +11,7 @@ public class ProductStructureData {
     private static ProductStructure productStructure;
 
     private static void enterProduct() {
-        IAction action = new Action("ExeRunner");
+        IAction action = new Action(ExeRunner.class);
         List<IAction> actions = new ArrayList<>();
         actions.add(action);
         IInstallationProcedure installationProcedure = new InstallationProcedure(actions);

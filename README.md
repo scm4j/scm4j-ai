@@ -41,4 +41,3 @@ Deployer
 # Manual and Legacy Installations
 
 In some cases it is important to detect that products has been installed not using Deployer (legacy versions or manual installations)
-

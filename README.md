@@ -21,4 +21,15 @@ Thus all dependencies of product artifcat are "installers" i.e. implement instal
 
 Ref. [data-structure.md](data-structure.md)
 
+# Scenarious
+
+- List of available products
+- List product versions
+- List installed products
+- Install product
+- Remove product
+
+# Manual and Legacy Installations
+
+In some cases it is important to detect that products has been installed not using Deployer (legacy versions or manual installations)
 

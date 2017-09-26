@@ -28,7 +28,8 @@ Ref. [data-structure.md](data-structure.md)
 - List installed products
 - Install product
   - Existing product version is queried using `Deployment URL`
-  - If old version exists
+  - If old version exists it is `stopped`
+  - If `stop` fails all components are `disabled` and `REBOOT_NEEDED` is returned
 - Downgrade
 - Remove product
 

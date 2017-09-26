@@ -27,6 +27,9 @@ Ref. [data-structure.md](data-structure.md)
 - List product versions
 - List installed products
 - Install product
+  - Existing product version is queried using `Deployment URL`
+  - If old version exists
+- Downgrade
 - Remove product
 
 # Manual and Legacy Installations

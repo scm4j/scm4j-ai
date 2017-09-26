@@ -26,12 +26,17 @@ Ref. [data-structure.md](data-structure.md)
 - List of available products
 - List product versions
 - List installed products
+- Get installation tree for given product (product is downloaded first)
 - Install product
   - Existing product version is queried using `Deployment URL`
   - If old version exists it is `stopped`
   - If `stop` fails all components are `disabled` and `REBOOT_NEEDED` is returned
 - Downgrade
 - Remove product
+
+# Self-upgrade
+
+Deployer 
 
 # Manual and Legacy Installations
 

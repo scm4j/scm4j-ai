@@ -1,24 +1,19 @@
 package org.scm4j.deployer.engine;
 
-import org.scm4j.deployer.api.*;
-import org.scm4j.deployer.installers.ExeRunner;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.scm4j.deployer.api.IProductStructure;
+import org.scm4j.deployer.api.ProductStructure;
+import org.scm4j.deployer.installers.Executor;
 
 public class ProductStructureData {
 
     private static ProductStructure productStructure;
 
     private static void enterProduct() {
-        IAction action = new Action(ExeRunner.class);
-        List<IAction> actions = new ArrayList<>();
-        actions.add(action);
-        IInstallationProcedure installationProcedure = new InstallationProcedure(actions);
-        IComponent component = new Component("eu.untill:UBL:war:22.2", installationProcedure);
-        List<IComponent> components = new ArrayList<>();
-        components.add(component);
-        productStructure = new ProductStructure(components);
+        productStructure = ProductStructure.create()
+                .addComponent("eu.untill:UBL:war:22.2")
+                .addAction(Executor.class)
+                .parent()
+                .parent();
     }
 
     public static IProductStructure getProductStructure() {

@@ -1,5 +1,9 @@
 package org.scm4j.deployer.engine;
 
+import org.apache.commons.io.FileUtils;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -7,10 +11,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.commons.io.FileUtils;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
 
 public class AITestEnvironment {
 	

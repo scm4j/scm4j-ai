@@ -8,6 +8,10 @@ apply plugin: 'maven'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
+configurations.compile {
+	resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
 repositories {
 	maven { url "https://jitpack.io" }
 	mavenCentral()
@@ -44,9 +48,9 @@ dependencies {
 	compile 'org.slf4j:slf4j-nop:1.7.25'
 	compileOnly 'org.projectlombok:lombok:1.16.18'
 
-	compile 'com.github.scm4j:scm4j-commons:master-SNAPSHOT'
-	compile 'com.github.scm4j:scm4j-deployer-api:e10d9b0225'
-	compile 'com.github.scm4j:scm4j-deployer-installers:-SNAPSHOT'
+	compile group: 'com.github.scm4j', name: 'scm4j-commons', version: 'master-SNAPSHOT', changing: true
+	compile group: 'com.github.scm4j', name: 'scm4j-deployer-api', version: 'dev-SNAPSHOT', changing: true
+	compile group: 'com.github.scm4j', name: 'scm4j-deployer-installers', version: 'master-SNAPSHOT', changing: true
 
 	compile 'org.apache.maven.resolver:maven-resolver-api:1.1.0'
     compile 'org.apache.maven.resolver:maven-resolver-util:1.1.0'

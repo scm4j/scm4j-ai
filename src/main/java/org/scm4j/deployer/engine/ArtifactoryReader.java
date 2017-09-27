@@ -1,10 +1,5 @@
 package org.scm4j.deployer.engine;
 
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-
 import lombok.Cleanup;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Base64;
@@ -12,6 +7,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
+
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class ArtifactoryReader {
 

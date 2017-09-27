@@ -1,13 +1,9 @@
 package org.scm4j.deployer.engine;
 
-import java.io.File;
+import org.apache.commons.cli.*;
+import org.scm4j.deployer.api.IProductDeployer;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.scm4j.deployer.installers.IAI;
+import java.io.File;
 
 public class Cli {
 
@@ -34,13 +30,13 @@ public class Cli {
 		CommandLine commandLine = cmdLineParser.parse(options, args);
 
 		// TODO: add working folder providing
-		IAI ai = new AI(new File(""),"");
+		IProductDeployer ai = new DeployerEngine(new File(""),"");
 		if (commandLine.hasOption("install")) {
-			ai.install(commandLine.getOptionValue("install"));
+			ai.deploy(commandLine.getOptionValue("install"));
 		} else if (commandLine.hasOption("upgrade")) {
 			ai.upgrade(commandLine.getOptionValue("upgrade"));
 		} else if (commandLine.hasOption("uninstall")) {
-			ai.uninstall(commandLine.getOptionValue("uninstall"));
+			ai.undeploy(commandLine.getOptionValue("uninstall"));
 		}
 	}
 

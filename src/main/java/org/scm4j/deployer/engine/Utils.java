@@ -1,16 +1,8 @@
 package org.scm4j.deployer.engine;
 
-import java.io.*;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
 import lombok.Cleanup;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
@@ -22,10 +14,18 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 
+import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
+
 public class Utils {
 
+    //TODO change Utils for work with Coords
     public static String coordsToString(String groupId, String artifactId, String version, String extension) {
-        return coordsToString(groupId, artifactId) + ":" + version + ":" + extension;
+        return coordsToString(groupId, artifactId) + ":" + version + ":" + StringUtils.prependIfMissing(extension, ".");
     }
 
     public static String coordsToString(String groupId, String artifactId) {
@@ -33,7 +33,7 @@ public class Utils {
     }
 
     public static String coordsToFileName(String artifactId, String version, String extension) {
-        return artifactId + "-" + version + extension;
+        return artifactId + "-" + version + StringUtils.prependIfMissing(extension, ".");
     }
 
     public static String coordsToFolderStructure(String groupId, String artifactId) {
@@ -46,7 +46,7 @@ public class Utils {
 
     public static String coordsToRelativeFilePath(String groupId, String artifactId, String version, String extension) {
         return new File(coordsToFolderStructure(groupId, artifactId, version),
-                coordsToFileName(artifactId, version, extension)).getPath();
+                coordsToFileName(artifactId, version, StringUtils.prependIfMissing(extension, "."))).getPath();
     }
 
     public static String coordsToUrlStructure(String groupId, String artifactId) {

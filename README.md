@@ -5,7 +5,7 @@ Status: in development
 
 
 # Overview
-This component automates installation (deployment) of products which are represented by artifacts in maven repositories. 
+This component automates installation (deployment) of products which are represented by artifacts in maven repositories. `download` and `install` are different actions, so all dependencies might be downloaded first and then installed (after some time).
 
 # Terms
 
@@ -21,4 +21,24 @@ Thus all dependencies of product artifcat are "installers" i.e. implement instal
 
 Ref. [data-structure.md](data-structure.md)
 
+# Scenarious
 
+- List of available products: `DeployerEngine`.listAvailableProducts()
+- List available  product versions: `DeployerEngine`.listAvailableProductVersions()
+- List installed products: `DeployerEngine`.listInstalledProducts()
+- Get installation tree for given product (product is downloaded first)
+- Deploy  product:  `DeployerEngine`.deploy()
+  - Existing product version is queried using `Deployment URL`
+  - If old version exists it is `stopped`
+  - If `stop` fails all components are `disabled` and `REBOOT_NEEDED` is returned
+- Downgrade
+- Remove product
+
+
+# Self-upgrade
+
+Deployer 
+
+# Manual and Legacy Installations
+
+In some cases it is important to detect that products has been installed not using Deployer (legacy versions or manual installations)

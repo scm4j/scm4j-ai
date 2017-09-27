@@ -5,7 +5,7 @@ Status: in development
 
 
 # Overview
-This component automates installation (deployment) of products which are represented by artifacts in maven repositories. 
+This component automates installation (deployment) of products which are represented by artifacts in maven repositories. `download` and `install` are different actions, so all dependencies might be downloaded first and then installed (after some time).
 
 # Terms
 

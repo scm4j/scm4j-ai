@@ -25,6 +25,7 @@ Ref. [data-structure.md](data-structure.md)
 
 Scenarious are represeneted by methods of `DeployerEngine`
 
+- `DeployerEngine`: initializes engine with URL of `product list` and `working folder`. Constructor does NOT do any network operation.
 - `listProducts`: gets data from offline cache
 - `refreshProducts`: refreshes cache for `listProducts`
 - `listProductVersions`: gets data from offline cache

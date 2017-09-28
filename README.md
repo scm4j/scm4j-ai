@@ -24,7 +24,9 @@ Ref. [data-structure.md](data-structure.md)
 # Scenarious
 
 - List of available products: `DeployerEngine`.listAvailableProducts()
-- List available  product versions: `DeployerEngine`.listAvailableProductVersions()
+  - Offline
+- Refresh list of available products: `DeployerEngine`.refreshAvailableProducts(). Refresh data for `listAvailableProducts`
+- List product versions: `DeployerEngine`.listAvailableProductVersions().
 - List installed products: `DeployerEngine`.listInstalledProducts()
 - Get installation tree for given product (product is downloaded first)
 - Deploy  product:  `DeployerEngine`.deploy()

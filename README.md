@@ -21,25 +21,27 @@ Thus all dependencies of product artifcat are "installers" i.e. implement instal
 
 Ref. [data-structure.md](data-structure.md)
 
-# Scenarious
+# Scenarious Overview
 
-- List of available products: `DeployerEngine`.listAvailableProducts()
-  - Offline
-- Refresh list of available products: `DeployerEngine`.refreshAvailableProducts(). Refresh data for `listAvailableProducts`
-- List product versions: `DeployerEngine`.listAvailableProductVersions().
-- List installed products: `DeployerEngine`.listInstalledProducts()
-- Get installation tree for given product (product is downloaded first)
-- Deploy  product:  `DeployerEngine`.deploy()
+Scenarious are represeneted by methods of `DeployerEngine`
+
+- `listAvailableProducts`: gets data from offline cache
+- `refreshAvailableProducts`: refresh cache for `listAvailableProducts`
+- `listAvailableProductVersions`: gets data from offline cache
+- `refreshProductVersions`: refresh offline cache
+- `download`: downloads given product
+- `deploy`: deploys given product
+- `deployedProducts`: lists all deployed product
+
+# Deployment
+
   - Existing product version is queried using `Deployment URL`
   - If old version exists it is `stopped`
   - If `stop` fails all components are `disabled` and `REBOOT_NEEDED` is returned
-- Downgrade
-- Remove product
-
 
 # Self-upgrade
 
-Deployer 
+Deployer
 
 # Manual and Legacy Installations
 

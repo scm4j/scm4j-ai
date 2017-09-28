@@ -26,9 +26,9 @@ Ref. [data-structure.md](data-structure.md)
 Scenarious are represeneted by methods of `DeployerEngine`
 
 - `listAvailableProducts`: gets data from offline cache
-- `refreshAvailableProducts`: refresh cache for `listAvailableProducts`
+- `refreshAvailableProducts`: refreshes cache for `listAvailableProducts`
 - `listAvailableProductVersions`: gets data from offline cache
-- `refreshProductVersions`: refresh offline cache
+- `refreshProductVersions`: refreshes offline cache
 - `download`: downloads given product
 - `deploy`: deploys given product
 - `deployedProducts`: lists all deployed product

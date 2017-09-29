@@ -20,6 +20,7 @@ import java.net.URLClassLoader;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 
 public class Utils {
 
@@ -98,5 +99,14 @@ public class Utils {
         URLClassLoader loader = URLClassLoader.newInstance(new URL[] {jarFile.toURI().toURL()});
         Class<?> loadedClass = loader.loadClass(className);
         return loadedClass.newInstance();
+    }
+
+    public static String getGroupId(DeployerRunner runner, String artifactId) {
+        String groupAndArtifactID = runner.getProductList().getProducts().stream()
+                .filter(s -> s.contains(artifactId))
+                .limit(1)
+                .collect(Collectors.toList())
+                .get(0);
+        return StringUtils.substringBefore(groupAndArtifactID, ":");
     }
 }

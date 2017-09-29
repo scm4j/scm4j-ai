@@ -15,19 +15,24 @@ public class DeployerEngine implements IProductDeployer {
 
     private final File workingFolder;
     private final String productListArtifactoryUrl;
-    private final AIRunner runner;
+    private final DeployerRunner runner;
 
     public DeployerEngine(File workingFolder, String productListArtifactoryUrl) {
         this.workingFolder = workingFolder;
         this.productListArtifactoryUrl = productListArtifactoryUrl;
-        runner = new AIRunner(workingFolder, productListArtifactoryUrl, null, null);
+        runner = new DeployerRunner(workingFolder, productListArtifactoryUrl);
     }
 
     @Override
     public void deploy(String productCoords) {
         Coords coords = new Coords(productCoords);
-        File jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
-                StringUtils.remove(coords.getExtension(), "@"));
+        File jarFile;
+        if (coords.getExtension().equals(""))
+            jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
+                    ".jar");
+        else
+            jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
+                    StringUtils.remove(coords.getExtension(), "@"));
     }
 
     @Override
@@ -40,28 +45,32 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @Override
-    public List<String> listAvailableProducts() {
-        return runner.getProductList().getProducts().stream()
+    public List<String> listProducts() {
+        return runner.getProductList().readFromProductList().get(ProductList.PRODUCTS).stream()
                 .map(s -> StringUtils.substringAfter(s, ":"))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<String> listAvailableProductVersions(String artifactId) {
-        String groupId = runner.getProductList().getProducts().stream()
-                .filter(s -> s.contains(artifactId))
-                .limit(1)
-                .collect(Collectors.toList())
-                .get(0);
-        return runner.getProductList().getProductVersions(StringUtils.substringBefore(groupId, ":"), artifactId);
-    }
-
-    public List<String> listDownloadedProducts() {
-        return runner.getProductList().getProductListEntry().get(ProductList.DOWNLOADED_PRODUCTS);
+    @SneakyThrows
+    public List<String> refreshProducts() {
+        runner.getProductList().downloadProductList();
+        return listProducts();
     }
 
     @Override
-    public List<String> listInstalledProducts() {
+    public List<String> listProductVersions(String artifactId) {
+        return runner.getProductList().readProductVersions(Utils.getGroupId(runner, artifactId),artifactId).get(artifactId);
+    }
+
+    @Override
+    public List<String> refreshProductVersions(String artifactId) {
+        runner.getProductList().refreshProductVersions(Utils.getGroupId(runner, artifactId),artifactId);
+        return listProductVersions(artifactId);
+    }
+
+    @Override
+    public List<String> listDeployedProducts() {
         return null;
     }
 
@@ -73,9 +82,9 @@ public class DeployerEngine implements IProductDeployer {
 
     @SneakyThrows
     private void installComponent(IInstallationProcedure procedure, File jarFile) {
-        for(IAction action : procedure.getActions()){
+        for (IAction action : procedure.getActions()) {
             Object obj = action.getInstallerClass().newInstance();
-            if(obj instanceof IComponentDeployer) {
+            if (obj instanceof IComponentDeployer) {
                 IComponentDeployer installer = (IComponentDeployer) obj;
                 installer.deploy();
             }

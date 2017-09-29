@@ -19,8 +19,8 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
 import org.scm4j.commons.Coords;
+import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.IComponent;
-import org.scm4j.deployer.api.IDeploymentContext;
 import org.scm4j.deployer.api.IProduct;
 import org.scm4j.deployer.api.IProductStructure;
 import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
@@ -31,10 +31,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Data
-public class AIRunner {
+public class DeployerRunner {
 
     private static final String REPOSITORY_FOLDER_NAME = "repository";
     private File tmpRepository;
@@ -42,39 +43,32 @@ public class AIRunner {
     private RepositorySystem system;
     private RepositorySystemSession session;
     private ProductList productList;
-    private IDeploymentContext depCtx;
+    private List<DeploymentContext> depCtx;
 
     @SneakyThrows
-    public AIRunner(File workingFolder, String productListArtifactoryUrl, String userName, String password) {
+    public DeployerRunner(File workingFolder, String productListArtifactoryUrl) {
         repository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
-        productList = new ProductList(repository);
-
         if (!repository.exists()) {
             Files.createDirectory(repository.toPath());
         }
-        productList.downloadProductList(productListArtifactoryUrl, userName, password);
+
+        ArtifactoryReader productListReader = ArtifactoryReader.getByUrl(productListArtifactoryUrl);
+        productList = new ProductList(repository, productListReader);
+        productList.readFromProductList();
 
         tmpRepository = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp");
         system = Utils.newRepositorySystem();
     }
 
     public File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
-        File res = queryLocal(groupId, artifactId, version, extension);
-        if (res == null) {
+        String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
+        File res = new File(repository, fileRelativePath);
+        if (!res.exists()) {
             res = download(groupId, artifactId, version, extension);
             if (res == null) {
                 throw new EArtifactNotFound(Utils.coordsToString(groupId, artifactId, version, extension)
                         + " is not found in all known repositories");
             }
-        }
-        return res;
-    }
-
-    public File queryLocal(String groupId, String artifactId, String version, String extension) {
-        String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
-        File res = new File(repository, fileRelativePath);
-        if (!res.exists()) {
-            return null;
         }
         return res;
     }
@@ -107,6 +101,8 @@ public class AIRunner {
             } catch (Exception e1) {
                 continue;
             }
+
+            depCtx = new ArrayList<>();
 
             List<Artifact> artifacts = getComponents(temp);
             Artifact productArtifact = new DefaultArtifact(groupId, artifactId, extension,version);
@@ -155,11 +151,19 @@ public class AIRunner {
     }
 
     private List<Artifact> getComponents(File productFile) {
-        return getProductStructure(productFile).getComponents().stream()
+        List<Artifact> artifacts = getProductStructure(productFile).getComponents().stream()
                 .map(IComponent::getArtifactCoords)
                 .map(Coords::toString)
                 .map(DefaultArtifact::new)
                 .collect(Collectors.toList());
+        Map<Coords, File> arts = artifacts.stream()
+                .map(artifact -> artifact.setFile(new File(repository, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
+                        artifact.getArtifactId(), artifact.getVersion(),
+                        artifact.getExtension()))))
+                .collect(Collectors.toMap(artifact -> new Coords(Utils.coordsToString(artifact.getGroupId(),
+                        artifact.getArtifactId(), artifact.getVersion(),artifact.getExtension())), Artifact::getFile ));
+        depCtx.add(new DeploymentContext());
+        return artifacts;
     }
 
     public IProductStructure getProductStructure(File productFile) {

@@ -21,8 +21,9 @@ public class ArtifactoryReader {
 	private final URL url;
 	private final String password;
 	private final String userName;
-	
-	public ArtifactoryReader(String url, String userName, String password) throws Exception {
+
+	@SneakyThrows
+	public ArtifactoryReader(String url, String userName, String password){
 		this.userName = userName;
 		this.password = password;
 		this.url = new URL(StringUtils.appendIfMissing(url, "/"));
@@ -38,8 +39,9 @@ public class ArtifactoryReader {
 			Versioning vers = meta.getVersioning();
 			return vers.getRelease();
 	}
-	
-	public InputStream getContentStream(URL url) throws Exception {
+
+	@SneakyThrows
+	public InputStream getContentStream(URL url) {
 		if (url.getProtocol().equals("file")) {
 			return url.openStream();
 		} else {
@@ -51,16 +53,19 @@ public class ArtifactoryReader {
 			return con.getInputStream();
 		}
 	}
-	
-	public InputStream getContentStream(String groupId, String artifactId, String version, String extension) throws Exception {
+
+	@SneakyThrows
+	public InputStream getContentStream(String groupId, String artifactId, String version, String extension) {
 		return getContentStream(getProductUrl(groupId, artifactId, version, extension));
 	}
 
-	public URL getProductMetaDataURL(String groupId, String artifactId) throws MalformedURLException {
+	@SneakyThrows
+	public URL getProductMetaDataURL(String groupId, String artifactId) {
 		return new URL(new URL(url, Utils.coordsToUrlStructure(groupId, artifactId) + "/"), METADATA_FILE_NAME);
 	}
 
-	public static ArtifactoryReader getByUrl(String repoUrl) throws Exception {
+	@SneakyThrows
+	public static ArtifactoryReader getByUrl(String repoUrl) {
 		URL url = new URL(repoUrl);
 		String userInfoStr = url.getUserInfo();
 		if (userInfoStr != null) {
@@ -73,7 +78,8 @@ public class ArtifactoryReader {
 		return new ArtifactoryReader(repoUrl, null, null);
 	}
 
-	public URL getProductUrl(String groupId, String artifactId, String version, String extension) throws Exception {
+	@SneakyThrows
+	public URL getProductUrl(String groupId, String artifactId, String version, String extension) {
 		return new URL(this.url, Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension)
 				.replace("\\",  "/"));
 	}

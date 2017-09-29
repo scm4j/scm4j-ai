@@ -23,23 +23,105 @@ public class ProductList {
     private ArtifactoryReader productListReader;
     private List<ArtifactoryReader> repos;
     private Set<String> products;
+    private List<String> versions;
     private List<String> downloadedProducts;
     private File localRepo;
     private File localProductList;
-    private Map<String, ArrayList<String>> productListEntry;
+    private File versionsYml;
+    private Map<String, List<String>> productListEntry;
+    private Map<String, List<String>> productsVersions;
 
     public static final String PRODUCT_LIST_GROUP_ID = "org.scm4j.ai";
     public static final String PRODUCT_LIST_ARTIFACT_ID = "product-list";
-    public static final String REPOSITORIES = "repositories";
-    public static final String PRODUCTS = "available products";
+    public static final String REPOSITORIES = "Repositories";
+    public static final String PRODUCTS = "Products";
+    public static final String VERSIONS = "Versions";
+    public static final String VERSIONS_ARTIFACT_ID = "products-versions.yml";
     public static final String DOWNLOADED_PRODUCTS = "downloaded products";
 
-    public ProductList(File localRepo) {
+    public ProductList(File localRepo, ArtifactoryReader productListReader) {
         this.localRepo = localRepo;
+        this.productListReader = productListReader;
     }
 
-    public void downloadProductList(String productListArtifactoryUrl, String userName, String password) throws Exception {
-        productListReader = new ArtifactoryReader(productListArtifactoryUrl, userName, password);
+    @SneakyThrows
+    public Map<String, List<String>> readFromProductList() {
+        String productListReleaseVersion = getLocalProductListReleaseVersion();
+        if (productListReleaseVersion == null) {
+            downloadProductList();
+            loadProductListEntry();
+            downloadProductsVersions();
+            return productListEntry;
+        } else {
+            localProductList = new File(localRepo, Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
+                    productListReleaseVersion, ".yml"));
+            versionsYml = new File(getLocalProductList().getParent(), VERSIONS_ARTIFACT_ID);
+            loadProductListEntry();
+            return productListEntry;
+        }
+    }
+
+    public Map<String, List<String>> readProductVersions(String groupId, String artifactId) {
+        if(versionsYml.isFile()) {
+            loadProductVersions(artifactId);
+            return productsVersions;
+        } else {
+            downloadSingleProjectVersions(groupId, artifactId);
+            loadProductVersions(artifactId);
+            return productsVersions;
+        }
+    }
+
+    private void downloadProductsVersions() {
+        versionsYml = new File(getLocalProductList().getParent(), VERSIONS_ARTIFACT_ID);
+        productsVersions = new HashMap<>();
+        for (String product : products) {
+            String artifactId = StringUtils.substringAfter(product, ":");
+            List<String> versions = getProductVersions(StringUtils.substringBefore(product, ":"),
+                    artifactId);
+            productsVersions.put(artifactId, versions);
+        }
+        yamlWriter(productsVersions, versionsYml);
+    }
+
+    private void downloadSingleProjectVersions(String groupId, String artifactId) {
+        productsVersions = readYml(versionsYml);
+        List<String> versions = getProductVersions(groupId, artifactId);
+        productsVersions.get(artifactId).clear();
+        productsVersions.put(artifactId, versions);
+        yamlWriter(productsVersions, versionsYml);
+    }
+
+    private void loadProductVersions(String artifactId) {
+        productsVersions = readYml(versionsYml);
+        versions = new ArrayList<>();
+        versions.addAll(productsVersions.get(artifactId));
+    }
+
+    public void refreshProductVersions(String groupId, String artifactId) {
+        productsVersions = readYml(versionsYml);
+        productsVersions.get(artifactId).clear();
+        productsVersions.get(artifactId).addAll(getProductVersions(groupId, artifactId));
+        yamlWriter(productsVersions, versionsYml);
+    }
+
+    @SneakyThrows
+    public String getLocalProductListReleaseVersion() {
+        File metadataFolder = new File(localRepo, Utils.coordsToFolderStructure(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID));
+        File metadataFile = new File(metadataFolder, ArtifactoryReader.METADATA_FILE_NAME);
+        if (metadataFile.exists()) {
+            MetadataXpp3Reader reader = new MetadataXpp3Reader();
+            @Cleanup
+            FileInputStream fis = new FileInputStream(metadataFile);
+            Metadata meta = reader.read(fis);
+            Versioning vers = meta.getVersioning();
+            return vers.getRelease();
+        } else {
+            return null;
+        }
+    }
+
+    public void downloadProductList() throws Exception {
         String productListReleaseVersion = productListReader.getProductListReleaseVersion();
         URL remoteProductListUrl = productListReader.getProductUrl(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
                 productListReleaseVersion, ".yml");
@@ -51,33 +133,29 @@ public class ProductList {
         }
         FileUtils.copyURLToFile(remoteProductListUrl, localProductList);
         writeProductListMetadata(productListReleaseVersion);
-        loadProductListEntry();
+    }
+
+    private void loadProductListEntry() {
+        productListEntry = readYml(localProductList);
+        repos = new ArrayList<>();
+        productListEntry.get(REPOSITORIES).forEach(name -> repos.add(ArtifactoryReader.getByUrl(name)));
+        products = new HashSet<>();
+        products.addAll(productListEntry.get(PRODUCTS));
     }
 
     @SuppressWarnings("unchecked")
     @SneakyThrows
-    private void loadProductListEntry() {
+    private Map<String, List<String>> readYml(File input) {
         @Cleanup
-        FileReader reader = new FileReader(localProductList);
+        FileReader reader = new FileReader(input);
         Yaml yaml = new Yaml();
-        productListEntry = yaml.loadAs(reader, HashMap.class);
-        List<String> reposNames = productListEntry.get(REPOSITORIES);
-        for (String repoName : reposNames) {
-            if (repos == null) {
-                repos = new ArrayList<>();
-                repos.add(ArtifactoryReader.getByUrl(repoName));
-            } else {
-                repos.add(ArtifactoryReader.getByUrl(repoName));
-            }
-        }
-        products = new HashSet<>();
-        products.addAll(productListEntry.get(PRODUCTS));
+        return yaml.loadAs(reader, HashMap.class);
     }
 
     @SneakyThrows
     public void appendLocalRepo() {
         productListEntry.get(REPOSITORIES).add(localRepo.toURI().toURL().toString());
-        yamlWriter(productListEntry);
+        yamlWriter(productListEntry, localProductList);
     }
 
     public void markDownloadedProduct(String artifactId, String version) {
@@ -87,13 +165,13 @@ public class ProductList {
                 .findFirst().orElse(null);
         productListEntry.computeIfAbsent(DOWNLOADED_PRODUCTS, list -> new ArrayList<>())
                 .add(newProduct);
-        yamlWriter(productListEntry);
+        yamlWriter(productListEntry, localProductList);
     }
 
     @SneakyThrows
-    private void yamlWriter(Map<String, ArrayList<String>> entry) {
+    private void yamlWriter(Map<String, List<String>> entry, File output) {
         @Cleanup
-        FileWriter writer = new FileWriter(localProductList);
+        FileWriter writer = new FileWriter(output);
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         Yaml yaml = new Yaml(options);

@@ -19,15 +19,13 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
 import org.scm4j.commons.Coords;
-import org.scm4j.deployer.api.DeploymentContext;
-import org.scm4j.deployer.api.IComponent;
-import org.scm4j.deployer.api.IProduct;
-import org.scm4j.deployer.api.IProductStructure;
+import org.scm4j.deployer.api.*;
 import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +42,8 @@ public class DeployerRunner {
     private RepositorySystemSession session;
     private ProductList productList;
     private List<DeploymentContext> depCtx;
+
+    private static final String DEFAULT_DEPLOYMENT_URL = "file://localhost/C:/tools/unTILL";
 
     @SneakyThrows
     public DeployerRunner(File workingFolder, String productListArtifactoryUrl) {
@@ -128,10 +128,19 @@ public class DeployerRunner {
                 (new RemoteRepository.Builder("", "default", artifactoryReader.toString()).build()));
         DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
         for (Artifact artifact : artifacts) {
+            DeploymentContext context = new DeploymentContext(artifact.getArtifactId());
+            depCtx.add(context);
             collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
             DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
             List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
             artifactResults.forEach((artifactResult) -> components.add(artifactResult.getArtifact()));
+            Map<Coords, File> arts = components.stream()
+                    .map(component -> component.setFile(new File(repository, Utils.coordsToRelativeFilePath(component.getGroupId(),
+                            component.getArtifactId(), component.getVersion(),
+                            component.getExtension()))))
+                    .collect(Collectors.toMap(component -> new Coords(Utils.coordsToString(component.getGroupId(),
+                            component.getArtifactId(), component.getVersion(),component.getExtension())), Artifact::getFile ));
+            context.setArtifacts(arts);
         }
         return components;
     }
@@ -150,20 +159,20 @@ public class DeployerRunner {
         FileUtils.deleteDirectory(tmpRepository);
     }
 
+    @SneakyThrows
+    private IDeploymentContext collectDeploymentContext(IComponent component) {
+        Coords coords = component.getArtifactCoords();
+        DeploymentContext deploymentContext = new DeploymentContext(coords.toString());
+        deploymentContext.setDeploymentURL(new URL(DEFAULT_DEPLOYMENT_URL));
+        return null;
+    }
+
     private List<Artifact> getComponents(File productFile) {
-        List<Artifact> artifacts = getProductStructure(productFile).getComponents().stream()
+        return getProductStructure(productFile).getComponents().stream()
                 .map(IComponent::getArtifactCoords)
                 .map(Coords::toString)
                 .map(DefaultArtifact::new)
                 .collect(Collectors.toList());
-        Map<Coords, File> arts = artifacts.stream()
-                .map(artifact -> artifact.setFile(new File(repository, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
-                        artifact.getArtifactId(), artifact.getVersion(),
-                        artifact.getExtension()))))
-                .collect(Collectors.toMap(artifact -> new Coords(Utils.coordsToString(artifact.getGroupId(),
-                        artifact.getArtifactId(), artifact.getVersion(),artifact.getExtension())), Artifact::getFile ));
-        depCtx.add(new DeploymentContext());
-        return artifacts;
     }
 
     public IProductStructure getProductStructure(File productFile) {

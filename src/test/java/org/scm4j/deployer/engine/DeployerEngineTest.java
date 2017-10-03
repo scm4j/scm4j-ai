@@ -29,6 +29,7 @@ public class DeployerEngineTest {
     private static final String TEST_AXIS_GROUP_ID = "org.apache.axis";
     private static final String TEST_ARTIFACTORY_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
             .getPath();
+    private static final String untillCoord = "eu.untill:unTILL:123.4@jar";
 
     private static AITestEnvironment env = new AITestEnvironment();
 
@@ -183,10 +184,10 @@ public class DeployerEngineTest {
 
     @Test
     public void testDownloadAndDeployProductFromLocalHost() throws Exception {
-        DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
-        File product = runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
-        runner = new DeployerRunner(env.getBaseTestFolder(), runner.getRepository().toURI().toURL().toString());
-        File product1 = runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
+        DeployerEngine engine = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
+        File product = engine.download(untillCoord);
+        engine = new DeployerEngine(env.getBaseTestFolder(), engine.getRunner().getRepository().toURI().toURL().toString());
+        File product1 = engine.download(untillCoord);
         assertEquals(FileUtils.readFileToString(product, Charset.forName("UTF-8")), FileUtils.readFileToString(product1, Charset.forName("UTF-8")));
     }
 
@@ -220,33 +221,6 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testAvailableProducts() {
-        DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
-        assertEquals(de.listProducts(), Arrays.asList("unTILL"));
-    }
-
-    @Test
-    public void testAvailableVersions() {
-        DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
-        assertEquals(de.listProductVersions("unTILL"), Arrays.asList("123.4", "124.5"));
-    }
-
-    //TODO rewrite
-    @Ignore
-    public void testDownloadedProducts() {
-        DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
-        de.deploy(TEST_UNTILL_GROUP_ID + ":" + untillArtifactId + ":123.4@jar");
-        assertTrue(de.getRunner().getProductList().getProductListEntry().get(ProductList.DOWNLOADED_PRODUCTS)
-                .contains(untillArtifactId + "-123.4"));
-        de.deploy(TEST_UNTILL_GROUP_ID + ":" + untillArtifactId + ":124.5@jar");
-        assertTrue(de.getRunner().getProductList().getProductListEntry().get(ProductList.DOWNLOADED_PRODUCTS)
-                .contains(untillArtifactId + "-123.4"));
-        assertTrue(de.getRunner().getProductList().getProductListEntry().get(ProductList.DOWNLOADED_PRODUCTS)
-                .contains(untillArtifactId + "-124.5"));
-
-    }
-
-    @Test
     public void testDownloadAndRefreshProducts() throws Exception {
         DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
         assertEquals(de.listProducts(), Arrays.asList("unTILL"));
@@ -269,7 +243,10 @@ public class DeployerEngineTest {
     @Test
     public void testDownloadAndRefreshProductsVersions() throws Exception {
         DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
-        assertEquals(de.listProductVersions(untillArtifactId), Arrays.asList("123.4", "124.5"));
+        Map<String, Boolean> testMap = new LinkedHashMap<>();
+        testMap.put("123.4", false);
+        testMap.put("124.5", false);
+        assertEquals(de.listProductVersions(untillArtifactId), testMap);
         //changing product versions
         Map<String, ArrayList<String>> entry = new HashMap<>();
         entry.put(untillArtifactId, new ArrayList<>(Arrays.asList("777")));
@@ -281,8 +258,18 @@ public class DeployerEngineTest {
             String yamlOtput = yaml.dump(entry);
             writer.write(yamlOtput);
         }
-        assertEquals(de.listProductVersions(untillArtifactId), Arrays.asList("777"));
+        testMap.clear();
+        testMap.put("777", false);
+        assertEquals(de.listProductVersions(untillArtifactId), testMap);
         //reload version of specific product
-        assertEquals(de.refreshProductVersions(untillArtifactId),Arrays.asList("123.4", "124.5"));
+        testMap.clear();
+        testMap.put("123.4", false);
+        testMap.put("124.5", false);
+        assertEquals(de.refreshProductVersions(untillArtifactId),testMap);
+        de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
+        assertEquals(de.listProductVersions(untillArtifactId), testMap);
+        de.download(untillCoord);
+        testMap.replace("123.4", false, true);
+        assertEquals(de.listProductVersions(untillArtifactId), testMap);
     }
 }

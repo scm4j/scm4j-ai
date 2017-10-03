@@ -7,7 +7,9 @@ import org.scm4j.commons.Coords;
 import org.scm4j.deployer.api.*;
 
 import java.io.File;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Data
@@ -25,14 +27,17 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     public void deploy(String productCoords) {
+
+    }
+
+    @Override
+    public File download(String productCoords) {
         Coords coords = new Coords(productCoords);
-        File jarFile;
-        if (coords.getExtension().equals(""))
-            jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
-                    ".jar");
-        else
-            jarFile = runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
-                    StringUtils.remove(coords.getExtension(), "@"));
+        String defaultExtension = ".jar";
+        if (!coords.getExtension().equals(""))
+            defaultExtension = StringUtils.remove(coords.getExtension(), "@");
+        return runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
+                defaultExtension);
     }
 
     @Override
@@ -59,12 +64,21 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @Override
-    public List<String> listProductVersions(String artifactId) {
-        return runner.getProductList().readProductVersions(Utils.getGroupId(runner, artifactId),artifactId).get(artifactId);
+    public Map<String, Boolean> listProductVersions(String artifactId) {
+        String groupId = Utils.getGroupId(runner, artifactId);
+        List<String> versions =  runner.getProductList().readProductVersions(groupId,artifactId).get(artifactId);
+        Map<String, Boolean> downloadedVersions = new LinkedHashMap<>();
+        versions.forEach( version -> downloadedVersions.put(version, versionExists(groupId, artifactId, version)));
+        return downloadedVersions;
+    }
+
+    private Boolean versionExists(String groupId, String artifactId, String version) {
+        File productVersionFolder = new File(runner.getRepository(), Utils.coordsToFolderStructure(groupId, artifactId, version));
+        return productVersionFolder.exists();
     }
 
     @Override
-    public List<String> refreshProductVersions(String artifactId) {
+    public Map<String, Boolean> refreshProductVersions(String artifactId) {
         runner.getProductList().refreshProductVersions(Utils.getGroupId(runner, artifactId),artifactId);
         return listProductVersions(artifactId);
     }

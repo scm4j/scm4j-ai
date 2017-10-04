@@ -33,11 +33,11 @@ public class DeployerEngine implements IProductDeployer {
     @Override
     public File download(String productCoords) {
         Coords coords = new Coords(productCoords);
-        String defaultExtension = ".jar";
+        String extension = ".jar";
         if (!coords.getExtension().equals(""))
-            defaultExtension = StringUtils.remove(coords.getExtension(), "@");
+            extension = StringUtils.remove(coords.getExtension(), "@");
         return runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
-                defaultExtension);
+                extension);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @SneakyThrows
-    private void installComponent(IInstallationProcedure procedure, File jarFile) {
+    private void installComponent(IInstallationProcedure procedure) {
         for (IAction action : procedure.getActions()) {
             Object obj = action.getInstallerClass().newInstance();
             if (obj instanceof IComponentDeployer) {

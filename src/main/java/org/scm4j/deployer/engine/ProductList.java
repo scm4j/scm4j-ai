@@ -158,16 +158,6 @@ public class ProductList {
         yamlWriter(productListEntry, localProductList);
     }
 
-    public void markDownloadedProduct(String artifactId, String version) {
-        String newProduct = productListEntry.get(PRODUCTS).stream()
-                .filter(s -> s.contains(artifactId))
-                .map(s -> s = StringUtils.substringAfter(s, ":") + "-" + version)
-                .findFirst().orElse(null);
-        productListEntry.computeIfAbsent(DOWNLOADED_PRODUCTS, list -> new ArrayList<>())
-                .add(newProduct);
-        yamlWriter(productListEntry, localProductList);
-    }
-
     @SneakyThrows
     private void yamlWriter(Map<String, List<String>> entry, File output) {
         @Cleanup

@@ -2,6 +2,8 @@ package org.scm4j.deployer.engine;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.*;
 import org.mockito.Mockito;
 import org.scm4j.deployer.api.IComponentDeployer;
@@ -178,8 +180,6 @@ public class DeployerEngineTest {
         //don't download second time
         testFile = mockedRunner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
         assertTrue(testFile.exists());
-        Mockito.verify(mockedRunner, Mockito.times(1))
-                .download(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
     }
 
     @Test
@@ -272,4 +272,5 @@ public class DeployerEngineTest {
         testMap.replace("123.4", false, true);
         assertEquals(de.listProductVersions(untillArtifactId), testMap);
     }
+
 }

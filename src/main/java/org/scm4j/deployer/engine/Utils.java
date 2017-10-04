@@ -73,8 +73,6 @@ public class Utils {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
         LocalRepository localRepo = new LocalRepository(repository);
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
-
-
         return session;
     }
 

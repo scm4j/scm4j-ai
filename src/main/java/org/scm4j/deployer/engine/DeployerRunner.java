@@ -42,7 +42,7 @@ public class DeployerRunner {
     private RepositorySystem system;
     private RepositorySystemSession session;
     private ProductList productList;
-    private List<IDeploymentContext> depCtx;
+    private Map<String, DeploymentContext> depCtx;
 
     private static final String DEFAULT_DEPLOYMENT_URL = "file://localhost/C:/tools/unTILL";
 
@@ -63,7 +63,7 @@ public class DeployerRunner {
     public File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
         String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
         File res = new File(repository, fileRelativePath);
-        depCtx = new ArrayList<>();
+        depCtx = new HashMap<>();
         if(res.exists()) {
             List<Artifact> artifacts = getComponents(res);
             resolveDependencies(artifacts);
@@ -120,7 +120,7 @@ public class DeployerRunner {
         return null;
     }
 
-
+    //TODO Log's for downloading deps
     @SneakyThrows
     private List<Artifact> resolveDependencies(List<Artifact> artifacts) {
         List<Artifact> components = new ArrayList<>();
@@ -134,7 +134,7 @@ public class DeployerRunner {
             DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
             List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
             artifactResults.forEach((artifactResult) -> components.add(artifactResult.getArtifact()));
-            depCtx.add(getDeploymentContext(artifact, components));
+            depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, components));
         }
         return components;
     }
@@ -167,10 +167,9 @@ public class DeployerRunner {
         FileUtils.deleteDirectory(tmpRepository);
     }
 
-    private List<Artifact> getComponents(File productFile) {
+    public List<Artifact> getComponents(File productFile) {
         return getProductStructure(productFile).getComponents().stream()
                 .map(IComponent::getArtifactCoords)
-                .map(DefaultArtifact::new)
                 .collect(Collectors.toList());
     }
 

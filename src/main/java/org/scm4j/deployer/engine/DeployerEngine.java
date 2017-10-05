@@ -3,7 +3,8 @@ package org.scm4j.deployer.engine;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
-import org.scm4j.commons.Coords;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.scm4j.deployer.api.*;
 
 import java.io.File;
@@ -27,17 +28,24 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     public void deploy(String productCoords) {
-
+        Artifact artifact = new DefaultArtifact(productCoords);
+        File product = download(productCoords);
+        List<IComponent> components = runner.getProductStructure(product).getComponents();
+        for(IComponent component : components) {
+            try {
+                installComponent(component);
+            } catch (Exception e) {
+                System.err.println("Can't install component " + component.getArtifactCoords().getArtifactId());
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
     public File download(String productCoords) {
-        Coords coords = new Coords(productCoords);
-        String extension = ".jar";
-        if (!coords.getExtension().equals(""))
-            extension = StringUtils.remove(coords.getExtension(), "@");
-        return runner.get(coords.getGroupId(), coords.getArtifactId(), coords.getVersion().toString(),
-                extension);
+        Artifact artifact = new DefaultArtifact(productCoords);
+        return runner.get(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
+                artifact.getExtension());
     }
 
     @Override
@@ -51,6 +59,7 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     public List<String> listProducts() {
+        getRunner().getProductList().readFromProductList();
         return runner.getProductList().readFromProductList().get(ProductList.PRODUCTS).stream()
                 .map(s -> StringUtils.substringAfter(s, ":"))
                 .collect(Collectors.toList());
@@ -88,18 +97,18 @@ public class DeployerEngine implements IProductDeployer {
         return null;
     }
 
-    private List<IInstallationProcedure> getInstallationProcedures(File productFile) throws Exception {
-        return runner.getProductStructure(productFile).getComponents().stream()
-                .map(IComponent::getInstallationProcedure)
-                .collect(Collectors.toList());
-    }
-
     @SneakyThrows
-    private void installComponent(IInstallationProcedure procedure) {
+    private void installComponent(IComponent component) {
+        IInstallationProcedure procedure = component.getInstallationProcedure();
+        Map<Class, Map<String, Object>> params = procedure.getActionsParams();
+        String artifactId = component.getArtifactCoords().getArtifactId();
+        DeploymentContext context = runner.getDepCtx().get(artifactId);
+        context.setParams(params);
         for (IAction action : procedure.getActions()) {
             Object obj = action.getInstallerClass().newInstance();
             if (obj instanceof IComponentDeployer) {
                 IComponentDeployer installer = (IComponentDeployer) obj;
+                installer.init(context);
                 installer.deploy();
             }
         }

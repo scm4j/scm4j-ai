@@ -31,7 +31,7 @@ public class DeployerEngineTest {
     private static final String TEST_AXIS_GROUP_ID = "org.apache.axis";
     private static final String TEST_ARTIFACTORY_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
             .getPath();
-    private static final String untillCoord = "eu.untill:unTILL:123.4@jar";
+    private static final String untillCoord = "eu.untill:unTILL:123.4";
 
     private static AITestEnvironment env = new AITestEnvironment();
 
@@ -283,6 +283,11 @@ public class DeployerEngineTest {
         de.download(untillCoord);
         testMap.replace("123.4", false, true);
         assertEquals(de.listProductVersions(untillArtifactId), testMap);
+    }
+
+    @Test
+    public void testCollectDeploymentContext() throws Exception {
+
     }
 
 }

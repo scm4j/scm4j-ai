@@ -85,6 +85,7 @@ public class DeployerEngineTest {
     @Test
     public void testGetProducts() throws IOException {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        runner.getProductList().readFromProductList();
         Set<String> products = runner.getProductList().getProducts();
         assertNotNull(products);
         assertTrue(products.containsAll(Arrays.asList(
@@ -95,6 +96,7 @@ public class DeployerEngineTest {
     @Test
     public void testGetVersions() throws Exception {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        runner.getProductList().readFromProductList();
         List<String> versions = runner.getProductList().getProductVersions(TEST_UNTILL_GROUP_ID, untillArtifactId);
         assertNotNull(versions);
         assertTrue(versions.containsAll(Arrays.asList(
@@ -115,6 +117,7 @@ public class DeployerEngineTest {
     @Test
     public void testUnknownArtifact() throws Exception {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        runner.getProductList().readFromProductList();
         try {
             runner.getProductList().getProductVersions("eu.untill", "unknown artifact");
             fail();
@@ -131,6 +134,7 @@ public class DeployerEngineTest {
     @Test
     public void testUnknownVersion() {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        runner.getProductList().readFromProductList();
         try {
             runner.get(TEST_UNTILL_GROUP_ID, ublArtifactId, "unknown version", ".jar");
             fail();
@@ -154,6 +158,7 @@ public class DeployerEngineTest {
     @Test
     public void testLoadRepos() {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        runner.getProductList().readFromProductList();
         List<ArtifactoryReader> repos = runner.getProductList().getRepos();
         assertNotNull(repos);
         repos.containsAll(Arrays.asList(
@@ -164,6 +169,7 @@ public class DeployerEngineTest {
     @Test
     public void testDownloadAndDeployProduct() throws Exception {
         DeployerRunner mockedRunner = Mockito.spy(new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url()));
+        mockedRunner.getProductList().readFromProductList();
         File testFile = mockedRunner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
         assertEquals(FileUtils.readFileToString(testFile, Charset.forName("UTF-8")), FileUtils.readFileToString(new File(env.getArtifactory1Folder(),
                 Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
@@ -185,8 +191,10 @@ public class DeployerEngineTest {
     @Test
     public void testDownloadAndDeployProductFromLocalHost() throws Exception {
         DeployerEngine engine = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
+        engine.listProducts();
         File product = engine.download(untillCoord);
         engine = new DeployerEngine(env.getBaseTestFolder(), engine.getRunner().getRepository().toURI().toURL().toString());
+        engine.listProducts();
         File product1 = engine.download(untillCoord);
         assertEquals(FileUtils.readFileToString(product, Charset.forName("UTF-8")), FileUtils.readFileToString(product1, Charset.forName("UTF-8")));
     }
@@ -210,12 +218,14 @@ public class DeployerEngineTest {
     @Test
     public void testAppendRepos() throws Exception {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        runner.getProductList().readFromProductList();
         List<ArtifactoryReader> remoteRepos = runner.getProductList().getRepos();
         assertTrue(remoteRepos.size() == 2);
         assertEquals(remoteRepos.get(0).toString(),env.getArtifactory1Url());
         assertEquals(remoteRepos.get(1).toString(), env.getArtifactory2Url());
         File product = runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
         DeployerRunner runner1 = new DeployerRunner(env.getBaseTestFolder(), runner.getRepository().toURI().toURL().toString());
+        runner1.getProductList().readFromProductList();
         List<ArtifactoryReader> localRepo = runner1.getProductList().getRepos();
         assertEquals(localRepo.get(2).toString(), runner.getRepository().toURI().toURL().toString());
     }
@@ -243,6 +253,7 @@ public class DeployerEngineTest {
     @Test
     public void testDownloadAndRefreshProductsVersions() throws Exception {
         DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
+        de.getRunner().getProductList().readFromProductList();
         Map<String, Boolean> testMap = new LinkedHashMap<>();
         testMap.put("123.4", false);
         testMap.put("124.5", false);
@@ -267,6 +278,7 @@ public class DeployerEngineTest {
         testMap.put("124.5", false);
         assertEquals(de.refreshProductVersions(untillArtifactId),testMap);
         de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
+        de.getRunner().getProductList().readFromProductList();
         assertEquals(de.listProductVersions(untillArtifactId), testMap);
         de.download(untillCoord);
         testMap.replace("123.4", false, true);

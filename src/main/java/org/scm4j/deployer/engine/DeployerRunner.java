@@ -55,7 +55,6 @@ public class DeployerRunner {
 
         ArtifactoryReader productListReader = ArtifactoryReader.getByUrl(productListArtifactoryUrl);
         productList = new ProductList(repository, productListReader);
-        productList.readFromProductList();
 
         tmpRepository = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp");
         system = Utils.newRepositorySystem();

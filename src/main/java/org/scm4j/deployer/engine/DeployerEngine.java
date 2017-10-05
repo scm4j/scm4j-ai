@@ -51,6 +51,7 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     public List<String> listProducts() {
+        getRunner().getProductList().readFromProductList();
         return runner.getProductList().readFromProductList().get(ProductList.PRODUCTS).stream()
                 .map(s -> StringUtils.substringAfter(s, ":"))
                 .collect(Collectors.toList());

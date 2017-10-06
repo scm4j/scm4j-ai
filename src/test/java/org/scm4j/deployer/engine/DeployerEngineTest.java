@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.mockito.Mockito;
+import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
@@ -80,7 +81,7 @@ public class DeployerEngineTest {
                 untillArtifactId, "123.4", ".jar"));
     }
 
-    @org.junit.Test
+    @Test
     public void testGetProducts() throws IOException {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
@@ -169,9 +170,9 @@ public class DeployerEngineTest {
         DeployerRunner mockedRunner = Mockito.spy(new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url()));
         mockedRunner.getProductList().readFromProductList();
         File testFile = mockedRunner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
-        assertEquals(FileUtils.readFileToString(testFile, Charset.forName("UTF-8")), FileUtils.readFileToString(new File(env.getArtifactory1Folder(),
+        assertTrue(FileUtils.contentEquals(testFile,new File(env.getArtifactory1Folder(),
                 Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
-                        untillArtifactId, "123.4", "jar")), Charset.forName("UTF-8")));
+                        untillArtifactId, "123.4", "jar"))));
         testFile = new File(mockedRunner.getRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
                 "22.2", ".war"));
         assertTrue(testFile.exists());
@@ -194,7 +195,7 @@ public class DeployerEngineTest {
         engine = new DeployerEngine(env.getBaseTestFolder(), engine.getRunner().getRepository().toURI().toURL().toString());
         engine.listProducts();
         File product1 = engine.download(untillCoord);
-        assertEquals(FileUtils.readFileToString(product, Charset.forName("UTF-8")), FileUtils.readFileToString(product1, Charset.forName("UTF-8")));
+        assertTrue(FileUtils.contentEquals(product, product1));
     }
 
     @Test
@@ -285,7 +286,10 @@ public class DeployerEngineTest {
 
     @Test
     public void testCollectDeploymentContext() throws Exception {
-
+        DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
+        de.listProducts();
+        de.download(untillCoord);
+        DeploymentContext ctx = de.getRunner().getDepCtx().get("unTILL");
     }
 
 }

@@ -12,6 +12,7 @@ public class ProductStructureData {
         productStructure = ProductStructure.create()
                 .addComponent("eu.untill:UBL:war:22.2")
                 .addAction(Executor.class)
+                .addParam("1", "2")
                 .parent()
                 .parent();
     }

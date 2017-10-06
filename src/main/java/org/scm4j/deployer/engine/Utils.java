@@ -13,6 +13,8 @@ import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
+import org.scm4j.deployer.engine.loggers.ConsoleRepositoryListener;
+import org.scm4j.deployer.engine.loggers.ConsoleTransferListener;
 
 import java.io.File;
 import java.net.URL;
@@ -73,6 +75,8 @@ public class Utils {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
         LocalRepository localRepo = new LocalRepository(repository);
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
+        session.setTransferListener(new ConsoleTransferListener());
+        session.setRepositoryListener(new ConsoleRepositoryListener());
         return session;
     }
 

@@ -288,9 +288,4 @@ public class DeployerEngineTest {
 
     }
 
-    @Test
-    public void testA() throws Exception {
-        DeployerEngine de = new DeployerEngine(env.getEnvFolder(),"https://dev.untill.com/artifactory/repo");
-        de.listProducts();
-    }
 }

@@ -28,7 +28,6 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     public void deploy(String productCoords) {
-        Artifact artifact = new DefaultArtifact(productCoords);
         File product = download(productCoords);
         List<IComponent> components = runner.getProductStructure(product).getComponents();
         for(IComponent component : components) {

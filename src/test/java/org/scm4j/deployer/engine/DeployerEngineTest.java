@@ -2,8 +2,6 @@ package org.scm4j.deployer.engine;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.*;
 import org.mockito.Mockito;
 import org.scm4j.deployer.api.IComponentDeployer;
@@ -82,7 +80,7 @@ public class DeployerEngineTest {
                 untillArtifactId, "123.4", ".jar"));
     }
 
-    @Test
+    @org.junit.Test
     public void testGetProducts() throws IOException {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
@@ -290,4 +288,9 @@ public class DeployerEngineTest {
 
     }
 
+    @Test
+    public void testA() throws Exception {
+        DeployerEngine de = new DeployerEngine(env.getEnvFolder(),"https://dev.untill.com/artifactory/repo");
+        de.listProducts();
+    }
 }

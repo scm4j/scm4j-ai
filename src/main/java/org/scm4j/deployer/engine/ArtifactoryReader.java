@@ -8,6 +8,7 @@ import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 
+import javax.net.ssl.HttpsURLConnection;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -48,7 +49,8 @@ public class ArtifactoryReader {
 			HttpURLConnection con = (HttpURLConnection) url.openConnection();
 			con.setDoOutput(true);
 			con.setRequestMethod("GET");
-			con.setRequestProperty("Authorization", "Basic " 
+			if(userName != null && password != null)
+			con.setRequestProperty("Authorization", "Basic "
 					+ Base64.encodeBase64String((userName + ":" + password).getBytes()));
 			return con.getInputStream();
 		}

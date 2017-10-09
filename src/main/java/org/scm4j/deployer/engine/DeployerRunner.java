@@ -24,6 +24,7 @@ import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
 import org.scm4j.deployer.api.*;
 import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
+import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -61,6 +62,9 @@ public class DeployerRunner {
     }
 
     public File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
+        if(productList.getRepos() == null || productList.getProducts() == null) {
+            throw new EProductListEntryNotFound("Product list doesn't loaded");
+        }
         String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
         File res = new File(repository, fileRelativePath);
         depCtx = new HashMap<>();
@@ -107,9 +111,9 @@ public class DeployerRunner {
             }
 
             List<Artifact> artifacts = getComponents(temp);
-            Artifact productArtifact = new DefaultArtifact(groupId, artifactId, extension, version);
-            artifacts.add(productArtifact);
             artifacts = resolveDependencies(artifacts);
+            Artifact productArtifact = new DefaultArtifact(groupId, artifactId, extension, version);
+            artifacts.addAll(resolveDependencies(Collections.singletonList(productArtifact)));
             saveComponents(artifacts);
             File localMetadataFolder = new File(repository, Utils.coordsToFolderStructure(groupId, artifactId));
             File localMetadata = new File(localMetadataFolder, ArtifactoryReader.LOCAL_METADATA_FILE_NAME);
@@ -120,7 +124,6 @@ public class DeployerRunner {
         return null;
     }
 
-    //TODO Log's for downloading deps
     @SneakyThrows
     private List<Artifact> resolveDependencies(List<Artifact> artifacts) {
         List<Artifact> components = new ArrayList<>();
@@ -147,8 +150,7 @@ public class DeployerRunner {
         Map<String, File> arts = deps.stream()
                 .map(art -> art.setFile(new File(repository, Utils.coordsToRelativeFilePath(art.getGroupId(),
                         art.getArtifactId(), art.getVersion(), art.getExtension()))))
-                .collect(Collectors.toMap(art -> Utils.coordsToString(art.getGroupId(),
-                        art.getArtifactId(),art.getVersion(),art.getExtension()), Artifact::getFile ));
+                .collect(Collectors.toMap(Artifact::getArtifactId, Artifact::getFile ));
         context.setArtifacts(arts);
         return context;
     }

@@ -45,7 +45,7 @@ public class DeployerRunner {
     private ProductList productList;
     private Map<String, DeploymentContext> depCtx;
 
-    private static final String DEFAULT_DEPLOYMENT_URL = "file://localhost/C:/tools/unTILL";
+    private static final String DEFAULT_DEPLOYMENT_URL = "file://localhost/C:/tools/";
 
     @SneakyThrows
     public DeployerRunner(File workingFolder, String productListArtifactoryUrl) {
@@ -145,8 +145,7 @@ public class DeployerRunner {
     @SneakyThrows
     private DeploymentContext getDeploymentContext(Artifact artifact, List<Artifact> deps) {
         DeploymentContext context = new DeploymentContext(artifact.getArtifactId());
-        context.setDeploymentURL(new URL(new URL(DEFAULT_DEPLOYMENT_URL),
-                Utils.coordsToFolderStructure(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion())));
+        context.setDeploymentURL(new URL(new URL(DEFAULT_DEPLOYMENT_URL), artifact.getArtifactId()));
         Map<String, File> arts = deps.stream()
                 .map(art -> art.setFile(new File(repository, Utils.coordsToRelativeFilePath(art.getGroupId(),
                         art.getArtifactId(), art.getVersion(), art.getExtension()))))

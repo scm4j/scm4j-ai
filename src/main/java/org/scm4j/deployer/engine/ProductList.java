@@ -9,6 +9,7 @@ import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
+import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -44,36 +45,36 @@ public class ProductList {
         this.productListReader = productListReader;
     }
 
-    @SneakyThrows
-    public Map<String, List<String>> readFromProductList() {
+
+    public Map<String, List<String>> readFromProductList() throws Exception {
         String productListReleaseVersion = getLocalProductListReleaseVersion();
         if (productListReleaseVersion == null) {
             downloadProductList();
             loadProductListEntry();
-            downloadProductsVersions();
+            try {
+                downloadProductsVersions();
+            } catch (ENoMetadata e) {
+                versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
+                versionsYml.createNewFile();
+            }
             return productListEntry;
         } else {
             localProductList = new File(localRepo, Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
                     productListReleaseVersion, ".yml"));
-            versionsYml = new File(getLocalProductList().getParent(), VERSIONS_ARTIFACT_ID);
+            versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
             loadProductListEntry();
             return productListEntry;
         }
     }
 
+    //TODO refactor this
     public Map<String, List<String>> readProductVersions(String groupId, String artifactId) {
-        if(versionsYml.isFile()) {
-            loadProductVersions(artifactId);
-            return productsVersions;
-        } else {
-            downloadSingleProjectVersions(groupId, artifactId);
-            loadProductVersions(artifactId);
-            return productsVersions;
-        }
+        loadProductVersions(artifactId);
+        return productsVersions;
     }
 
-    private void downloadProductsVersions() {
-        versionsYml = new File(getLocalProductList().getParent(), VERSIONS_ARTIFACT_ID);
+    private void downloadProductsVersions() throws ENoMetadata {
+        versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
         productsVersions = new HashMap<>();
         for (String product : products) {
             String artifactId = StringUtils.substringAfter(product, ":");
@@ -84,24 +85,24 @@ public class ProductList {
         yamlWriter(productsVersions, versionsYml);
     }
 
-    private void downloadSingleProjectVersions(String groupId, String artifactId) {
-        productsVersions = readYml(versionsYml);
-        List<String> versions = getProductVersions(groupId, artifactId);
-        productsVersions.get(artifactId).clear();
-        productsVersions.put(artifactId, versions);
-        yamlWriter(productsVersions, versionsYml);
-    }
-
     private void loadProductVersions(String artifactId) {
         productsVersions = readYml(versionsYml);
+        if (productsVersions == null)
+            productsVersions = new HashMap<>();
         versions = new ArrayList<>();
-        versions.addAll(productsVersions.get(artifactId));
+        versions.addAll(productsVersions.getOrDefault(artifactId, new ArrayList<>()));
     }
 
     public void refreshProductVersions(String groupId, String artifactId) {
         productsVersions = readYml(versionsYml);
-        productsVersions.get(artifactId).clear();
-        productsVersions.get(artifactId).addAll(getProductVersions(groupId, artifactId));
+        if (productsVersions == null)
+            productsVersions = new HashMap<>();
+        productsVersions.getOrDefault(artifactId, new ArrayList<>()).clear();
+        try {
+            productsVersions.getOrDefault(artifactId, new ArrayList<>()).addAll(getProductVersions(groupId, artifactId));
+        } catch (ENoMetadata e) {
+            throw new RuntimeException(e);
+        }
         yamlWriter(productsVersions, versionsYml);
     }
 
@@ -146,10 +147,14 @@ public class ProductList {
     @SuppressWarnings("unchecked")
     @SneakyThrows
     private Map<String, List<String>> readYml(File input) {
-        @Cleanup
-        FileReader reader = new FileReader(input);
-        Yaml yaml = new Yaml();
-        return yaml.loadAs(reader, HashMap.class);
+        if(input.exists()) {
+            @Cleanup
+            FileReader reader = new FileReader(input);
+            Yaml yaml = new Yaml();
+            return yaml.loadAs(reader, HashMap.class);
+        } else {
+            return new HashMap<>();
+        }
     }
 
     @SneakyThrows
@@ -169,8 +174,7 @@ public class ProductList {
         writer.write(yamlOutput);
     }
 
-    @SneakyThrows
-    public List<String> getProductVersions(String groupId, String artifactId) {
+    public List<String> getProductVersions(String groupId, String artifactId) throws ENoMetadata {
         if (!hasProduct(groupId, artifactId)) {
             throw new EProductNotFound();
         }
@@ -179,14 +183,17 @@ public class ProductList {
             Metadata meta = reader.read(is);
             Versioning vers = meta.getVersioning();
             return vers.getVersions();
+        } catch (Exception e) {
+            throw new ENoMetadata("Can't find product metadata " + artifactId);
         }
     }
 
-    public boolean hasProduct(String groupId, String artifactId) throws Exception {
+    public boolean hasProduct(String groupId, String artifactId) {
         return getProducts().contains(Utils.coordsToString(groupId, artifactId));
     }
 
-    private void writeProductListMetadata(String productListReleaseVersion) throws Exception {
+    @SneakyThrows
+    private void writeProductListMetadata(String productListReleaseVersion) {
         File productListMetadataFolder = new File(localRepo,
                 Utils.coordsToFolderStructure(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID));
         File productListMetadataFile = new File(productListMetadataFolder, "maven-metadata.xml");
@@ -199,7 +206,8 @@ public class ProductList {
         writeMetadata(metadata, productListMetadataFile);
     }
 
-    private void writeMetadata(Metadata metaData, File metaDataFile) throws Exception {
+    @SneakyThrows
+    private void writeMetadata(Metadata metaData, File metaDataFile) {
         try (FileOutputStream os = new FileOutputStream(metaDataFile)) {
             MetadataXpp3Writer writer = new MetadataXpp3Writer();
             writer.write(os, metaData);

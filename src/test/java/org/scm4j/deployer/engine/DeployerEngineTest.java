@@ -7,7 +7,9 @@ import org.mockito.Mockito;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
+import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
+import org.scm4j.deployer.installers.Executor;
 import org.scm4j.deployer.installers.UnzipArtifact;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -82,7 +84,7 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testGetProducts() throws IOException {
+    public void testGetProducts() throws Exception {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
         Set<String> products = runner.getProductList().getProducts();
@@ -131,7 +133,7 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testUnknownVersion() {
+    public void testUnknownVersion() throws Exception {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
         try {
@@ -155,7 +157,7 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testLoadRepos() {
+    public void testLoadRepos() throws Exception {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
         List<ArtifactoryReader> repos = runner.getProductList().getRepos();
@@ -199,22 +201,6 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testUnzip() throws Exception {
-        IComponentDeployer unziper = new UnzipArtifact(new File(TEST_ARTIFACTORY_DIR), pathToUntill);
-        unziper.deploy();
-        File metainf = new File(TEST_ARTIFACTORY_DIR, "META-INF");
-        Manifest mf = new Manifest();
-        assertTrue(metainf.exists());
-        mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-        mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, "ProductStructureDataLoader");
-        Manifest unzipMf;
-        try (FileInputStream fis = new FileInputStream(new File(metainf, "MANIFEST.MF"))) {
-            unzipMf = new Manifest(fis);
-        }
-        assertEquals(mf.getMainAttributes(), unzipMf.getMainAttributes());
-    }
-
-    @Test
     public void testAppendRepos() throws Exception {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
@@ -222,7 +208,7 @@ public class DeployerEngineTest {
         assertTrue(remoteRepos.size() == 2);
         assertEquals(remoteRepos.get(0).toString(),env.getArtifactory1Url());
         assertEquals(remoteRepos.get(1).toString(), env.getArtifactory2Url());
-        File product = runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
+        runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
         DeployerRunner runner1 = new DeployerRunner(env.getBaseTestFolder(), runner.getRepository().toURI().toURL().toString());
         runner1.getProductList().readFromProductList();
         List<ArtifactoryReader> localRepo = runner1.getProductList().getRepos();
@@ -252,7 +238,7 @@ public class DeployerEngineTest {
     @Test
     public void testDownloadAndRefreshProductsVersions() throws Exception {
         DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
-        de.getRunner().getProductList().readFromProductList();
+        de.listProducts();
         Map<String, Boolean> testMap = new LinkedHashMap<>();
         testMap.put("123.4", false);
         testMap.put("124.5", false);
@@ -282,6 +268,18 @@ public class DeployerEngineTest {
         de.download(untillCoord);
         testMap.replace("123.4", false, true);
         assertEquals(de.listProductVersions(untillArtifactId), testMap);
+        FileUtils.forceDelete(de.getRunner().getProductList().getVersionsYml());
+        testMap.clear();
+        de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
+        File metadataFolder = new File(env.getArtifactory1Folder(),Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, untillArtifactId));
+        FileUtils.moveFileToDirectory(new File(metadataFolder, ArtifactoryReader.METADATA_FILE_NAME), env.getEnvFolder(),false);
+        de.listProducts();
+        assertEquals(de.listProductVersions(untillArtifactId), testMap);
+        try {
+            de.refreshProductVersions(untillArtifactId);
+            fail();
+        } catch (RuntimeException e) {}
+        FileUtils.moveFileToDirectory(new File(env.getEnvFolder(),ArtifactoryReader.METADATA_FILE_NAME), metadataFolder,false);
     }
 
     @Test
@@ -289,7 +287,12 @@ public class DeployerEngineTest {
         DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
         de.listProducts();
         de.download(untillCoord);
-        DeploymentContext ctx = de.getRunner().getDepCtx().get("unTILL");
+        DeploymentContext ctx = de.getRunner().getDepCtx().get("UBL");
+        assertEquals(ctx.getMainArtifact(), "UBL");
+        assertTrue(ctx.getArtifacts().containsKey("UBL"));
+        assertTrue(ctx.getArtifacts().containsKey("axis"));
+        assertEquals(ctx.getDeploymentURL(), new URL("file://localhost/C:/tools/UBL"));
+        assertNull(ctx.getParams());
     }
 
 }

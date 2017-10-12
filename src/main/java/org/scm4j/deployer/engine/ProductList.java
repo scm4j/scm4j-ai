@@ -95,11 +95,12 @@ public class ProductList {
 
     public void refreshProductVersions(String groupId, String artifactId) {
         productsVersions = readYml(versionsYml);
-        if (productsVersions == null)
+        if (productsVersions == null) {
             productsVersions = new HashMap<>();
-        productsVersions.getOrDefault(artifactId, new ArrayList<>()).clear();
+        }
+        productsVersions.put(artifactId, new ArrayList<>());
         try {
-            productsVersions.getOrDefault(artifactId, new ArrayList<>()).addAll(getProductVersions(groupId, artifactId));
+            productsVersions.get(artifactId).addAll(getProductVersions(groupId, artifactId));
         } catch (ENoMetadata e) {
             throw new RuntimeException(e);
         }

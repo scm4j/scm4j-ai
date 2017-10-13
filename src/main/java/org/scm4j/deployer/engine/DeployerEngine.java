@@ -125,6 +125,8 @@ public class DeployerEngine implements IProductDeployer {
                     case UNDEPLOY:
                         installer.undeploy();
                         break;
+                    case UPGRADE:
+                        break;
                 }
             }
         }

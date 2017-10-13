@@ -6,6 +6,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.artifact.ArtifactType;
+import org.eclipse.aether.artifact.ArtifactTypeRegistry;
+import org.eclipse.aether.artifact.DefaultArtifactType;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.repository.LocalRepository;
@@ -13,6 +16,7 @@ import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
+import org.eclipse.aether.util.artifact.DefaultArtifactTypeRegistry;
 import org.scm4j.deployer.engine.loggers.ConsoleRepositoryListener;
 import org.scm4j.deployer.engine.loggers.ConsoleTransferListener;
 
@@ -73,6 +77,14 @@ public class Utils {
 
     public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system, File repository) {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
+        DefaultArtifactTypeRegistry stereotypes = new DefaultArtifactTypeRegistry();
+        stereotypes.add( new DefaultArtifactType( "pom" ) );
+        stereotypes.add( new DefaultArtifactType( "maven-plugin", "jar", "", "java" ) );
+        stereotypes.add(new DefaultArtifactType("zip"));
+        stereotypes.add( new DefaultArtifactType( "javadoc", "jar", "javadoc", "java" ) );
+        stereotypes.add( new DefaultArtifactType( "java-source", "jar", "sources", "java", false, false ) );
+        stereotypes.add( new DefaultArtifactType( "war", "war", "", "java", false, true ) );
+        session.setArtifactTypeRegistry( stereotypes );
         LocalRepository localRepo = new LocalRepository(repository);
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
         session.setTransferListener(new ConsoleTransferListener());

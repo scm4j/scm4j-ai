@@ -7,7 +7,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.scm4j.deployer.api.*;
-import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 
 import java.io.File;
 import java.util.LinkedHashMap;

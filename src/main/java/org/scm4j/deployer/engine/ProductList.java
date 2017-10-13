@@ -202,25 +202,15 @@ public class ProductList {
             productListMetadataFile.delete();
         }
         productListMetadataFile.createNewFile();
-        Metadata metadata = createArtifactMetadata(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID);
-        metadata.getVersioning().setRelease(productListReleaseVersion);
-        writeMetadata(metadata, productListMetadataFile);
-    }
-
-    @SneakyThrows
-    private void writeMetadata(Metadata metaData, File metaDataFile) {
-        try (FileOutputStream os = new FileOutputStream(metaDataFile)) {
-            MetadataXpp3Writer writer = new MetadataXpp3Writer();
-            writer.write(os, metaData);
-        }
-    }
-
-    private Metadata createArtifactMetadata(String groupId, String artifactId) {
-        Metadata metaData = new Metadata();
+        Metadata metadata = new Metadata();
         Versioning vers = new Versioning();
-        metaData.setVersioning(vers);
-        metaData.setGroupId(groupId);
-        metaData.setArtifactId(artifactId);
-        return metaData;
+        metadata.setVersioning(vers);
+        metadata.setGroupId(ProductList.PRODUCT_LIST_GROUP_ID);
+        metadata.setArtifactId(ProductList.PRODUCT_LIST_ARTIFACT_ID);
+        metadata.getVersioning().setRelease(productListReleaseVersion);
+        try (FileOutputStream os = new FileOutputStream(productListMetadataFile)) {
+            MetadataXpp3Writer writer = new MetadataXpp3Writer();
+            writer.write(os, metadata);
+        }
     }
 }

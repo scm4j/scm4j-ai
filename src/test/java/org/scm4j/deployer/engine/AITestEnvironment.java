@@ -21,7 +21,6 @@ public class AITestEnvironment {
 	private File artifactory2Folder;
 	private String artifactory1Url;
 	private String artifactory2Url;
-	private File productListFile;
 
 	public void prepareEnvironment() throws IOException {
 		File baseTestFolderFile = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test");
@@ -51,7 +50,7 @@ public class AITestEnvironment {
 	}
 
 	private void writeReposInProductList(String version) throws IOException {
-		productListFile = new File(artifactory1Folder, Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
+		File productListFile = new File(artifactory1Folder, Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
 				ProductList.PRODUCT_LIST_ARTIFACT_ID, version, ".yml"));
 		if(!productListFile.exists()) {
 			productListFile.getParentFile().mkdirs();

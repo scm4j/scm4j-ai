@@ -10,7 +10,6 @@ import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -99,7 +98,6 @@ public class ArtifactoryWriter {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void writeArtifact(String artifactId, String version, String extension, String content, File artifactRoot)
             throws Exception {
         File artifactVersionPath = new File(artifactRoot, version);

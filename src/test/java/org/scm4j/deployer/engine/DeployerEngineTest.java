@@ -85,7 +85,7 @@ public class DeployerEngineTest {
         runner.getProductList().readFromProductList();
         Set<String> products = runner.getProductList().getProducts();
         assertNotNull(products);
-        assertTrue(products.containsAll(Arrays.asList(
+        assertTrue(products.containsAll(Collections.singletonList(
                 "eu.untill:unTILL")));
         assertTrue(products.size() == 1);
     }
@@ -214,11 +214,11 @@ public class DeployerEngineTest {
     @Test
     public void testDownloadAndRefreshProducts() throws Exception {
         DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
-        assertEquals(de.listProducts(), Arrays.asList("unTILL"));
+        assertEquals(de.listProducts(), Collections.singletonList("unTILL"));
         //changing product list
         Map<String, ArrayList<String>> entry = new HashMap<>();
-        entry.put(ProductList.PRODUCTS, new ArrayList<>(Arrays.asList("some:stuff")));
-        entry.put(ProductList.REPOSITORIES, new ArrayList<>(Arrays.asList("file://some repos")));
+        entry.put(ProductList.PRODUCTS, new ArrayList<>(Collections.singletonList("some:stuff")));
+        entry.put(ProductList.REPOSITORIES, new ArrayList<>(Collections.singletonList("file://some repos")));
         try(FileWriter writer = new FileWriter(new File(de.getRunner().getProductList().getLocalProductList().toString()))) {
             DumperOptions options = new DumperOptions();
             options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
@@ -226,9 +226,9 @@ public class DeployerEngineTest {
             String yamlOtput = yaml.dump(entry);
             writer.write(yamlOtput);
         }
-        assertEquals(de.listProducts(), Arrays.asList("stuff"));
+        assertEquals(de.listProducts(), Collections.singletonList("stuff"));
         //reload product list
-        assertEquals(de.refreshProducts(), Arrays.asList("unTILL"));
+        assertEquals(de.refreshProducts(), Collections.singletonList("unTILL"));
     }
 
     @Test
@@ -241,8 +241,8 @@ public class DeployerEngineTest {
         assertEquals(de.listProductVersions(untillArtifactId), testMap);
         //changing product versions
         Map<String, ArrayList<String>> entry = new HashMap<>();
-        entry.put(untillArtifactId, new ArrayList<>(Arrays.asList("777")));
-        entry.put("haha", new ArrayList<>(Arrays.asList("1234")));
+        entry.put(untillArtifactId, new ArrayList<>(Collections.singletonList("777")));
+        entry.put("haha", new ArrayList<>(Collections.singletonList("1234")));
         try(FileWriter writer = new FileWriter(new File(de.getRunner().getProductList().getVersionsYml().toString()))) {
             DumperOptions options = new DumperOptions();
             options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);

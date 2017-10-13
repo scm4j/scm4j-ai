@@ -8,7 +8,10 @@ plugins {
 }
 
 configurations.compile {
-	resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+	resolutionStrategy {
+		cacheChangingModulesFor 0, 'seconds'
+		cacheDynamicVersionsFor 0, 'seconds'
+	}
 }
 
 repositories {
@@ -41,7 +44,7 @@ dependencies {
 	def s = '[ \t]*', w = '[^:#@\\s]+?'
 	(file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
 		match, group, name, version, classifier, ext, configuration ->
-			add(configuration ?: 'compile', "$group:$name:${version?:'latest.integration'}${classifier?:''}${ext?:''}")
+			add(configuration ?: 'compile', "$group:$name:${version?:'latest.integration'}${classifier?:''}${ext?:''}", { changing = true })
 	}
 	
 	compile 'com.google.guava:guava:20.0'

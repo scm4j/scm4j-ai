@@ -50,7 +50,7 @@ public class DeployerRunner {
     public DeployerRunner(File workingFolder, String productListArtifactoryUrl) {
         repository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
         if (!repository.exists()) {
-            Files.createDirectory(repository.toPath());
+            repository.mkdirs();
         }
 
         ArtifactoryReader productListReader = ArtifactoryReader.getByUrl(productListArtifactoryUrl);
@@ -183,5 +183,4 @@ public class DeployerRunner {
             throw new RuntimeException();
         }
     }
-
 }

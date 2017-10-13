@@ -32,8 +32,8 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @Override
-    public void deploy(String productCoords) {
-        File product = download(productCoords);
+    public void deploy(String artifactId, String version) {
+        File product = download(artifactId, version);
         List<IComponent> components = runner.getProductStructure(product).getComponents();
         for (IComponent component : components) {
             try {
@@ -46,19 +46,20 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @Override
-    public File download(String productCoords) {
-        Artifact artifact = new DefaultArtifact(productCoords);
+    public File download(String artifactId, String version) {
+        String groupId = Utils.getGroupId(runner, artifactId);
+        Artifact artifact = new DefaultArtifact(groupId, artifactId, "jar", version);
         return runner.get(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
                 artifact.getExtension());
     }
 
     @Override
-    public void undeploy(String productCoors) {
+    public void undeploy(String artifactId, String version) {
 
     }
 
     @Override
-    public void upgrade(String newProductCoords) {
+    public void upgrade(String artifactId, String version) {
     }
 
     @Override

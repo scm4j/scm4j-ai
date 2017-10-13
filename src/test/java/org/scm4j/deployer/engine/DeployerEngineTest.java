@@ -32,7 +32,6 @@ public class DeployerEngineTest {
     private static final String TEST_AXIS_GROUP_ID = "org.apache.axis";
     private static final String TEST_ARTIFACTORY_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
             .getPath();
-    private static final String untillCoord = "eu.untill:unTILL:123.4";
 
     private static AITestEnvironment env = new AITestEnvironment();
 
@@ -193,10 +192,10 @@ public class DeployerEngineTest {
     public void testDownloadAndDeployProductFromLocalHost() throws Exception {
         DeployerEngine engine = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
         engine.listProducts();
-        File product = engine.download(untillCoord);
+        File product = engine.download(untillArtifactId, "123.4");
         engine = new DeployerEngine(env.getBaseTestFolder(), engine.getRunner().getRepository().toURI().toURL().toString());
         engine.listProducts();
-        File product1 = engine.download(untillCoord);
+        File product1 = engine.download(untillArtifactId, "123.4");
         assertTrue(FileUtils.contentEquals(product, product1));
     }
 
@@ -265,7 +264,7 @@ public class DeployerEngineTest {
         de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
         de.getRunner().getProductList().readFromProductList();
         assertEquals(de.listProductVersions(untillArtifactId), testMap);
-        de.download(untillCoord);
+        de.download(untillArtifactId, "123.4");
         testMap.replace("123.4", false, true);
         assertEquals(de.listProductVersions(untillArtifactId), testMap);
         FileUtils.forceDelete(de.getRunner().getProductList().getVersionsYml());
@@ -286,7 +285,7 @@ public class DeployerEngineTest {
     public void testCollectDeploymentContext() throws Exception {
         DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
         de.listProducts();
-        de.download(untillCoord);
+        de.download(untillArtifactId, "123.4");
         DeploymentContext ctx = de.getRunner().getDepCtx().get("UBL");
         assertEquals(ctx.getMainArtifact(), "UBL");
         assertTrue(ctx.getArtifacts().containsKey("UBL"));

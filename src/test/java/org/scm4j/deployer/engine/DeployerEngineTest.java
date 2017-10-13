@@ -5,21 +5,18 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.mockito.Mockito;
 import org.scm4j.deployer.api.DeploymentContext;
-import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
-import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
-import org.scm4j.deployer.installers.Executor;
-import org.scm4j.deployer.installers.UnzipArtifact;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 
 import static org.junit.Assert.*;
 

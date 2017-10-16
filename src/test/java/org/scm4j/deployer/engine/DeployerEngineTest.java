@@ -208,7 +208,7 @@ public class DeployerEngineTest {
         DeployerRunner runner1 = new DeployerRunner(env.getBaseTestFolder(), runner.getRepository().toURI().toURL().toString());
         runner1.getProductList().readFromProductList();
         List<ArtifactoryReader> localRepo = runner1.getProductList().getRepos();
-        assertEquals(localRepo.get(2).toString(), runner.getRepository().toURI().toURL().toString());
+        assertEquals(localRepo.get(0).toString(), runner1.getRepository().toURI().toURL().toString());
     }
 
     @Test

@@ -81,6 +81,7 @@ public class Utils {
         stereotypes.add( new DefaultArtifactType( "pom" ) );
         stereotypes.add( new DefaultArtifactType( "maven-plugin", "jar", "", "java" ) );
         stereotypes.add(new DefaultArtifactType("zip"));
+        stereotypes.add(new DefaultArtifactType("exe"));
         stereotypes.add( new DefaultArtifactType( "javadoc", "jar", "javadoc", "java" ) );
         stereotypes.add( new DefaultArtifactType( "java-source", "jar", "sources", "java", false, false ) );
         stereotypes.add( new DefaultArtifactType( "war", "war", "", "java", false, true ) );

@@ -160,7 +160,7 @@ public class ProductList {
 
     @SneakyThrows
     public void appendLocalRepo() {
-        productListEntry.get(REPOSITORIES).add(localRepo.toURI().toURL().toString());
+        productListEntry.get(REPOSITORIES).add(0,localRepo.toURI().toURL().toString());
         yamlWriter(productListEntry, localProductList);
     }
 

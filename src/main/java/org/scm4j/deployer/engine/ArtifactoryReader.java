@@ -7,85 +7,104 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
+import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ArtifactoryReader {
 
-	public static final String METADATA_FILE_NAME = "maven-metadata.xml";
-	public static final String LOCAL_METADATA_FILE_NAME = "maven-metadata-local.xml";
-	
-	private final URL url;
-	private final String password;
-	private final String userName;
+    public static final String METADATA_FILE_NAME = "maven-metadata.xml";
+    public static final String LOCAL_METADATA_FILE_NAME = "maven-metadata-local.xml";
 
-	@SneakyThrows
-	public ArtifactoryReader(String url, String userName, String password){
-		this.userName = userName;
-		this.password = password;
-		this.url = new URL(StringUtils.appendIfMissing(url, "/"));
-	}
+    private final URL url;
+    private final String password;
+    private final String userName;
 
-	@SneakyThrows
-	public String getProductListReleaseVersion() {
-		@Cleanup
-		InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID,
-				ProductList.PRODUCT_LIST_ARTIFACT_ID));
-			MetadataXpp3Reader reader = new MetadataXpp3Reader();
-			Metadata meta = reader.read(is);
-			Versioning vers = meta.getVersioning();
-			return vers.getRelease();
-	}
+    @SneakyThrows
+    public ArtifactoryReader(String url, String userName, String password) {
+        this.userName = userName;
+        this.password = password;
+        this.url = new URL(StringUtils.appendIfMissing(url, "/"));
+    }
 
-	@SneakyThrows
-	public InputStream getContentStream(URL url) {
-		if (url.getProtocol().equals("file")) {
-			return url.openStream();
-		} else {
-			HttpURLConnection con = (HttpURLConnection) url.openConnection();
-			con.setDoOutput(true);
-			con.setRequestMethod("GET");
-			if(userName != null && password != null)
-			con.setRequestProperty("Authorization", "Basic "
-					+ Base64.encodeBase64String((userName + ":" + password).getBytes()));
-			return con.getInputStream();
-		}
-	}
+    @SneakyThrows
+    public List<String> getProductVersions(String groupId, String artifactId) {
+        MetadataXpp3Reader reader = new MetadataXpp3Reader();
+        URL url = getProductMetaDataURL(groupId, artifactId);
+        try (InputStream is = url.openStream()) {
+            Metadata meta = reader.read(is);
+            Versioning vers = meta.getVersioning();
+            return vers.getVersions();
+        } catch (FileNotFoundException e) {
+            return Collections.emptyList();
+        }
+    }
 
-	@SneakyThrows
-	public InputStream getContentStream(String groupId, String artifactId, String version, String extension) {
-		return getContentStream(getProductUrl(groupId, artifactId, version, extension));
-	}
 
-	@SneakyThrows
-	public URL getProductMetaDataURL(String groupId, String artifactId) {
-		return new URL(new URL(url, Utils.coordsToUrlStructure(groupId, artifactId) + "/"), METADATA_FILE_NAME);
-	}
+    @SneakyThrows
+    public String getProductListReleaseVersion() {
+        @Cleanup
+        InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID,
+                ProductList.PRODUCT_LIST_ARTIFACT_ID));
+        MetadataXpp3Reader reader = new MetadataXpp3Reader();
+        Metadata meta = reader.read(is);
+        Versioning vers = meta.getVersioning();
+        return vers.getRelease();
+    }
 
-	@SneakyThrows
-	public static ArtifactoryReader getByUrl(String repoUrl) {
-		URL url = new URL(repoUrl);
-		String userInfoStr = url.getUserInfo();
-		if (userInfoStr != null) {
-			String[] userInfo = userInfoStr.split(":");
-			repoUrl = repoUrl.replace(userInfoStr + "@",  "");
-			if (userInfo.length == 2) {
-				return new ArtifactoryReader(repoUrl, userInfo[0], userInfo[1]);
-			} 
-		}
-		return new ArtifactoryReader(repoUrl, null, null);
-	}
+    @SneakyThrows
+    public InputStream getContentStream(URL url) {
+        if (url.getProtocol().equals("file")) {
+            return url.openStream();
+        } else {
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setDoOutput(true);
+            con.setRequestMethod("GET");
+            if (userName != null && password != null)
+                con.setRequestProperty("Authorization", "Basic "
+                        + Base64.encodeBase64String((userName + ":" + password).getBytes()));
+            return con.getInputStream();
+        }
+    }
 
-	@SneakyThrows
-	public URL getProductUrl(String groupId, String artifactId, String version, String extension) {
-		return new URL(this.url, Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension)
-				.replace("\\",  "/"));
-	}
+    @SneakyThrows
+    public InputStream getContentStream(String groupId, String artifactId, String version, String extension) {
+        return getContentStream(getProductUrl(groupId, artifactId, version, extension));
+    }
 
-	@Override
-	public String toString() {
-		return url.toString();
-	}
+    @SneakyThrows
+    public URL getProductMetaDataURL(String groupId, String artifactId) {
+        return new URL(new URL(url, Utils.coordsToUrlStructure(groupId, artifactId) + "/"), METADATA_FILE_NAME);
+    }
+
+    @SneakyThrows
+    public static ArtifactoryReader getByUrl(String repoUrl) {
+        URL url = new URL(repoUrl);
+        String userInfoStr = url.getUserInfo();
+        if (userInfoStr != null) {
+            String[] userInfo = userInfoStr.split(":");
+            repoUrl = repoUrl.replace(userInfoStr + "@", "");
+            if (userInfo.length == 2) {
+                return new ArtifactoryReader(repoUrl, userInfo[0], userInfo[1]);
+            }
+        }
+        return new ArtifactoryReader(repoUrl, null, null);
+    }
+
+    @SneakyThrows
+    public URL getProductUrl(String groupId, String artifactId, String version, String extension) {
+        return new URL(this.url, Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension)
+                .replace("\\", "/"));
+    }
+
+    @Override
+    public String toString() {
+        return url.toString();
+    }
 }

@@ -6,6 +6,7 @@ import org.junit.*;
 import org.mockito.Mockito;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
+import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -60,8 +61,6 @@ public class DeployerEngineTest {
         env.prepareEnvironment();
         ArtifactoryWriter aw = new ArtifactoryWriter(env.getArtifactory1Folder());
         aw.generateProductListArtifact();
-        aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar",
-                "ProductStructureDataLoader", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "124.5", "jar",
                 "ProductStructureDataLoader", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, installersArtifactId, "1.1.0", "jar",
@@ -71,6 +70,8 @@ public class DeployerEngineTest {
         aw.installArtifact(TEST_JOOQ_GROUP_ID, jooqArtifact, "3.1.0", "jar",
                 TEST_DEP_CONTENT, env.getArtifactory1Folder());
         aw = new ArtifactoryWriter(env.getArtifactory2Folder());
+        aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar",
+                "ProductStructureDataLoader", env.getArtifactory1Folder());
         aw.installArtifact(TEST_AXIS_GROUP_ID, axisArtifact, "1.4", "jar",
                 TEST_DEP_CONTENT, env.getArtifactory2Folder());
         aw.installArtifact(TEST_AXIS_GROUP_ID, axisJaxrpcArtifact, "1.4", "jar",
@@ -94,7 +95,7 @@ public class DeployerEngineTest {
     public void testGetVersions() throws Exception {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
-        List<String> versions = runner.getProductList().getProductVersions(TEST_UNTILL_GROUP_ID, untillArtifactId);
+        List<String> versions = runner.getProductList().getProductsVersions().get(untillArtifactId);
         assertNotNull(versions);
         assertTrue(versions.containsAll(Arrays.asList(
                 "123.4", "124.5")));
@@ -112,19 +113,16 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testUnknownArtifact() throws Exception {
+    public void testUnknownProduct() throws Exception {
         DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
-        try {
-            runner.getProductList().getProductVersions("eu.untill", "unknown artifact");
-            fail();
-        } catch (EProductNotFound e) {
-        }
+        assertEquals(Collections.emptyList(),
+                runner.getProductList().getProductListReader().getProductVersions("eu.untill", "unknown artifact"));
 
         try {
             runner.get("eu.untill", "unknown artifact", "version", "extension");
             fail();
-        } catch (EArtifactNotFound e) {
+        } catch (EProductNotFound e) {
         }
     }
 
@@ -135,7 +133,7 @@ public class DeployerEngineTest {
         try {
             runner.get(TEST_UNTILL_GROUP_ID, ublArtifactId, "unknown version", ".jar");
             fail();
-        } catch (EArtifactNotFound e) {
+        } catch (EProductNotFound e) {
         }
     }
 
@@ -168,7 +166,7 @@ public class DeployerEngineTest {
         DeployerRunner mockedRunner = Mockito.spy(new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url()));
         mockedRunner.getProductList().readFromProductList();
         File testFile = mockedRunner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
-        assertTrue(FileUtils.contentEquals(testFile,new File(env.getArtifactory1Folder(),
+        assertTrue(FileUtils.contentEquals(testFile,new File(env.getArtifactory2Folder(),
                 Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
                         untillArtifactId, "123.4", "jar"))));
         testFile = new File(mockedRunner.getRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
@@ -266,16 +264,21 @@ public class DeployerEngineTest {
         assertEquals(de.listProductVersions(untillArtifactId), testMap);
         FileUtils.forceDelete(de.getRunner().getProductList().getVersionsYml());
         testMap.clear();
+        File metadataFolder1 = new File(env.getArtifactory1Folder(),Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, untillArtifactId));
+        File metadataFolder2 = new File(env.getArtifactory2Folder(),Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, untillArtifactId));
+        FileUtils.moveFileToDirectory(new File(metadataFolder1, ArtifactoryReader.METADATA_FILE_NAME), env.getEnvFolder(),false);
+        FileUtils.moveFileToDirectory(new File(metadataFolder2, ArtifactoryReader.METADATA_FILE_NAME),
+                env.getArtifactory1Folder(),true);
+        FileUtils.deleteDirectory(new File(env.getEnvFolder(), "repository"));
         de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
-        File metadataFolder = new File(env.getArtifactory1Folder(),Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, untillArtifactId));
-        FileUtils.moveFileToDirectory(new File(metadataFolder, ArtifactoryReader.METADATA_FILE_NAME), env.getEnvFolder(),false);
         de.listProducts();
         assertEquals(de.listProductVersions(untillArtifactId), testMap);
         try {
             de.refreshProductVersions(untillArtifactId);
             fail();
         } catch (RuntimeException e) {}
-        FileUtils.moveFileToDirectory(new File(env.getEnvFolder(),ArtifactoryReader.METADATA_FILE_NAME), metadataFolder,false);
+        FileUtils.moveFileToDirectory(new File(env.getEnvFolder(),ArtifactoryReader.METADATA_FILE_NAME), metadataFolder1,false);
+        FileUtils.moveFileToDirectory(new File(env.getArtifactory1Folder(), ArtifactoryReader.METADATA_FILE_NAME), metadataFolder2, false);
     }
 
     @Test

@@ -24,6 +24,7 @@ import org.scm4j.deployer.api.IProduct;
 import org.scm4j.deployer.api.IProductStructure;
 import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
+import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -72,11 +73,20 @@ public class DeployerRunner {
         } else {
             res = download(groupId, artifactId, version, extension);
             if (res == null) {
-                throw new EArtifactNotFound(Utils.coordsToString(groupId, artifactId, version, extension)
+                throw new EProductNotFound(Utils.coordsToString(groupId, artifactId, version, extension)
                         + " is not found in all known repositories");
             }
         }
         return res;
+    }
+
+    @SneakyThrows
+    private List<String> getProductVersions(String groupId, String artifactId) {
+            if(productList.getProductsVersions().get(artifactId) == null) {
+                throw new EProductNotFound("Product not found in all known repositories " + artifactId);
+            } else {
+                return productList.getProductsVersions().get(artifactId);
+            }
     }
 
     @SneakyThrows
@@ -87,11 +97,11 @@ public class DeployerRunner {
         for (ArtifactoryReader repo : productList.getRepos()) {
             try {
                 if (!productList.getProducts().contains(Utils.coordsToString(groupId, artifactId))
-                        || !productList.getProductVersions(groupId, artifactId).contains(version)) {
-                    return null;
+                        || !repo.getProductVersions(groupId, artifactId).contains(version)) {
+                    continue;
                 }
             } catch (Exception e) {
-                return null;
+                continue;
             }
 
             File parent = temp.getParentFile();

@@ -17,6 +17,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 public class ProductList {
@@ -73,14 +74,17 @@ public class ProductList {
         return productsVersions;
     }
 
+    @SneakyThrows
     private void downloadProductsVersions() throws ENoMetadata {
         versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
         productsVersions = new HashMap<>();
+        List<String> vers = new ArrayList<>();
         for (String product : products) {
             String artifactId = StringUtils.substringAfter(product, ":");
-            List<String> versions = getProductVersions(StringUtils.substringBefore(product, ":"),
-                    artifactId);
-            productsVersions.put(artifactId, versions);
+            for (ArtifactoryReader reader : repos) {
+                vers.addAll(reader.getProductVersions(StringUtils.substringBefore(product, ":"), artifactId));
+            }
+            productsVersions.put(artifactId, vers);
         }
         yamlWriter(productsVersions, versionsYml);
     }
@@ -93,18 +97,21 @@ public class ProductList {
         versions.addAll(productsVersions.getOrDefault(artifactId, new ArrayList<>()));
     }
 
-    public void refreshProductVersions(String groupId, String artifactId) {
+    public void refreshProductVersions(String groupId, String artifactId) throws ENoMetadata {
         productsVersions = readYml(versionsYml);
         if (productsVersions == null) {
             productsVersions = new HashMap<>();
         }
-        productsVersions.put(artifactId, new ArrayList<>());
-        try {
-            productsVersions.get(artifactId).addAll(getProductVersions(groupId, artifactId));
-        } catch (ENoMetadata e) {
-            throw new RuntimeException(e);
+        List<String> vers = new ArrayList<>();
+        for(ArtifactoryReader reader : repos) {
+            vers.addAll(reader.getProductVersions(groupId, artifactId));
         }
-        yamlWriter(productsVersions, versionsYml);
+        if (vers.isEmpty()) {
+            throw new ENoMetadata(artifactId + " metadata don't find in all known repos");
+        } else {
+            productsVersions.put(artifactId, vers);
+            yamlWriter(productsVersions, versionsYml);
+        }
     }
 
     @SneakyThrows
@@ -148,7 +155,7 @@ public class ProductList {
     @SuppressWarnings("unchecked")
     @SneakyThrows
     private Map<String, List<String>> readYml(File input) {
-        if(input.exists()) {
+        if (input.exists()) {
             @Cleanup
             FileReader reader = new FileReader(input);
             Yaml yaml = new Yaml();
@@ -160,8 +167,8 @@ public class ProductList {
 
     @SneakyThrows
     public void appendLocalRepo() {
-        if(!productListEntry.get(REPOSITORIES).contains(localRepo.toURI().toURL().toString()))
-        productListEntry.get(REPOSITORIES).add(0,localRepo.toURI().toURL().toString());
+        if (!productListEntry.get(REPOSITORIES).contains(localRepo.toURI().toURL().toString()))
+            productListEntry.get(REPOSITORIES).add(0, localRepo.toURI().toURL().toString());
         yamlWriter(productListEntry, localProductList);
     }
 
@@ -174,24 +181,6 @@ public class ProductList {
         Yaml yaml = new Yaml(options);
         String yamlOutput = yaml.dump(entry);
         writer.write(yamlOutput);
-    }
-
-    public List<String> getProductVersions(String groupId, String artifactId) throws ENoMetadata {
-        if (!hasProduct(groupId, artifactId)) {
-            throw new EProductNotFound();
-        }
-        MetadataXpp3Reader reader = new MetadataXpp3Reader();
-        try (InputStream is = productListReader.getProductMetaDataURL(groupId, artifactId).openStream()) {
-            Metadata meta = reader.read(is);
-            Versioning vers = meta.getVersioning();
-            return vers.getVersions();
-        } catch (Exception e) {
-            throw new ENoMetadata("Can't find product metadata " + artifactId);
-        }
-    }
-
-    public boolean hasProduct(String groupId, String artifactId) {
-        return getProducts().contains(Utils.coordsToString(groupId, artifactId));
     }
 
     @SneakyThrows

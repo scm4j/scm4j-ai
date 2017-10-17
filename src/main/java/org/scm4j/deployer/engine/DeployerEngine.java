@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.scm4j.deployer.api.*;
+import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 
 import java.io.File;
 import java.util.LinkedHashMap;
@@ -94,7 +95,11 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     public Map<String, Boolean> refreshProductVersions(String artifactId) {
-        runner.getProductList().refreshProductVersions(Utils.getGroupId(runner, artifactId), artifactId);
+        try {
+            runner.getProductList().refreshProductVersions(Utils.getGroupId(runner, artifactId), artifactId);
+        } catch (ENoMetadata e) {
+            throw new RuntimeException();
+        }
         return listProductVersions(artifactId);
     }
 

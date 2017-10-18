@@ -14,6 +14,8 @@ This component automates installation (deployment) of products which are represe
 - `IComponent` keeps `artifact coordinates`and lists `IInstallationProcedure`
 - `IInstallationProcedure`: lists `IAction`, every `action` is represented by `installer` class and `params`. All installer classes must be in `product` dependencies.
 - `installer`: class which implements `IInstaller` interface. Is instantiated during `installation procdure`, action paremeters are passed
+- `siteDataDir`: ref https://github.com/harawata/appdirs
+- `Deployed products registry`: `siteDataDir`/products.yml
 
 Thus all dependencies of product artifcat are "installers" i.e. implement installation logic. Installation "data" is represented by artifacts which are listed by `IProductStructure` interface.
 
@@ -32,11 +34,11 @@ Scenarious are represeneted by methods of `DeployerEngine`
 - `refreshProductVersions`: refreshes offline cache
 - `download`: downloads given product
 - `deploy`: deploys given product
-- `listDeployedProducts`: lists all deployed product
+- `listDeployedProducts`: lists all deployed product from `Deployed products registry`
 
 # Deployment
 
-- Existing product version is queried using local db and, if not found, using `IProjectStructure`
+- Existing product version is queried using `listDeployedProducts`, if not found  `IProjectStructure`
 - If old version exists and upgrade is needed
   - `IProjectStructure` is asked which version could uninstall old version (`uninstaller version`)
   - Uninstaller version is downloaded, if needed

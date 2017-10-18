@@ -14,8 +14,8 @@ This component automates installation (deployment) of products which are represe
 - `IComponent` keeps `artifact coordinates`and lists `IInstallationProcedure`
 - `IInstallationProcedure`: lists `IAction`, every `action` is represented by `installer` class and `params`. All installer classes must be in `product` dependencies.
 - `installer`: class which implements `IInstaller` interface. Is instantiated during `installation procdure`, action paremeters are passed
-- `siteDataDir`: ref https://github.com/harawata/appdirs
-- `Deployed products registry`: `siteDataDir`/products.yml
+- `localAppData`: system.getEnv('localAppData')
+- `Deployed products registry`: `localAppData`/deployed-products.yml
 
 Thus all dependencies of product artifcat are "installers" i.e. implement installation logic. Installation "data" is represented by artifacts which are listed by `IProductStructure` interface.
 
@@ -30,7 +30,7 @@ Scenarious are represeneted by methods of `DeployerEngine`
 - `DeployerEngine`: initializes engine with URL of `product list` artifact and `working folder`. Constructor does NOT do any network operation.
 - `listProducts`: gets data from offline cache
 - `refreshProducts`: refreshes cache for `listProducts`
-- `listProductVersions`: gets data from offline cache
+- `listProductVersions`: gets data from offline cache (products-versions.yml)
 - `refreshProductVersions`: refreshes offline cache
 - `download`: downloads given product
 - `deploy`: deploys given product

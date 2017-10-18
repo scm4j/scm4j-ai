@@ -36,8 +36,11 @@ Scenarious are represeneted by methods of `DeployerEngine`
 
 # Deployment
 
-  - Existing product version is queried using `Deployment URL`
-  - If old version exists it is `stopped`
+  - Existing product version is queried using `IProjectStructure`
+  - If old version exists and upgrade is needed 
+    - `IProjectStructure` is asked which version could uninstall old version (uninstaller version)
+    - Uninstaller version is downloaded, if needed
+    - Old version is stopped
   - If `stop` fails all components are `disabled` and `REBOOT_NEEDED` is returned
 
 # Self-upgrade

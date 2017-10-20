@@ -1,9 +1,12 @@
 package org.scm4j.deployer.engine;
 
+import lombok.Cleanup;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -21,13 +24,13 @@ import org.eclipse.aether.util.filter.DependencyFilterUtils;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.IComponent;
 import org.scm4j.deployer.api.IProduct;
-import org.scm4j.deployer.api.IProductStructure;
 import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
@@ -61,13 +64,13 @@ public class DeployerRunner {
     }
 
     public File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
-        if(productList.getRepos() == null || productList.getProducts() == null) {
+        if (productList.getRepos() == null || productList.getProducts() == null) {
             throw new EProductListEntryNotFound("Product list doesn't loaded");
         }
         String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
         File res = new File(repository, fileRelativePath);
         depCtx = new HashMap<>();
-        if(res.exists()) {
+        if (res.exists()) {
             List<Artifact> artifacts = getComponents(res);
             resolveDependencies(artifacts);
         } else {
@@ -81,19 +84,9 @@ public class DeployerRunner {
     }
 
     @SneakyThrows
-    private List<String> getProductVersions(String groupId, String artifactId) {
-            if(productList.getProductsVersions().get(artifactId) == null) {
-                throw new EProductNotFound("Product not found in all known repositories " + artifactId);
-            } else {
-                return productList.getProductsVersions().get(artifactId);
-            }
-    }
-
-    @SneakyThrows
     private File download(String groupId, String artifactId, String version, String extension) {
         String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
         File res = new File(repository, fileRelativePath);
-        File temp = new File(tmpRepository, fileRelativePath);
         for (ArtifactoryReader repo : productList.getRepos()) {
             try {
                 if (!productList.getProducts().contains(Utils.coordsToString(groupId, artifactId))
@@ -103,25 +96,12 @@ public class DeployerRunner {
             } catch (Exception e) {
                 continue;
             }
-
-            File parent = temp.getParentFile();
-            if (!parent.exists()) {
-                parent.mkdirs();
-            }
-            temp.createNewFile();
-
-            //TODO Divide exceptions on write exception and read exception
-            try (FileOutputStream out = new FileOutputStream(temp);
-                 InputStream in = repo.getContentStream(groupId, artifactId, version, extension)) {
-                IOUtils.copy(in, out);
-            } catch (Exception e1) {
-                continue;
-            }
-
-            List<Artifact> artifacts = getComponents(temp);
-            artifacts = resolveDependencies(artifacts);
             Artifact productArtifact = new DefaultArtifact(groupId, artifactId, extension, version);
-            artifacts.addAll(resolveDependencies(Collections.singletonList(productArtifact)));
+            List<Artifact> artifacts = resolveDependencies(Collections.singletonList(productArtifact));
+            saveComponents(artifacts);
+            artifacts = getComponents(depCtx.get(productArtifact.getArtifactId())
+                    .getArtifacts().get(productArtifact.getArtifactId()));
+            artifacts = resolveDependencies(artifacts);
             saveComponents(artifacts);
             File localMetadataFolder = new File(repository, Utils.coordsToFolderStructure(groupId, artifactId));
             File localMetadata = new File(localMetadataFolder, ArtifactoryReader.LOCAL_METADATA_FILE_NAME);
@@ -157,7 +137,7 @@ public class DeployerRunner {
         Map<String, File> arts = deps.stream()
                 .map(art -> art.setFile(new File(repository, Utils.coordsToRelativeFilePath(art.getGroupId(),
                         art.getArtifactId(), art.getVersion(), art.getExtension()))))
-                .collect(Collectors.toMap(Artifact::getArtifactId, Artifact::getFile ));
+                .collect(Collectors.toMap(Artifact::getArtifactId, Artifact::getFile));
         context.setArtifacts(arts);
         return context;
     }
@@ -177,19 +157,38 @@ public class DeployerRunner {
     }
 
     public List<Artifact> getComponents(File productFile) {
-        return getProductStructure(productFile).getComponents().stream()
+        return getProduct(productFile).getProductStructure().getComponents().stream()
                 .map(IComponent::getArtifactCoords)
                 .collect(Collectors.toList());
     }
 
-    public IProductStructure getProductStructure(File productFile) {
-        String mainClassName = Utils.getExportedClassName(productFile);
-        Object obj = Utils.loadClassFromJar(productFile, mainClassName);
-        if (obj instanceof IProduct) {
-            IProduct product = (IProduct) obj;
-            return product.getProductStructure();
+    @SneakyThrows
+    public IProduct getProduct(File productFile) {
+        MavenXpp3Reader mavenreader = new MavenXpp3Reader();
+        File pomfile = new File(productFile.getParent(), productFile.getName().replace("jar", "pom"));
+        Model model;
+        try {
+            @Cleanup
+            FileReader reader = new FileReader(pomfile);
+            model = mavenreader.read(reader);
+        } catch (Exception e) {
+            throw new EProductNotFound(productFile.getName() + " pom not found!");
+        }
+        Optional<org.apache.maven.model.Dependency> apiDep = model.getDependencies().stream()
+                .filter(dep -> dep.getArtifactId().equals("scm4j-deployer-api"))
+                .findFirst();
+        String apiVersion = apiDep.isPresent() ? apiDep.get().getVersion() : "empty";
+        if (apiVersion.endsWith("SNAPSHOT") || (!apiVersion.equals("empty") &&
+                IProduct.class.getPackage().isCompatibleWith(apiVersion))) {
+            String mainClassName = Utils.getExportedClassName(productFile);
+            Object obj = Utils.loadClassFromJar(productFile, mainClassName);
+            if (obj instanceof IProduct) {
+                return (IProduct) obj;
+            } else {
+                throw new RuntimeException();
+            }
         } else {
-            throw new RuntimeException();
+            throw new EProductNotFound("Can't load " + productFile.getName() + " class to classpath");
         }
     }
 }

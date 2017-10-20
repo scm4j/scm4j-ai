@@ -3,10 +3,8 @@ package org.scm4j.deployer.engine;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
-import org.mockito.Mockito;
 import org.scm4j.deployer.api.DeploymentContext;
-import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
-import org.scm4j.deployer.engine.exceptions.ENoMetadata;
+import org.scm4j.deployer.api.IProduct;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -35,11 +33,7 @@ public class DeployerEngineTest {
 
     private static String ublArtifactId = "UBL";
     private static String untillArtifactId = "unTILL";
-    private static String jooqArtifact = "jooq";
-    private static String axisArtifact = "axis";
     private static String axisJaxrpcArtifact = "axis-jaxrpc";
-    private static File pathToUntill;
-    private static String installersArtifactId = "installers";
 
     @After
     public void tearDown() throws IOException {
@@ -63,21 +57,23 @@ public class DeployerEngineTest {
         aw.generateProductListArtifact();
         aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "124.5", "jar",
                 "ProductStructureDataLoader", env.getArtifactory1Folder());
-        aw.installArtifact(TEST_UNTILL_GROUP_ID, installersArtifactId, "1.1.0", "jar",
+        aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "124.5", "jar",
+                "ProductStructureDataLoader", env.getArtifactory1Folder());
+        aw.installArtifact(TEST_UNTILL_GROUP_ID, "installers", "0.1.0", "jar",
                 "ExeRunner", env.getArtifactory1Folder());
+        aw.installArtifact(TEST_UNTILL_GROUP_ID, "scm4j-deployer-api", "1.1.0", "jar",
+                "Api", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, ublArtifactId, "22.2", "war",
                 TEST_UBL_22_2_CONTENT, env.getArtifactory1Folder());
-        aw.installArtifact(TEST_JOOQ_GROUP_ID, jooqArtifact, "3.1.0", "jar",
+        aw.installArtifact(TEST_JOOQ_GROUP_ID, "jooq", "3.1.0", "jar",
                 TEST_DEP_CONTENT, env.getArtifactory1Folder());
         aw = new ArtifactoryWriter(env.getArtifactory2Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar",
                 "ProductStructureDataLoader", env.getArtifactory1Folder());
-        aw.installArtifact(TEST_AXIS_GROUP_ID, axisArtifact, "1.4", "jar",
+        aw.installArtifact(TEST_AXIS_GROUP_ID, "axis", "1.4", "jar",
                 TEST_DEP_CONTENT, env.getArtifactory2Folder());
         aw.installArtifact(TEST_AXIS_GROUP_ID, axisJaxrpcArtifact, "1.4", "jar",
                 TEST_DEP_CONTENT, env.getArtifactory2Folder());
-        pathToUntill = new File(env.getArtifactory1Folder(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
-                untillArtifactId, "123.4", ".jar"));
     }
 
     @Test
@@ -163,24 +159,20 @@ public class DeployerEngineTest {
 
     @Test
     public void testDownloadAndDeployProduct() throws Exception {
-        DeployerRunner mockedRunner = Mockito.spy(new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url()));
-        mockedRunner.getProductList().readFromProductList();
-        File testFile = mockedRunner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
+        DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        runner.getProductList().readFromProductList();
+        File testFile = runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
         assertTrue(FileUtils.contentEquals(testFile,new File(env.getArtifactory2Folder(),
                 Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
                         untillArtifactId, "123.4", "jar"))));
-        testFile = new File(mockedRunner.getRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
+        testFile = new File(runner.getRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
                 "22.2", ".war"));
         assertTrue(testFile.exists());
         assertEquals(FileUtils.readFileToString(testFile, Charset.forName("UTF-8")), TEST_UBL_22_2_CONTENT);
-        testFile = new File(mockedRunner.getRepository(), Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,
+        testFile = new File(runner.getRepository(), Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,
                 axisJaxrpcArtifact, "1.4", "jar"));
         assertTrue(testFile.exists());
         assertEquals(FileUtils.readFileToString(testFile, Charset.forName("UTF-8")), TEST_DEP_CONTENT);
-
-        //don't download second time
-        testFile = mockedRunner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
-        assertTrue(testFile.exists());
     }
 
     @Test
@@ -294,4 +286,10 @@ public class DeployerEngineTest {
         assertNull(ctx.getParams());
     }
 
+    @Test
+    public void testCompatibility() {
+//        DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
+//        de.getRunner().getProduct(new File("C:\\Users\\kvv\\IdeaProjects\\unTill\\build\\libs\\unTill-124.0-SNAPSHOT.jar"));
+        System.out.println(IProduct.class.getName());
+    }
 }

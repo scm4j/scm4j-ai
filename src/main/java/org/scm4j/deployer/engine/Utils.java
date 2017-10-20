@@ -6,8 +6,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.artifact.ArtifactType;
-import org.eclipse.aether.artifact.ArtifactTypeRegistry;
 import org.eclipse.aether.artifact.DefaultArtifactType;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
@@ -112,8 +110,8 @@ public class Utils {
     public static Object loadClassFromJar(File jarFile, String className) {
         @Cleanup
         URLClassLoader loader = URLClassLoader.newInstance(new URL[] {jarFile.toURI().toURL()});
-        Class<?> loadedClass = loader.loadClass(className);
-        return loadedClass.newInstance();
+        Class<?> clazz = loader.loadClass(className);
+        return clazz.newInstance();
     }
 
     public static String getGroupId(DeployerRunner runner, String artifactId) {
@@ -124,4 +122,5 @@ public class Utils {
                 .get(0);
         return StringUtils.substringBefore(groupAndArtifactID, ":");
     }
+
 }

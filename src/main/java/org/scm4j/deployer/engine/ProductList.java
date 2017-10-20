@@ -10,14 +10,12 @@ import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
 import org.scm4j.deployer.engine.exceptions.ENoMetadata;
-import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.net.URL;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Data
 public class ProductList {

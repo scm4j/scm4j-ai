@@ -7,7 +7,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
-import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -15,7 +14,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ArtifactoryReader {
 

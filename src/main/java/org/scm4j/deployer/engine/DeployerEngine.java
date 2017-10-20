@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Data
 public class DeployerEngine implements IProductDeployer {
 
-    enum Command { DEPLOY, UNDEPLOY, UPGRADE}
+    enum Command {DEPLOY, UNDEPLOY, UPGRADE}
 
     private final File workingFolder;
     private final String productListArtifactoryUrl;
@@ -33,15 +33,14 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     public void deploy(String artifactId, String version) {
-        File product = download(artifactId, version);
-        List<IComponent> components = runner.getProductStructure(product).getComponents();
+        File productFile = download(artifactId, version);
+        IProduct product = runner.getProduct(productFile);
+        if(!product.getDependentProducts().isEmpty()) {
+            //TODO
+        }
+        List<IComponent> components = product.getProductStructure().getComponents();
         for (IComponent component : components) {
-            try {
-                installComponent(component, Command.DEPLOY);
-            } catch (Exception e) {
-                System.err.println("Can't install component " + component.getArtifactCoords().getArtifactId());
-                e.printStackTrace();
-            }
+            installComponent(component, Command.DEPLOY, productFile);
         }
     }
 
@@ -108,8 +107,9 @@ public class DeployerEngine implements IProductDeployer {
         return null;
     }
 
+    //TODO load installers classes from jar
     @SneakyThrows
-    private void installComponent(IComponent component, Command command) {
+    private void installComponent(IComponent component, Command command, File productFile) {
         IInstallationProcedure procedure = component.getInstallationProcedure();
         Map<Class, Map<String, Object>> params = procedure.getActionsParams();
         String artifactId = component.getArtifactCoords().getArtifactId();
@@ -119,7 +119,7 @@ public class DeployerEngine implements IProductDeployer {
         if (command == Command.UNDEPLOY)
             actions = Lists.reverse(actions);
         for (IAction action : actions) {
-            Object obj = action.getInstallerClass().newInstance();
+            Object obj = Utils.loadClassFromJar(productFile, action.getInstallerClass().getName());
             if (obj instanceof IComponentDeployer) {
                 IComponentDeployer installer = (IComponentDeployer) obj;
                 installer.init(context);

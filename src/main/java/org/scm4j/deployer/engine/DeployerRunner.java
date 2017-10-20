@@ -4,7 +4,6 @@ import lombok.Cleanup;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.eclipse.aether.RepositorySystem;
@@ -29,9 +28,7 @@ import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -96,11 +93,10 @@ public class DeployerRunner {
             } catch (Exception e) {
                 continue;
             }
-            Artifact productArtifact = new DefaultArtifact(groupId, artifactId, extension, version);
-            List<Artifact> artifacts = resolveDependencies(Collections.singletonList(productArtifact));
+            List<Artifact> artifacts = resolveDependencies(
+                    Collections.singletonList(new DefaultArtifact(groupId, artifactId, extension, version)));
             saveComponents(artifacts);
-            artifacts = getComponents(depCtx.get(productArtifact.getArtifactId())
-                    .getArtifacts().get(productArtifact.getArtifactId()));
+            artifacts = getComponents(res);
             artifacts = resolveDependencies(artifacts);
             saveComponents(artifacts);
             File localMetadataFolder = new File(repository, Utils.coordsToFolderStructure(groupId, artifactId));
@@ -134,10 +130,7 @@ public class DeployerRunner {
     private DeploymentContext getDeploymentContext(Artifact artifact, List<Artifact> deps) {
         DeploymentContext context = new DeploymentContext(artifact.getArtifactId());
         context.setDeploymentURL(new URL(new URL(DEFAULT_DEPLOYMENT_URL), artifact.getArtifactId()));
-        Map<String, File> arts = deps.stream()
-                .map(art -> art.setFile(new File(repository, Utils.coordsToRelativeFilePath(art.getGroupId(),
-                        art.getArtifactId(), art.getVersion(), art.getExtension()))))
-                .collect(Collectors.toMap(Artifact::getArtifactId, Artifact::getFile));
+        Map<String, File> arts = deps.stream().collect(Collectors.toMap(Artifact::getArtifactId, Artifact::getFile));
         context.setArtifacts(arts);
         return context;
     }

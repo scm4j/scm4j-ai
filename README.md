@@ -14,6 +14,8 @@ This component automates installation (deployment) of products which are represe
 - `IComponent` keeps `artifact coordinates`and lists `IInstallationProcedure`
 - `IInstallationProcedure`: lists `IAction`, every `action` is represented by `installer` class and `params`. All installer classes must be in `product` dependencies.
 - `installer`: class which implements `IInstaller` interface. Is instantiated during `installation procdure`, action paremeters are passed
+- `localAppData`: system.getEnv('localAppData')
+- `Deployed products registry`: `localAppData`/deployed-products.yml
 
 Thus all dependencies of product artifcat are "installers" i.e. implement installation logic. Installation "data" is represented by artifacts which are listed by `IProductStructure` interface.
 
@@ -28,17 +30,22 @@ Scenarious are represeneted by methods of `DeployerEngine`
 - `DeployerEngine`: initializes engine with URL of `product list` artifact and `working folder`. Constructor does NOT do any network operation.
 - `listProducts`: gets data from offline cache
 - `refreshProducts`: refreshes cache for `listProducts`
-- `listProductVersions`: gets data from offline cache
+- `listProductVersions`: gets data from offline cache (products-versions.yml)
 - `refreshProductVersions`: refreshes offline cache
 - `download`: downloads given product
 - `deploy`: deploys given product
-- `listDeployedProducts`: lists all deployed product
+- `listDeployedProducts`: lists all deployed product from `Deployed products registry`
 
 # Deployment
 
-  - Existing product version is queried using `Deployment URL`
-  - If old version exists it is `stopped`
+- Existing product version is queried using `listDeployedProducts`, if not found  IProjectStructure.`queryLegacyVersion()` is used.
+- If old version exists and upgrade is needed
+  - `IProjectStructure` is asked which version could uninstall old version (`uninstaller version`)
+  - Uninstaller version is downloaded, if needed
+  - Old version is stopped
   - If `stop` fails all components are `disabled` and `REBOOT_NEEDED` is returned
+  - Old version uninstalled
+- New version is installed
 
 # Self-upgrade
 

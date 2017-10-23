@@ -10,10 +10,7 @@ import org.scm4j.deployer.api.*;
 import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 
 import java.io.File;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Data
@@ -21,12 +18,19 @@ public class DeployerEngine implements IProductDeployer {
 
     enum Command {DEPLOY, UNDEPLOY, UPGRADE}
 
+    private static final String DEPLOYED_PRODUCTS = "deployed-products.yml";
+
     private final File workingFolder;
+    private final File flashFolder;
     private final String productListArtifactoryUrl;
     private final DeployerRunner runner;
 
-    public DeployerEngine(File workingFolder, String productListArtifactoryUrl) {
+    //TODO 2 folders + url
+    public DeployerEngine(File flashFolder, File workingFolder, String productListArtifactoryUrl) {
+        if (flashFolder == null)
+            flashFolder = workingFolder;
         this.workingFolder = workingFolder;
+        this.flashFolder = flashFolder;
         this.productListArtifactoryUrl = productListArtifactoryUrl;
         runner = new DeployerRunner(workingFolder, productListArtifactoryUrl);
     }
@@ -35,12 +39,28 @@ public class DeployerEngine implements IProductDeployer {
     public void deploy(String artifactId, String version) {
         File productFile = download(artifactId, version);
         IProduct product = runner.getProduct(productFile);
-        if(!product.getDependentProducts().isEmpty()) {
-            //TODO
-        }
+        File deployedProductsFolder = new File(workingFolder, DEPLOYED_PRODUCTS);
+        Map<String, Set<String>> deployedProducts = Utils.readYml(deployedProductsFolder);
+        //TODO deployDependent()
         List<IComponent> components = product.getProductStructure().getComponents();
         for (IComponent component : components) {
             installComponent(component, Command.DEPLOY, productFile);
+        }
+        deployedProducts.getOrDefault(artifactId, Collections.emptySet()).add(version);
+        Utils.writeYaml(deployedProducts, deployedProductsFolder);
+    }
+
+    public void deployDependent(IProduct product, Map<String, Set<String>> deployedProducts) {
+        if(!product.getDependentProducts().isEmpty()) {
+            List<String> dependents = product.getDependentProducts();
+            for(String dep : dependents) {
+                String[] artIdPlusVers = dep.split("-");
+                if(deployedProducts.getOrDefault(artIdPlusVers[0], new HashSet<>()).contains(artIdPlusVers[1])) {
+                    continue;
+                } else {
+
+                }
+            }
         }
     }
 
@@ -76,18 +96,19 @@ public class DeployerEngine implements IProductDeployer {
         return listProducts();
     }
 
+    //TODO sort result
     @Override
     public Map<String, Boolean> listProductVersions(String artifactId) {
-        String groupId = Utils.getGroupId(runner, artifactId);
-        Optional<List<String>> versions = Optional.ofNullable
-                (runner.getProductList().readProductVersions(groupId, artifactId).get(artifactId));
+        Optional<Set<String>> versions = Optional.ofNullable
+                (runner.getProductList().readProductVersions(artifactId).get(artifactId));
         Map<String, Boolean> downloadedVersions = new LinkedHashMap<>();
         versions.ifPresent(strings -> strings.forEach
-                (version -> downloadedVersions.put(version, versionExists(groupId, artifactId, version))));
+                (version -> downloadedVersions.put(version, versionExists(artifactId, version))));
         return downloadedVersions;
     }
 
-    private Boolean versionExists(String groupId, String artifactId, String version) {
+    private Boolean versionExists(String artifactId, String version) {
+        String groupId = Utils.getGroupId(runner, artifactId);
         File productVersionFolder = new File(runner.getRepository(), Utils.coordsToFolderStructure(groupId, artifactId, version));
         return productVersionFolder.exists();
     }
@@ -103,11 +124,10 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @Override
-    public List<String> listDeployedProducts() {
-        return null;
+    public Map<String, Set<String>> listDeployedProducts() {
+        return Utils.readYml(new File(workingFolder, DEPLOYED_PRODUCTS));
     }
 
-    //TODO load installers classes from jar
     @SneakyThrows
     private void installComponent(IComponent component, Command command, File productFile) {
         IInstallationProcedure procedure = component.getInstallationProcedure();

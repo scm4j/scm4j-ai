@@ -8,9 +8,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class AITestEnvironment {
 	
@@ -59,11 +57,11 @@ public class AITestEnvironment {
 		DumperOptions options = new DumperOptions();
 		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
 		Yaml yaml = new Yaml(options);
-		Map<String, ArrayList<String>> productList = new HashMap<>();
-		ArrayList<String> repos = new ArrayList<>();
+		Map<String, Set<String>> productList = new HashMap<>();
+		Set<String> repos = new HashSet<>();
 		repos.add(artifactory1Url);
 		repos.add(artifactory2Url);
-		productList.put(ProductList.PRODUCTS, new ArrayList<>());
+		productList.put(ProductList.PRODUCTS, new HashSet<>());
 		productList.put(ProductList.REPOSITORIES, repos);
 		String yamlOutput = yaml.dump(productList);
 		FileWriter fw = new FileWriter(productListFile);

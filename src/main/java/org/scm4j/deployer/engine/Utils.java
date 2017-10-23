@@ -17,10 +17,17 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.artifact.DefaultArtifactTypeRegistry;
 import org.scm4j.deployer.engine.loggers.ConsoleRepositoryListener;
 import org.scm4j.deployer.engine.loggers.ConsoleTransferListener;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -123,4 +130,27 @@ public class Utils {
         return StringUtils.substringBefore(groupAndArtifactID, ":");
     }
 
+    @SneakyThrows
+    public static void writeYaml(Map<String, Set<String>> entry, File output) {
+        @Cleanup
+        FileWriter writer = new FileWriter(output);
+        DumperOptions options = new DumperOptions();
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        Yaml yaml = new Yaml(options);
+        String yamlOutput = yaml.dump(entry);
+        writer.write(yamlOutput);
+    }
+
+    @SuppressWarnings("unchecked")
+    @SneakyThrows
+    public static Map<String, Set<String>> readYml(File input) {
+        if (input.exists()) {
+            @Cleanup
+            FileReader reader = new FileReader(input);
+            Yaml yaml = new Yaml();
+            return yaml.loadAs(reader, HashMap.class);
+        } else {
+            return new HashMap<>();
+        }
+    }
 }

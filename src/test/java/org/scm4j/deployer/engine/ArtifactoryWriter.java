@@ -11,10 +11,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -63,7 +60,7 @@ public class ArtifactoryWriter {
     private Metadata getProductListArtifactMetadata() {
         Metadata metaData = createArtifactMetadata(ProductList.PRODUCT_LIST_GROUP_ID,
                 ProductList.PRODUCT_LIST_ARTIFACT_ID);
-        List<String> versions = metaData.getVersioning().getVersions();
+        Set<String> versions = new HashSet<>(metaData.getVersioning().getVersions());
         versions.add(PRODUCT_LIST_DEFAULT_VERSION);
         versions.add(PRODUCT_LIST_VERSION);
         metaData.getVersioning().setRelease(PRODUCT_LIST_DEFAULT_VERSION);
@@ -144,7 +141,7 @@ public class ArtifactoryWriter {
                 Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
                         ProductList.PRODUCT_LIST_ARTIFACT_ID, PRODUCT_LIST_DEFAULT_VERSION, ".yml"));
 
-        Map<String, ArrayList<String>> products = getProductListContent(remoteProductListFileLocation);
+        Map<String, Set<String>> products = getProductListContent(remoteProductListFileLocation);
 
         if (!products.get(ProductList.PRODUCTS).contains(Utils.coordsToString(groupId, artifactId))) {
             products.get(ProductList.PRODUCTS).add(Utils.coordsToString(groupId, artifactId));
@@ -154,7 +151,7 @@ public class ArtifactoryWriter {
         }
     }
 
-    private void writeProductListContent(Map<String, ArrayList<String>> products, File remoteProductListFileLocation)
+    private void writeProductListContent(Map<String, Set<String>> products, File remoteProductListFileLocation)
             throws Exception {
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
@@ -165,16 +162,16 @@ public class ArtifactoryWriter {
         }
     }
 
-    private Map<String, ArrayList<String>> getProductListContent(File remoteProductListFileLocation)
+    private Map<String, Set<String>> getProductListContent(File remoteProductListFileLocation)
             throws IOException {
         try (FileReader reader = new FileReader(remoteProductListFileLocation)) {
             YAML = new Yaml();
             @SuppressWarnings("unchecked")
-            Map<String, ArrayList<String>> res = YAML.loadAs(reader, HashMap.class);
+            Map<String, Set<String>> res = YAML.loadAs(reader, HashMap.class);
             if (res == null) {
                 res = new HashMap<>();
-                res.put(ProductList.PRODUCTS, new ArrayList<>());
-                res.put(ProductList.REPOSITORIES, new ArrayList<>());
+                res.put(ProductList.PRODUCTS, new HashSet<>());
+                res.put(ProductList.REPOSITORIES, new HashSet<>());
             }
             return res;
         } catch (IOException e) {

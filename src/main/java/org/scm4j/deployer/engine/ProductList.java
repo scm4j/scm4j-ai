@@ -10,8 +10,6 @@ import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
 import org.scm4j.deployer.engine.exceptions.ENoMetadata;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.net.URL;
@@ -21,15 +19,15 @@ import java.util.*;
 public class ProductList {
 
     private ArtifactoryReader productListReader;
-    private List<ArtifactoryReader> repos;
+    private Set<ArtifactoryReader> repos;
     private Set<String> products;
-    private List<String> versions;
+    private Set<String> versions;
     private List<String> downloadedProducts;
     private File localRepo;
     private File localProductList;
     private File versionsYml;
-    private Map<String, List<String>> productListEntry;
-    private Map<String, List<String>> productsVersions;
+    private Map<String, Set<String>> productListEntry;
+    private Map<String, Set<String>> productsVersions;
 
     public static final String PRODUCT_LIST_GROUP_ID = "org.scm4j.ai";
     public static final String PRODUCT_LIST_ARTIFACT_ID = "product-list";
@@ -45,7 +43,7 @@ public class ProductList {
     }
 
 
-    public Map<String, List<String>> readFromProductList() throws Exception {
+    public Map<String, Set<String>> readFromProductList() throws Exception {
         String productListReleaseVersion = getLocalProductListReleaseVersion();
         if (productListReleaseVersion == null) {
             downloadProductList();
@@ -67,7 +65,7 @@ public class ProductList {
     }
 
     //TODO refactor this
-    public Map<String, List<String>> readProductVersions(String groupId, String artifactId) {
+    public Map<String, Set<String>> readProductVersions(String artifactId) {
         loadProductVersions(artifactId);
         return productsVersions;
     }
@@ -76,7 +74,7 @@ public class ProductList {
     private void downloadProductsVersions() throws ENoMetadata {
         versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
         productsVersions = new HashMap<>();
-        List<String> vers = new ArrayList<>();
+        Set<String> vers = new HashSet<>();
         for (String product : products) {
             String artifactId = StringUtils.substringAfter(product, ":");
             for (ArtifactoryReader reader : repos) {
@@ -84,31 +82,31 @@ public class ProductList {
             }
             productsVersions.put(artifactId, vers);
         }
-        yamlWriter(productsVersions, versionsYml);
+        Utils.writeYaml(productsVersions, versionsYml);
     }
 
     private void loadProductVersions(String artifactId) {
-        productsVersions = readYml(versionsYml);
+        productsVersions = Utils.readYml(versionsYml);
         if (productsVersions == null)
             productsVersions = new HashMap<>();
-        versions = new ArrayList<>();
-        versions.addAll(productsVersions.getOrDefault(artifactId, new ArrayList<>()));
+        versions = new HashSet<>();
+        versions.addAll(productsVersions.getOrDefault(artifactId, new HashSet<>()));
     }
 
     public void refreshProductVersions(String groupId, String artifactId) throws ENoMetadata {
-        productsVersions = readYml(versionsYml);
+        productsVersions = Utils.readYml(versionsYml);
         if (productsVersions == null) {
             productsVersions = new HashMap<>();
         }
-        List<String> vers = new ArrayList<>();
-        for(ArtifactoryReader reader : repos) {
+        Set<String> vers = new HashSet<>();
+        for (ArtifactoryReader reader : repos) {
             vers.addAll(reader.getProductVersions(groupId, artifactId));
         }
         if (vers.isEmpty()) {
             throw new ENoMetadata(artifactId + " metadata don't find in all known repos");
         } else {
             productsVersions.put(artifactId, vers);
-            yamlWriter(productsVersions, versionsYml);
+            Utils.writeYaml(productsVersions, versionsYml);
         }
     }
 
@@ -143,42 +141,17 @@ public class ProductList {
     }
 
     private void loadProductListEntry() {
-        productListEntry = readYml(localProductList);
-        repos = new ArrayList<>();
+        productListEntry = Utils.readYml(localProductList);
+        repos = new LinkedHashSet<>();
         productListEntry.get(REPOSITORIES).forEach(name -> repos.add(ArtifactoryReader.getByUrl(name)));
         products = new HashSet<>();
         products.addAll(productListEntry.get(PRODUCTS));
     }
 
-    @SuppressWarnings("unchecked")
-    @SneakyThrows
-    private Map<String, List<String>> readYml(File input) {
-        if (input.exists()) {
-            @Cleanup
-            FileReader reader = new FileReader(input);
-            Yaml yaml = new Yaml();
-            return yaml.loadAs(reader, HashMap.class);
-        } else {
-            return new HashMap<>();
-        }
-    }
-
     @SneakyThrows
     public void appendLocalRepo() {
-        if (!productListEntry.get(REPOSITORIES).contains(localRepo.toURI().toURL().toString()))
-            productListEntry.get(REPOSITORIES).add(0, localRepo.toURI().toURL().toString());
-        yamlWriter(productListEntry, localProductList);
-    }
-
-    @SneakyThrows
-    private void yamlWriter(Map<String, List<String>> entry, File output) {
-        @Cleanup
-        FileWriter writer = new FileWriter(output);
-        DumperOptions options = new DumperOptions();
-        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-        Yaml yaml = new Yaml(options);
-        String yamlOutput = yaml.dump(entry);
-        writer.write(yamlOutput);
+        productListEntry.get(REPOSITORIES).add(localRepo.toURI().toURL().toString());
+        Utils.writeYaml(productListEntry, localProductList);
     }
 
     @SneakyThrows

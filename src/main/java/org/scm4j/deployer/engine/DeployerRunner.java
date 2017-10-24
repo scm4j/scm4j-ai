@@ -37,27 +37,26 @@ import java.util.stream.Collectors;
 public class DeployerRunner {
 
     private static final String REPOSITORY_FOLDER_NAME = "repository";
-    private File tmpRepository;
-    private File repository;
+    private static final File TMP_REPOSITORY = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp");
+    private static final String DEFAULT_DEPLOYMENT_URL = "file://localhost/C:/tools/";
+    private final ProductList productList;
+    private final File repository;
+    private final File flashRepository;
     private RepositorySystem system;
     private RepositorySystemSession session;
-    private ProductList productList;
     private Map<String, DeploymentContext> depCtx;
 
-    private static final String DEFAULT_DEPLOYMENT_URL = "file://localhost/C:/tools/";
-
     @SneakyThrows
-    public DeployerRunner(File workingFolder, String productListArtifactoryUrl) {
-        repository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
-        if (!repository.exists()) {
+    public DeployerRunner(File flashFolder, File workingFolder, String productListArtifactoryUrl) {
+        if(flashFolder == null)
+            flashFolder = workingFolder;
+        this.repository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
+        this.flashRepository = new File(flashFolder, REPOSITORY_FOLDER_NAME);
+        if (!repository.exists())
             repository.mkdirs();
-        }
-
         ArtifactoryReader productListReader = ArtifactoryReader.getByUrl(productListArtifactoryUrl);
-        productList = new ProductList(repository, productListReader);
-
-        tmpRepository = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp");
-        system = Utils.newRepositorySystem();
+        this.productList = new ProductList(repository, productListReader);
+        this.system = Utils.newRepositorySystem();
     }
 
     public File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
@@ -65,13 +64,13 @@ public class DeployerRunner {
             throw new EProductListEntryNotFound("Product list doesn't loaded");
         }
         String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
-        File res = new File(repository, fileRelativePath);
+        File res = new File(flashRepository, fileRelativePath);
         depCtx = new HashMap<>();
         if (res.exists()) {
             List<Artifact> artifacts = getComponents(res);
             resolveDependencies(artifacts);
         } else {
-            res = download(groupId, artifactId, version, extension);
+            res = download(groupId, artifactId, version, extension, res);
             if (res == null) {
                 throw new EProductNotFound(Utils.coordsToString(groupId, artifactId, version, extension)
                         + " is not found in all known repositories");
@@ -81,9 +80,7 @@ public class DeployerRunner {
     }
 
     @SneakyThrows
-    private File download(String groupId, String artifactId, String version, String extension) {
-        String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
-        File res = new File(repository, fileRelativePath);
+    private File download(String groupId, String artifactId, String version, String extension, File productFile) {
         for (ArtifactoryReader repo : productList.getRepos()) {
             try {
                 if (!productList.getProducts().contains(Utils.coordsToString(groupId, artifactId))
@@ -95,15 +92,15 @@ public class DeployerRunner {
             }
             List<Artifact> artifacts = resolveDependencies(
                     Collections.singletonList(new DefaultArtifact(groupId, artifactId, extension, version)));
-            saveComponents(artifacts);
-            artifacts = getComponents(res);
+            saveComponents(artifacts, flashRepository);
+            artifacts = getComponents(productFile);
             artifacts = resolveDependencies(artifacts);
-            saveComponents(artifacts);
-            File localMetadataFolder = new File(repository, Utils.coordsToFolderStructure(groupId, artifactId));
+            saveComponents(artifacts, flashRepository);
+            File localMetadataFolder = new File(flashRepository, Utils.coordsToFolderStructure(groupId, artifactId));
             File localMetadata = new File(localMetadataFolder, ArtifactoryReader.LOCAL_METADATA_FILE_NAME);
             localMetadata.renameTo(new File(localMetadataFolder, ArtifactoryReader.METADATA_FILE_NAME));
             productList.appendLocalRepo();
-            return res;
+            return productFile;
         }
         return null;
     }
@@ -111,7 +108,7 @@ public class DeployerRunner {
     @SneakyThrows
     private List<Artifact> resolveDependencies(List<Artifact> artifacts) {
         List<Artifact> components = new ArrayList<>();
-        session = Utils.newRepositorySystemSession(system, tmpRepository);
+        session = Utils.newRepositorySystemSession(system, TMP_REPOSITORY);
         CollectRequest collectRequest = new CollectRequest();
         productList.getRepos().forEach(artifactoryReader -> collectRequest.addRepository
                 (new RemoteRepository.Builder("", "default", artifactoryReader.toString()).build()));
@@ -136,17 +133,17 @@ public class DeployerRunner {
     }
 
     @SneakyThrows
-    private void saveComponents(List<Artifact> artifacts) {
+    private void saveComponents(List<Artifact> artifacts, File repository) {
         session = Utils.newRepositorySystemSession(system, repository);
         InstallRequest installRequest = new InstallRequest();
         for (Artifact artifact : artifacts) {
             Artifact pomArtifact = new SubArtifact(artifact, "", "pom");
-            pomArtifact = pomArtifact.setFile(new File(tmpRepository, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
+            pomArtifact = pomArtifact.setFile(new File(TMP_REPOSITORY, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
                     artifact.getArtifactId(), artifact.getVersion(), ".pom")));
             installRequest.addArtifact(artifact).addArtifact(pomArtifact);
         }
         system.install(session, installRequest);
-        FileUtils.deleteDirectory(tmpRepository);
+        FileUtils.deleteDirectory(TMP_REPOSITORY);
     }
 
     public List<Artifact> getComponents(File productFile) {

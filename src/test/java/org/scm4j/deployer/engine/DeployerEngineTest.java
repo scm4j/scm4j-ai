@@ -79,7 +79,7 @@ public class DeployerEngineTest {
 
     @Test
     public void testGetProducts() throws Exception {
-        DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        DeployerRunner runner = new DeployerRunner(null,env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
         Set<String> products = runner.getProductList().getProducts();
         assertNotNull(products);
@@ -90,7 +90,7 @@ public class DeployerEngineTest {
 
     @Test
     public void testGetVersions() throws Exception {
-        DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        DeployerRunner runner = new DeployerRunner(null,env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
         Set<String> versions = runner.getProductList().getProductsVersions().get(untillArtifactId);
         assertNotNull(versions);
@@ -102,7 +102,7 @@ public class DeployerEngineTest {
     @Test
     public void testNoReposNoWork() throws FileNotFoundException {
         try {
-            new DeployerRunner(env.getEnvFolder(), "random URL");
+            new DeployerRunner(null, env.getEnvFolder(), "random URL");
             fail();
         } catch (Exception e) {
 
@@ -111,7 +111,7 @@ public class DeployerEngineTest {
 
     @Test
     public void testUnknownProduct() throws Exception {
-        DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        DeployerRunner runner = new DeployerRunner(null,env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
         assertEquals(Collections.emptyList(),
                 runner.getProductList().getProductListReader().getProductVersions("eu.untill", "unknown artifact"));
@@ -125,7 +125,7 @@ public class DeployerEngineTest {
 
     @Test
     public void testUnknownVersion() throws Exception {
-        DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        DeployerRunner runner = new DeployerRunner(null,env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
         try {
             runner.get(TEST_UNTILL_GROUP_ID, ublArtifactId, "unknown version", ".jar");
@@ -149,7 +149,7 @@ public class DeployerEngineTest {
 
     @Test
     public void testLoadRepos() throws Exception {
-        DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        DeployerRunner runner = new DeployerRunner(null,env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
         Set<ArtifactoryReader> repos = runner.getProductList().getRepos();
         assertNotNull(repos);
@@ -160,7 +160,7 @@ public class DeployerEngineTest {
 
     @Test
     public void testDownloadAndDeployProduct() throws Exception {
-        DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        DeployerRunner runner = new DeployerRunner(null,env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
         File testFile = runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
         assertTrue(FileUtils.contentEquals(testFile,new File(env.getArtifactory2Folder(),
@@ -189,7 +189,7 @@ public class DeployerEngineTest {
 
     @Test
     public void testAppendRepos() throws Exception {
-        DeployerRunner runner = new DeployerRunner(env.getEnvFolder(), env.getArtifactory1Url());
+        DeployerRunner runner = new DeployerRunner(null,env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
         Set<ArtifactoryReader> remoteRepos = runner.getProductList().getRepos();
         assertTrue(remoteRepos.size() == 2);
@@ -197,7 +197,7 @@ public class DeployerEngineTest {
         assertTrue(reposNames.containsAll(Arrays.asList(env.getArtifactory1Url()
                 ,env.getArtifactory2Url())));
         runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
-        DeployerRunner runner1 = new DeployerRunner(env.getBaseTestFolder(), runner.getRepository().toURI().toURL().toString());
+        DeployerRunner runner1 = new DeployerRunner(null,env.getBaseTestFolder(), runner.getRepository().toURI().toURL().toString());
         runner1.getProductList().readFromProductList();
         remoteRepos = runner1.getProductList().getRepos();
         reposNames = remoteRepos.stream().map(ArtifactoryReader::toString).collect(Collectors.toSet());
@@ -289,10 +289,4 @@ public class DeployerEngineTest {
         assertNull(ctx.getParams());
     }
 
-    @Test
-    public void testCompatibility() {
-//        DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getArtifactory1Url());
-//        de.getRunner().getProduct(new File("C:\\Users\\kvv\\IdeaProjects\\unTill\\build\\libs\\unTill-124.0-SNAPSHOT.jar"));
-        System.out.println(IProduct.class.getName());
-    }
 }

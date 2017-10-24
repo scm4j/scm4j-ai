@@ -18,7 +18,9 @@ import org.eclipse.aether.util.artifact.DefaultArtifactTypeRegistry;
 import org.scm4j.deployer.engine.loggers.ConsoleRepositoryListener;
 import org.scm4j.deployer.engine.loggers.ConsoleTransferListener;
 import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
 
 import java.io.File;
 import java.io.FileReader;
@@ -148,7 +150,7 @@ public class Utils {
             @Cleanup
             FileReader reader = new FileReader(input);
             Yaml yaml = new Yaml();
-            return yaml.loadAs(reader, HashMap.class);
+            return (Map<String, Set<String>>) yaml.load(reader);
         } else {
             return new HashMap<>();
         }

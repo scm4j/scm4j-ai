@@ -3,6 +3,7 @@ package org.scm4j.deployer.engine;
 import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -14,6 +15,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Data
+@Slf4j
 public class DeployerEngine implements IProductDeployer {
 
     enum Command {DEPLOY, UNDEPLOY, UPGRADE}
@@ -25,32 +27,36 @@ public class DeployerEngine implements IProductDeployer {
     private final String productListArtifactoryUrl;
     private final DeployerRunner runner;
 
-    //TODO 2 folders + url
     public DeployerEngine(File flashFolder, File workingFolder, String productListArtifactoryUrl) {
         if (flashFolder == null)
             flashFolder = workingFolder;
         this.workingFolder = workingFolder;
         this.flashFolder = flashFolder;
         this.productListArtifactoryUrl = productListArtifactoryUrl;
-        runner = new DeployerRunner(workingFolder, productListArtifactoryUrl);
+        this.runner = new DeployerRunner(flashFolder, workingFolder, productListArtifactoryUrl);
     }
 
     @Override
     public void deploy(String artifactId, String version) {
-        File productFile = download(artifactId, version);
-        IProduct product = runner.getProduct(productFile);
         File deployedProductsFolder = new File(workingFolder, DEPLOYED_PRODUCTS);
         Map<String, Set<String>> deployedProducts = Utils.readYml(deployedProductsFolder);
-        //TODO deployDependent()
-        List<IComponent> components = product.getProductStructure().getComponents();
-        for (IComponent component : components) {
-            installComponent(component, Command.DEPLOY, productFile);
+        if(deployedProducts.getOrDefault(artifactId, new HashSet<>()).contains(version)) {
+            log.trace(artifactId + "-" + version + " already installed!");
+        } else {
+            File productFile = download(artifactId, version);
+            IProduct product = runner.getProduct(productFile);
+            //TODO check existing product and copy from flash to local machine
+            //TODO deployDependent()
+            List<IComponent> components = product.getProductStructure().getComponents();
+            for (IComponent component : components) {
+                installComponent(component, Command.DEPLOY, productFile);
+            }
+            deployedProducts.getOrDefault(artifactId, Collections.emptySet()).add(version);
+            Utils.writeYaml(deployedProducts, deployedProductsFolder);
         }
-        deployedProducts.getOrDefault(artifactId, Collections.emptySet()).add(version);
-        Utils.writeYaml(deployedProducts, deployedProductsFolder);
     }
 
-    public void deployDependent(IProduct product, Map<String, Set<String>> deployedProducts) {
+    private void deployDependent(IProduct product, Map<String, Set<String>> deployedProducts) {
         if(!product.getDependentProducts().isEmpty()) {
             List<String> dependents = product.getDependentProducts();
             for(String dep : dependents) {
@@ -58,7 +64,7 @@ public class DeployerEngine implements IProductDeployer {
                 if(deployedProducts.getOrDefault(artIdPlusVers[0], new HashSet<>()).contains(artIdPlusVers[1])) {
                     continue;
                 } else {
-
+                    File productFile = download(artIdPlusVers[0], artIdPlusVers[1]);
                 }
             }
         }

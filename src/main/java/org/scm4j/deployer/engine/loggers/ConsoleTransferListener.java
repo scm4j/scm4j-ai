@@ -1,5 +1,6 @@
 package org.scm4j.deployer.engine.loggers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.aether.transfer.AbstractTransferListener;
 import org.eclipse.aether.transfer.MetadataNotFoundException;
 import org.eclipse.aether.transfer.TransferEvent;
@@ -12,32 +13,22 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class ConsoleTransferListener
         extends AbstractTransferListener
 {
-
-    private PrintStream out;
 
     private Map<TransferResource, Long> downloads = new ConcurrentHashMap<>();
 
     private int lastLength;
 
-    public ConsoleTransferListener()
-    {
-        this( null );
-    }
-
-    public ConsoleTransferListener( PrintStream out )
-    {
-        this.out = ( out != null ) ? out : System.out;
-    }
-
     @Override
     public void transferInitiated( TransferEvent event )
     {
+
         String message = event.getRequestType() == TransferEvent.RequestType.PUT ? "Uploading" : "Downloading";
 
-        out.println( message + ": " + event.getResource().getRepositoryUrl() + event.getResource().getResourceName() );
+        log.trace( message + ": " + event.getResource().getRepositoryUrl() + event.getResource().getResourceName() );
     }
 
     @Override
@@ -61,7 +52,7 @@ public class ConsoleTransferListener
         pad( buffer, pad );
         buffer.append( '\r' );
 
-        out.print( buffer );
+        log.trace( buffer.toString() );
     }
 
     private String getStatus( long complete, long total )
@@ -117,7 +108,7 @@ public class ConsoleTransferListener
                 throughput = " at " + format.format( kbPerSec ) + " KB/sec";
             }
 
-            out.println( type + ": " + resource.getRepositoryUrl() + resource.getResourceName() + " (" + len
+            log.trace( type + ": " + resource.getRepositoryUrl() + resource.getResourceName() + " (" + len
                     + throughput + ")" );
         }
     }
@@ -129,7 +120,7 @@ public class ConsoleTransferListener
 
         if ( !( event.getException() instanceof MetadataNotFoundException) )
         {
-            event.getException().printStackTrace( out );
+            log.error(event.getException().getMessage(),event.getException());
         }
     }
 
@@ -140,12 +131,12 @@ public class ConsoleTransferListener
         StringBuilder buffer = new StringBuilder( 64 );
         pad( buffer, lastLength );
         buffer.append( '\r' );
-        out.print( buffer );
+        log.trace( buffer.toString() );
     }
 
     public void transferCorrupted( TransferEvent event )
     {
-        event.getException().printStackTrace( out );
+        log.error(event.getException().getMessage(),event.getException());
     }
 
     protected long toKB( long bytes )

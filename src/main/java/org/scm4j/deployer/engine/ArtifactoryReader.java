@@ -35,7 +35,7 @@ public class ArtifactoryReader {
     public List<String> getProductVersions(String groupId, String artifactId) {
         MetadataXpp3Reader reader = new MetadataXpp3Reader();
         URL url = getProductMetaDataURL(groupId, artifactId);
-        try (InputStream is = url.openStream()) {
+        try (InputStream is = getContentStream(url)) {
             Metadata meta = reader.read(is);
             Versioning vers = meta.getVersioning();
             return vers.getVersions();

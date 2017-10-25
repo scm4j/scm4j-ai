@@ -69,6 +69,7 @@ public class DeployerRunner {
         depCtx = new HashMap<>();
         if (res.exists()) {
             List<Artifact> artifacts = getComponents(res);
+            artifacts.add(new DefaultArtifact(groupId, artifactId, extension, version));
             resolveDependencies(artifacts);
         } else {
             res = download(groupId, artifactId, version, extension, res);
@@ -111,8 +112,12 @@ public class DeployerRunner {
         List<Artifact> components = new ArrayList<>();
         session = Utils.newRepositorySystemSession(system, TMP_REPOSITORY);
         CollectRequest collectRequest = new CollectRequest();
-        productList.getRepos().forEach(artifactoryReader -> collectRequest.addRepository
-                (new RemoteRepository.Builder("", "default", artifactoryReader.toString()).build()));
+        List<String> urls = productList.getRepos().stream()
+                .map(ArtifactoryReader::toString)
+                .sorted()
+                .collect(Collectors.toList());
+        urls.forEach(url -> collectRequest.addRepository
+                (new RemoteRepository.Builder("", "default", url).build()));
         DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
         for (Artifact artifact : artifacts) {
             collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
@@ -122,7 +127,6 @@ public class DeployerRunner {
                 artifactResults.forEach((artifactResult) -> components.add(artifactResult.getArtifact()));
                 depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, components));
             } catch (DependencyResolutionException e) {
-                FileUtils.deleteDirectory(TMP_REPOSITORY);
                 throw new RuntimeException();
             }
         }
@@ -149,7 +153,6 @@ public class DeployerRunner {
             installRequest.addArtifact(artifact).addArtifact(pomArtifact);
         }
         system.install(session, installRequest);
-        FileUtils.deleteDirectory(TMP_REPOSITORY);
     }
 
     public List<Artifact> getComponents(File productFile) {

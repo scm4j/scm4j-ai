@@ -289,10 +289,4 @@ public class DeployerEngineTest {
         assertNull(ctx.getParams());
     }
 
-    @Ignore
-    public void afddas() {
-        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), "https://dev.untill.com/artifactory/ext-release-local/");
-        List<String> l= de.listProducts();
-        de.download("unTill", "124.0");
-    }
 }

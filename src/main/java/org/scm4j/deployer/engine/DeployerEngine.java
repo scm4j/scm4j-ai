@@ -45,11 +45,12 @@ public class DeployerEngine implements IProductDeployer {
         } else {
             File productFile = download(artifactId, version);
             IProduct product = runner.getProduct(productFile);
+            File installersJar = runner.getDepCtx().get(artifactId).getArtifacts().get("scm4j-deployer-installers");
             //TODO check existing product and copy from flash to local machine
             //TODO deployDependent()
             List<IComponent> components = product.getProductStructure().getComponents();
             for (IComponent component : components) {
-                installComponent(component, Command.DEPLOY, productFile);
+                installComponent(component, Command.DEPLOY, installersJar);
             }
             deployedProducts.getOrDefault(artifactId, Collections.emptySet()).add(version);
             Utils.writeYaml(deployedProducts, deployedProductsFolder);
@@ -135,7 +136,7 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @SneakyThrows
-    private void installComponent(IComponent component, Command command, File productFile) {
+    private void installComponent(IComponent component, Command command, File installerFile) {
         IInstallationProcedure procedure = component.getInstallationProcedure();
         Map<String, Map<String, Object>> params = procedure.getActionsParams();
         String artifactId = component.getArtifactCoords().getArtifactId();
@@ -145,7 +146,7 @@ public class DeployerEngine implements IProductDeployer {
         if (command == Command.UNDEPLOY)
             actions = Lists.reverse(actions);
         for (IAction action : actions) {
-            Object obj = Utils.loadClassFromJar(productFile, action.getInstallerClassName());
+            Object obj = Utils.loadClassFromJar(installerFile, action.getInstallerClassName());
             if (obj instanceof IComponentDeployer) {
                 IComponentDeployer installer = (IComponentDeployer) obj;
                 installer.init(context);

@@ -17,6 +17,7 @@ import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
+import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
@@ -116,9 +117,14 @@ public class DeployerRunner {
         for (Artifact artifact : artifacts) {
             collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
             DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
-            List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
-            artifactResults.forEach((artifactResult) -> components.add(artifactResult.getArtifact()));
-            depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, components));
+            try {
+                List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
+                artifactResults.forEach((artifactResult) -> components.add(artifactResult.getArtifact()));
+                depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, components));
+            } catch (DependencyResolutionException e) {
+                FileUtils.deleteDirectory(TMP_REPOSITORY);
+                throw new RuntimeException();
+            }
         }
         return components;
     }

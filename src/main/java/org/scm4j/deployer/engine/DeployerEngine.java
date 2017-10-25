@@ -137,7 +137,7 @@ public class DeployerEngine implements IProductDeployer {
     @SneakyThrows
     private void installComponent(IComponent component, Command command, File productFile) {
         IInstallationProcedure procedure = component.getInstallationProcedure();
-        Map<Class, Map<String, Object>> params = procedure.getActionsParams();
+        Map<String, Map<String, Object>> params = procedure.getActionsParams();
         String artifactId = component.getArtifactCoords().getArtifactId();
         DeploymentContext context = runner.getDepCtx().get(artifactId);
         context.setParams(params);
@@ -145,7 +145,7 @@ public class DeployerEngine implements IProductDeployer {
         if (command == Command.UNDEPLOY)
             actions = Lists.reverse(actions);
         for (IAction action : actions) {
-            Object obj = Utils.loadClassFromJar(productFile, action.getInstallerClass().getName());
+            Object obj = Utils.loadClassFromJar(productFile, action.getInstallerClassName());
             if (obj instanceof IComponentDeployer) {
                 IComponentDeployer installer = (IComponentDeployer) obj;
                 installer.init(context);

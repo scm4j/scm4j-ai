@@ -62,7 +62,7 @@ public class DeployerEngineTest {
                 "ProductStructureDataLoader", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, "installers", "0.1.0", "jar",
                 "ExeRunner", env.getArtifactory1Folder());
-        aw.installArtifact(TEST_UNTILL_GROUP_ID, "scm4j-deployer-api", "1.1.0", "jar",
+        aw.installArtifact(TEST_UNTILL_GROUP_ID, "scm4j-deployer-api", "0.1.0", "jar",
                 "Api", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, ublArtifactId, "22.2", "war",
                 TEST_UBL_22_2_CONTENT, env.getArtifactory1Folder());
@@ -289,4 +289,10 @@ public class DeployerEngineTest {
         assertNull(ctx.getParams());
     }
 
+    @Ignore
+    public void afddas() {
+        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), "https://dev.untill.com/artifactory/ext-release-local/");
+        List<String> l= de.listProducts();
+        de.download("unTill", "124.0");
+    }
 }

@@ -28,7 +28,7 @@ public class ConsoleTransferListener
 
         String message = event.getRequestType() == TransferEvent.RequestType.PUT ? "Uploading" : "Downloading";
 
-        log.trace( message + ": " + event.getResource().getRepositoryUrl() + event.getResource().getResourceName() );
+        log.info( message + ": " + event.getResource().getRepositoryUrl() + event.getResource().getResourceName() );
     }
 
     @Override
@@ -52,7 +52,7 @@ public class ConsoleTransferListener
         pad( buffer, pad );
         buffer.append( '\r' );
 
-        log.trace( buffer.toString() );
+        log.info( buffer.toString() );
     }
 
     private String getStatus( long complete, long total )
@@ -108,7 +108,7 @@ public class ConsoleTransferListener
                 throughput = " at " + format.format( kbPerSec ) + " KB/sec";
             }
 
-            log.trace( type + ": " + resource.getRepositoryUrl() + resource.getResourceName() + " (" + len
+            log.info( type + ": " + resource.getRepositoryUrl() + resource.getResourceName() + " (" + len
                     + throughput + ")" );
         }
     }
@@ -120,7 +120,7 @@ public class ConsoleTransferListener
 
         if ( !( event.getException() instanceof MetadataNotFoundException) )
         {
-            log.error(event.getException().getMessage(),event.getException());
+            log.trace(event.getException().getMessage(),event.getException());
         }
     }
 
@@ -131,12 +131,12 @@ public class ConsoleTransferListener
         StringBuilder buffer = new StringBuilder( 64 );
         pad( buffer, lastLength );
         buffer.append( '\r' );
-        log.trace( buffer.toString() );
+        log.info( buffer.toString() );
     }
 
     public void transferCorrupted( TransferEvent event )
     {
-        log.error(event.getException().getMessage(),event.getException());
+        log.trace(event.getException().getMessage(),event.getException());
     }
 
     protected long toKB( long bytes )

@@ -26,10 +26,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -124,28 +121,36 @@ public class Utils {
         try {
             clazz = Class.forName(className, true, loader);
         } catch (ClassNotFoundException e) {
-            clazz = Class.forName(findClassName(jarFile, className), true, loader);
+            clazz = Class.forName(findClassName(jarFile, className, loader), true, loader);
         }
         return clazz.newInstance();
     }
 
     @SneakyThrows
-    private static String findClassName(File jarFile, String className) {
+    private static String findClassName(File jarFile, String className, ClassLoader loader) {
         String fullClassName = null;
+        List<String> dependentClasses = new ArrayList<>();
         JarFile file = new JarFile(jarFile);
         Enumeration<JarEntry> entries = file.entries();
         while(entries.hasMoreElements()) {
             JarEntry je = entries.nextElement();
-            if(je.getName().endsWith(className + ".class")) {
-                fullClassName = (je.getName().substring(0,je.getName().length()-6)
+            if(je.getName().contains(className)) {
+                dependentClasses.add(je.getName().substring(0,je.getName().length()-6)
                         .replace("/", "."));
-                break;
             }
         }
-        if(fullClassName == null) {
+        for(String name : dependentClasses) {
+            if (name.equals(className)) {
+                fullClassName = name;
+            } else {
+                Class.forName(name, true, loader);
+            }
+        }
+        if(fullClassName != null) {
+            return fullClassName;
+        } else {
             throw new EClassNotFound(className + " class not found");
         }
-        return fullClassName;
     }
 
     public static String getGroupId(DeployerRunner runner, String artifactId) {

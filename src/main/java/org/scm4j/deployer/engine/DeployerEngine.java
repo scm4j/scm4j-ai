@@ -51,7 +51,12 @@ public class DeployerEngine implements IProductDeployer {
             for (IComponent component : components) {
                 installComponent(component, Command.DEPLOY, installersJar);
             }
-            deployedProducts.getOrDefault(artifactId, new HashSet<>()).add(version);
+            if(deployedProducts.get(artifactId) == null) {
+                deployedProducts.put(artifactId, new HashSet<>());
+                deployedProducts.get(artifactId).add(version);
+            } else {
+                deployedProducts.get(artifactId).add(version);
+            }
             Utils.writeYaml(deployedProducts, deployedProductsFolder);
         }
     }

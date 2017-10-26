@@ -19,9 +19,7 @@ import org.scm4j.deployer.engine.exceptions.EClassNotFound;
 import org.scm4j.deployer.engine.loggers.ConsoleRepositoryListener;
 import org.scm4j.deployer.engine.loggers.ConsoleTransferListener;
 import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.Constructor;
 
 import java.io.File;
 import java.io.FileReader;
@@ -119,20 +117,20 @@ public class Utils {
     }
 
     @SneakyThrows
-    public static Object loadClassFromJar(File jarFile, String className) {
+    public static Object createClassFromJar(File jarFile, String className) {
         @Cleanup
         URLClassLoader loader = URLClassLoader.newInstance(new URL[] {jarFile.toURI().toURL()});
         Class<?> clazz;
         try {
             clazz = loader.loadClass(className);
         } catch (ClassNotFoundException e) {
-            clazz = loader.loadClass(findClass(jarFile, className));
+            clazz = loader.loadClass(findClassName(jarFile, className));
         }
         return clazz.newInstance();
     }
 
     @SneakyThrows
-    private static String findClass(File jarFile, String className) {
+    private static String findClassName(File jarFile, String className) {
         String fullClassName = null;
         JarFile file = new JarFile(jarFile);
         Enumeration<JarEntry> entries = file.entries();

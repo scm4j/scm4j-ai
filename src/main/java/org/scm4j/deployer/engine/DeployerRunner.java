@@ -3,7 +3,6 @@ package org.scm4j.deployer.engine;
 import lombok.Cleanup;
 import lombok.Data;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.eclipse.aether.RepositorySystem;
@@ -180,7 +179,7 @@ public class DeployerRunner {
         if (apiVersion.endsWith("SNAPSHOT") || (!apiVersion.equals("empty") &&
                 IProduct.class.getPackage().isCompatibleWith(apiVersion))) {
             String mainClassName = Utils.getExportedClassName(productFile);
-            Object obj = Utils.loadClassFromJar(productFile, mainClassName);
+            Object obj = Utils.createClassFromJar(productFile, mainClassName);
             if (obj instanceof IProduct) {
                 return (IProduct) obj;
             } else {

@@ -18,9 +18,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DeployerEngine implements IProductDeployer {
 
-    enum Command {DEPLOY, UNDEPLOY, UPGRADE}
-
     private static final String DEPLOYED_PRODUCTS = "deployed-products.yml";
+    private static final String INSTALLERS_JAR_NAME = "scm4j-deployer-installers";
 
     private final File workingFolder;
     private final File flashFolder;
@@ -45,7 +44,7 @@ public class DeployerEngine implements IProductDeployer {
         } else {
             File productFile = download(artifactId, version);
             IProduct product = runner.getProduct(productFile);
-            File installersJar = runner.getDepCtx().get(artifactId).getArtifacts().get("scm4j-deployer-installers");
+            File installersJar = runner.getDepCtx().get(artifactId).getArtifacts().get(INSTALLERS_JAR_NAME);
             //TODO check existing product and copy from flash to local machine
             //TODO deployDependent()
             List<IComponent> components = product.getProductStructure().getComponents();
@@ -146,7 +145,7 @@ public class DeployerEngine implements IProductDeployer {
         if (command == Command.UNDEPLOY)
             actions = Lists.reverse(actions);
         for (IAction action : actions) {
-            Object obj = Utils.loadClassFromJar(installerFile, action.getInstallerClassName());
+            Object obj = Utils.createClassFromJar(installerFile, action.getInstallerClassName());
             if (obj instanceof IComponentDeployer) {
                 IComponentDeployer installer = (IComponentDeployer) obj;
                 installer.init(context);

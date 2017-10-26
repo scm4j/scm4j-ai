@@ -122,9 +122,9 @@ public class Utils {
         URLClassLoader loader = URLClassLoader.newInstance(new URL[] {jarFile.toURI().toURL()});
         Class<?> clazz;
         try {
-            clazz = loader.loadClass(className);
+            clazz = Class.forName(className, true, loader);
         } catch (ClassNotFoundException e) {
-            clazz = loader.loadClass(findClassName(jarFile, className));
+            clazz = Class.forName(findClassName(jarFile, className), true, loader);
         }
         return clazz.newInstance();
     }
@@ -136,7 +136,7 @@ public class Utils {
         Enumeration<JarEntry> entries = file.entries();
         while(entries.hasMoreElements()) {
             JarEntry je = entries.nextElement();
-            if(!je.isDirectory() && je.getName().endsWith(".class") && (je.getName().contains(className))) {
+            if(je.getName().endsWith(className + ".class")) {
                 fullClassName = (je.getName().substring(0,je.getName().length()-6)
                         .replace("/", "."));
                 break;

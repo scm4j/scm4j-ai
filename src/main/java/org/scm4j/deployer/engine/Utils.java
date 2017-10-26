@@ -137,8 +137,8 @@ public class Utils {
         while(entries.hasMoreElements()) {
             JarEntry je = entries.nextElement();
             if(!je.isDirectory() && je.getName().endsWith(".class") && (je.getName().contains(className))) {
-                fullClassName = StringUtils.substringBefore((je.getName().substring(0,je.getName().length()-6)
-                        .replace("/", ".")),"$");
+                fullClassName = (je.getName().substring(0,je.getName().length()-6)
+                        .replace("/", "."));
                 break;
             }
         }

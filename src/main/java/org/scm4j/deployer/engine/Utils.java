@@ -140,7 +140,7 @@ public class Utils {
             }
         }
         for(String name : dependentClasses) {
-            if (name.equals(className)) {
+            if (name.endsWith(className)) {
                 fullClassName = name;
             } else {
                 Class.forName(name, true, loader);

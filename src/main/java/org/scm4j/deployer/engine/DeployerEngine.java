@@ -44,9 +44,10 @@ public class DeployerEngine implements IProductDeployer {
         } else {
             File productFile = download(artifactId, version);
             IProduct product = runner.getProduct(productFile);
+            if(!product.getDependentProducts().isEmpty())
+            deployDependent(product, deployedProducts);
             File installersJar = runner.getDepCtx().get(artifactId).getArtifacts().get(INSTALLERS_JAR_NAME);
             //TODO check existing product and copy from flash to local machine
-            //TODO deployDependent()
             List<IComponent> components = product.getProductStructure().getComponents();
             for (IComponent component : components) {
                 installComponent(component, Command.DEPLOY, installersJar);
@@ -62,7 +63,6 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     private void deployDependent(IProduct product, Map<String, Set<String>> deployedProducts) {
-        if(!product.getDependentProducts().isEmpty()) {
             List<String> dependents = product.getDependentProducts();
             for(String dep : dependents) {
                 String[] artIdPlusVers = dep.split("-");
@@ -70,9 +70,14 @@ public class DeployerEngine implements IProductDeployer {
                     continue;
                 } else {
                     File productFile = download(artIdPlusVers[0], artIdPlusVers[1]);
+                    IProduct dependent = runner.getProduct(productFile);
+                    if(dependent.isInstalled(artIdPlusVers[0])) {
+                        continue;
+                    } else {
+                        deploy(artIdPlusVers[0],artIdPlusVers[1]);
+                    }
                 }
             }
-        }
     }
 
     @Override

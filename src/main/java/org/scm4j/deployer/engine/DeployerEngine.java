@@ -25,6 +25,7 @@ public class DeployerEngine implements IProductDeployer {
     private final File flashFolder;
     private final String productListArtifactoryUrl;
     private final DeployerRunner runner;
+    private final File deployedProductsFolder;
 
     public DeployerEngine(File flashFolder, File workingFolder, String productListArtifactoryUrl) {
         if (flashFolder == null)
@@ -32,21 +33,23 @@ public class DeployerEngine implements IProductDeployer {
         this.workingFolder = workingFolder;
         this.flashFolder = flashFolder;
         this.productListArtifactoryUrl = productListArtifactoryUrl;
+        deployedProductsFolder = new File(workingFolder,DEPLOYED_PRODUCTS);
         this.runner = new DeployerRunner(flashFolder, workingFolder, productListArtifactoryUrl);
     }
 
     @Override
     public void deploy(String artifactId, String version) {
-        File deployedProductsFolder = new File(workingFolder, DEPLOYED_PRODUCTS);
         Map<String, Set<String>> deployedProducts = Utils.readYml(deployedProductsFolder);
-        StringBuilder productName = new StringBuilder().append(artifactId).append(version);
+        StringBuilder productName = new StringBuilder().append(artifactId).append("-").append(version);
         if(deployedProducts.getOrDefault(artifactId, new HashSet<>()).contains(version)) {
-            log.trace(productName.append(" already installed!").toString());
+            log.warn(productName.append(" already installed!").toString());
         } else {
             File productFile = download(artifactId, version);
             IProduct product = runner.getProduct(productFile);
-            if(!product.getDependentProducts().isEmpty())
-            deployDependent(product, deployedProducts);
+            if(!product.getDependentProducts().isEmpty()) {
+                deployDependent(product, deployedProducts);
+                deployedProducts = Utils.readYml(deployedProductsFolder);
+            }
             File installersJar = runner.getDepCtx().get(artifactId).getArtifacts().get(INSTALLERS_JAR_NAME);
             //TODO check existing product and copy from flash to local machine
             List<IComponent> components = product.getProductStructure().getComponents();

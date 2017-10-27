@@ -9,15 +9,17 @@ This component automates installation (deployment) of products which are represe
 
 # Terms
 
-- `product list`: artifact (zipped yaml file) which describes `products` and maven repositories
-- `product`: jar-artifact whose main class has public static `getProjectStructure` method which returns  `IProductStructure` interface. IProjectStructure lists `IComponents`
-- `IComponent` keeps `artifact coordinates`and lists `IInstallationProcedure`
-- `IInstallationProcedure`: lists `IAction`, every `action` is represented by `installer` class and `params`. All installer classes must be in `product` dependencies.
-- `installer`: class which implements `IInstaller` interface. Is instantiated during `installation procdure`, action paremeters are passed
-- `localAppData`: system.getEnv('localAppData')
-- `Deployed products registry`: `localAppData`/deployed-products.yml
+- `product list`: artifact (yaml file) which describes `products` and maven repositories
+- `product`: jar-artifact whose main class has public static `getProductStructure` method which returns  `product structure`
+- `product structure`: lists `component`s
+- `component`: represented by  artifact coordinates and one or few `deployment procedure`
+- `deployment procedure`: lists `actions'
+- `action`: represented by `component deployer` class and `params` 
+- `component deployer`: Is instantiated during `deployment procedure`, action paremeters are passed using `init` method. All deployer classes must be in `product` dependencies.
+- `working folder`: Used to keep downloaded components and internal data structures
+- `portable folder`:  If specified used as a target for `download` command and as an implicit repository. Scenario: download all components to a `portable folder` (normally located at the USB flash drive), go to a place where internet is not presented and install products there using `portable folder` as a source
 
-Thus all dependencies of product artifcat are "installers" i.e. implement installation logic. Installation "data" is represented by artifacts which are listed by `IProductStructure` interface.
+Thus all dependencies of product artifcat are "deployers" and their dependencies i.e. implement deployment  logic. Deployment "data" is represented by artifacts which are listed by `IProductStructure` interface.
 
 # Data Structure
 
@@ -27,8 +29,8 @@ Ref. [data-structure.md](data-structure.md)
 
 Scenarious are represeneted by methods of `DeployerEngine`
 
-- `DeployerEngine`: initializes engine with URL of `product list` artifact and `working folder`. Constructor does NOT do any network operation.
-- `listProducts`: gets data from offline cache
+- `DeployerEngine`: Constructor does NOT do any network operation
+- `listProducts`: gets data from offline cache of `product list`
 - `refreshProducts`: refreshes cache for `listProducts`
 - `listProductVersions`: gets data from offline cache (products-versions.yml)
 - `refreshProductVersions`: refreshes offline cache

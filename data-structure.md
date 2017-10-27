@@ -1,4 +1,7 @@
-# product-list-(ver).yml
+# product list
+
+Is represented by `product-list.yml` file inside `product artifact`
+
 ```yaml
  
  # Map coordinates -> product display name

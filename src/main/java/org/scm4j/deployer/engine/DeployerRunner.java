@@ -39,12 +39,12 @@ public class DeployerRunner {
     private static final String REPOSITORY_FOLDER_NAME = "repository";
     private static final File TMP_REPOSITORY = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp");
     private static final String DEFAULT_DEPLOYMENT_URL = "file://localhost/C:/tools/";
+    private final Map<String, DeploymentContext> depCtx = new HashMap<>();
     private final ProductList productList;
     private final File repository;
     private final File flashRepository;
     private RepositorySystem system;
     private RepositorySystemSession session;
-    private Map<String, DeploymentContext> depCtx;
 
     @SneakyThrows
     public DeployerRunner(File flashFolder, File workingFolder, String productListArtifactoryUrl) {
@@ -65,7 +65,6 @@ public class DeployerRunner {
         }
         String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
         File res = new File(flashRepository, fileRelativePath);
-        depCtx = new HashMap<>();
         if (res.exists()) {
             List<Artifact> artifacts = getComponents(res);
             artifacts.add(new DefaultArtifact(groupId, artifactId, extension, version));

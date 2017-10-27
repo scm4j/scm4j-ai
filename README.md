@@ -9,13 +9,13 @@ This component automates installation (deployment) of products which are represe
 
 # Terms
 
-- `product list`: artifact (zipped yaml file) which describes `products` and maven repositories
-- `product`: jar-artifact whose main class has public static `getProjectStructure` method which returns  `IProductStructure` interface. IProjectStructure lists `IComponents`
+- `product list`: artifact (yaml file) which describes `products` and maven repositories
+- `product`: jar-artifact whose main class has public static `getProductStructure` method which returns  `IProductStructure` interface. IProductStructure lists `IComponents`
 - `IComponent` keeps `artifact coordinates`and lists `IInstallationProcedure`
-- `IInstallationProcedure`: lists `IAction`, every `action` is represented by `installer` class and `params`. All installer classes must be in `product` dependencies.
-- `installer`: class which implements `IInstaller` interface. Is instantiated during `installation procdure`, action paremeters are passed
-- `localAppData`: system.getEnv('localAppData')
-- `Deployed products registry`: `localAppData`/deployed-products.yml
+- `IDeploymentProcedure`: lists `IAction', every `action` is represented by `installer` class and `params`. All installer classes must be in `product` dependencies.
+- `component deployer`: class which implements `IComponentDeployer` interface. Is instantiated during `installation procedure`, action paremeters are passed
+- `working folder`:
+- `portable folder`: 
 
 Thus all dependencies of product artifcat are "installers" i.e. implement installation logic. Installation "data" is represented by artifacts which are listed by `IProductStructure` interface.
 

@@ -11,9 +11,7 @@ import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
 import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.*;
 
@@ -71,12 +69,13 @@ public class ProductList {
         return productsVersions;
     }
 
+    //TODO issue: can't find metadata and versions, if artifactId in productList key != productList value
     @SneakyThrows
     private void downloadProductsVersions() throws ENoMetadata {
         versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
         productsVersions = new HashMap<>();
-        Set<String> vers = new TreeSet<>();
         for (String product : products.keySet()) {
+            Set<String> vers = new HashSet<>();
             String artifactId = StringUtils.substringAfter(product, ":");
             for (ArtifactoryReader reader : repos) {
                 vers.addAll(reader.getProductVersions(StringUtils.substringBefore(product, ":"), artifactId));

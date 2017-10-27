@@ -40,7 +40,7 @@ public class DeployerEngine implements IProductDeployer {
     public void deploy(String artifactId, String version) {
         Map<String,List<String>> deployedProducts = Utils.readYml(deployedProductsFolder);
         StringBuilder productName = new StringBuilder().append(artifactId).append("-").append(version);
-        if(deployedProducts.get(artifactId).contains(version)) {
+        if(deployedProducts.getOrDefault(artifactId, new ArrayList<>()).contains(version)) {
             log.warn(productName.append(" already installed!").toString());
         } else {
             File productFile = download(artifactId, version);

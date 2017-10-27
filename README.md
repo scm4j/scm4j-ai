@@ -15,9 +15,9 @@ This component automates installation (deployment) of products which are represe
 - `component`: inplements `IComponent` interface, represented by  artifact coordinates and one or few `deployment procedure`
 - `deployment procedure`: implements `IDeploymentProcedure`, lists `actions'
 - `action`: implements IAction and represented by `component deployer` class and `params` 
-- `component deployer`: class which implements `IComponentDeployer` interface. Is instantiated during `deployment procedure`, action paremeters are passed. All deployer classes must be in `product` dependencies.
-- `working folder`:
-- `portable folder`: 
+- `component deployer`: class which implements `IComponentDeployer` interface. Is instantiated during `deployment procedure`, action paremeters are passed using `init` method. All deployer classes must be in `product` dependencies.
+- `working folder`: Used to keep downloaded components and internal data structures
+- `portable folder`:  If specified used as a target for `download` command and as an implicit repository. Scenario: download all components to a `portable folder`, go to a place where internet is not presented and install products there using `portable folder` as a source
 
 Thus all dependencies of product artifcat are "installers" i.e. implement installation logic. Installation "data" is represented by artifacts which are listed by `IProductStructure` interface.
 

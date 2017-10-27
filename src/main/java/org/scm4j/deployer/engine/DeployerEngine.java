@@ -39,8 +39,9 @@ public class DeployerEngine implements IProductDeployer {
     public void deploy(String artifactId, String version) {
         File deployedProductsFolder = new File(workingFolder, DEPLOYED_PRODUCTS);
         Map<String, Set<String>> deployedProducts = Utils.readYml(deployedProductsFolder);
+        StringBuilder productName = new StringBuilder().append(artifactId).append(version);
         if(deployedProducts.getOrDefault(artifactId, new HashSet<>()).contains(version)) {
-            log.trace(artifactId + "-" + version + " already installed!");
+            log.trace(productName.append(" already installed!").toString());
         } else {
             File productFile = download(artifactId, version);
             IProduct product = runner.getProduct(productFile);
@@ -59,12 +60,14 @@ public class DeployerEngine implements IProductDeployer {
                 deployedProducts.get(artifactId).add(version);
             }
             Utils.writeYaml(deployedProducts, deployedProductsFolder);
+            log.info(productName.append(" successfully installed!").toString());
         }
     }
 
     private void deployDependent(IProduct product, Map<String, Set<String>> deployedProducts) {
             List<String> dependents = product.getDependentProducts();
             for(String dep : dependents) {
+                log.info("Need to install " + dep);
                 String[] artIdPlusVers = dep.split("-");
                 if(deployedProducts.getOrDefault(artIdPlusVers[0], new HashSet<>()).contains(artIdPlusVers[1])) {
                     continue;

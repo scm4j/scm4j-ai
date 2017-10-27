@@ -4,8 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.RepositoryEvent;
 
-import java.io.PrintStream;
-
 @Slf4j
 public class ConsoleRepositoryListener
         extends AbstractRepositoryListener

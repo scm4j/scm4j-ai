@@ -47,6 +47,7 @@ public class AITestEnvironment {
 		envFolder = Files.createDirectory(new File(baseTestFolder, "env").toPath()).toFile();
 	}
 
+	@SuppressWarnings("unchecked")
 	private void writeReposInProductList(String version) throws IOException {
 		File productListFile = new File(artifactory1Folder, Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
 				ProductList.PRODUCT_LIST_ARTIFACT_ID, version, ".yml"));
@@ -57,11 +58,11 @@ public class AITestEnvironment {
 		DumperOptions options = new DumperOptions();
 		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
 		Yaml yaml = new Yaml(options);
-		Map<String, Set<String>> productList = new HashMap<>();
-		Set<String> repos = new HashSet<>();
+		Map productList = new HashMap<>();
+		List<String> repos = new ArrayList<>();
 		repos.add(artifactory1Url);
 		repos.add(artifactory2Url);
-		productList.put(ProductList.PRODUCTS, new HashSet<>());
+		productList.put(ProductList.PRODUCTS, new HashMap<>());
 		productList.put(ProductList.REPOSITORIES, repos);
 		String yamlOutput = yaml.dump(productList);
 		FileWriter fw = new FileWriter(productListFile);

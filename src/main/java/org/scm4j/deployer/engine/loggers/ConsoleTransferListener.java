@@ -6,7 +6,6 @@ import org.eclipse.aether.transfer.MetadataNotFoundException;
 import org.eclipse.aether.transfer.TransferEvent;
 import org.eclipse.aether.transfer.TransferResource;
 
-import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
@@ -57,17 +56,17 @@ public class ConsoleTransferListener
 
     private String getStatus( long complete, long total )
     {
-        if ( total >= 1024 )
+        if ( total >= 1048576 )
         {
-            return toKB( complete ) + "/" + toKB( total ) + " KB ";
+            return toMB( complete ) + "/" + toMB( total ) + " MB ";
         }
         else if ( total >= 0 )
         {
             return complete + "/" + total + " B ";
         }
-        else if ( complete >= 1024 )
+        else if ( complete >= 1048576 )
         {
-            return toKB( complete ) + " KB ";
+            return toMB( complete ) + " MB ";
         }
         else
         {
@@ -96,7 +95,7 @@ public class ConsoleTransferListener
         if ( contentLength >= 0 )
         {
             String type = ( event.getRequestType() == TransferEvent.RequestType.PUT ? "Uploaded" : "Downloaded" );
-            String len = contentLength >= 1024 ? toKB( contentLength ) + " KB" : contentLength + " B";
+            String len = contentLength >= 1048576 ? toMB( contentLength ) + " MB" : contentLength + " B";
 
             String throughput = "";
             long duration = System.currentTimeMillis() - resource.getTransferStartTime();
@@ -104,8 +103,8 @@ public class ConsoleTransferListener
             {
                 long bytes = contentLength - resource.getResumeOffset();
                 DecimalFormat format = new DecimalFormat( "0.0", new DecimalFormatSymbols( Locale.ENGLISH ) );
-                double kbPerSec = ( bytes / 1024.0 ) / ( duration / 1000.0 );
-                throughput = " at " + format.format( kbPerSec ) + " KB/sec";
+                double kbPerSec = ( bytes / 1048576.0 ) / ( duration / 1000.0 );
+                throughput = " at " + format.format( kbPerSec ) + " MB/sec";
             }
 
             log.info( type + ": " + resource.getRepositoryUrl() + resource.getResourceName() + " (" + len
@@ -139,9 +138,9 @@ public class ConsoleTransferListener
         log.trace(event.getException().getMessage(),event.getException());
     }
 
-    protected long toKB( long bytes )
+    protected long toMB(long bytes )
     {
-        return ( bytes + 1023 ) / 1024;
+        return ( bytes + 1023 ) / 1048576;
     }
 
 }

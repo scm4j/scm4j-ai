@@ -4,7 +4,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.scm4j.deployer.api.DeploymentContext;
-import org.scm4j.deployer.api.IProduct;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -81,9 +80,9 @@ public class DeployerEngineTest {
     public void testGetProducts() throws Exception {
         DeployerRunner runner = new DeployerRunner(null,env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
-        Set<String> products = runner.getProductList().getProducts();
+        Map<String,String> products = runner.getProductList().getProducts();
         assertNotNull(products);
-        assertTrue(products.containsAll(Collections.singletonList(
+        assertTrue(products.keySet().containsAll(Collections.singleton(
                 "eu.untill:unTILL")));
         assertTrue(products.size() == 1);
     }
@@ -151,7 +150,7 @@ public class DeployerEngineTest {
     public void testLoadRepos() throws Exception {
         DeployerRunner runner = new DeployerRunner(null,env.getEnvFolder(), env.getArtifactory1Url());
         runner.getProductList().readFromProductList();
-        Set<ArtifactoryReader> repos = runner.getProductList().getRepos();
+        List<ArtifactoryReader> repos = runner.getProductList().getRepos();
         assertNotNull(repos);
         repos.containsAll(Arrays.asList(
                 StringUtils.appendIfMissing(env.getArtifactory1Url(), "/"),
@@ -189,37 +188,18 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testAppendRepos() throws Exception {
-        DeployerRunner runner = new DeployerRunner(null,env.getEnvFolder(), env.getArtifactory1Url());
-        runner.getProductList().readFromProductList();
-        Set<ArtifactoryReader> remoteRepos = runner.getProductList().getRepos();
-        assertTrue(remoteRepos.size() == 2);
-        Set<String> reposNames = remoteRepos.stream().map(ArtifactoryReader::toString).collect(Collectors.toSet());
-        assertTrue(reposNames.containsAll(Arrays.asList(env.getArtifactory1Url()
-                ,env.getArtifactory2Url())));
-        runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
-        DeployerRunner runner1 = new DeployerRunner(null,env.getBaseTestFolder(), runner.getRepository().toURI().toURL().toString());
-        runner1.getProductList().readFromProductList();
-        remoteRepos = runner1.getProductList().getRepos();
-        reposNames = remoteRepos.stream().map(ArtifactoryReader::toString).collect(Collectors.toSet());
-        assertTrue(reposNames.contains(runner.getRepository().toURI().toURL().toString()));
-    }
-
-    @Test
+    @SuppressWarnings("unchecked")
     public void testDownloadAndRefreshProducts() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         assertEquals(de.listProducts(), Collections.singletonList("unTILL"));
         //changing product list
-        Map<String, Set<String>> entry = new HashMap<>();
-        entry.put(ProductList.PRODUCTS, new HashSet<>(Collections.singletonList("some:stuff")));
-        entry.put(ProductList.REPOSITORIES, new HashSet<>(Collections.singletonList("file://some repos")));
-        try(FileWriter writer = new FileWriter(new File(de.getRunner().getProductList().getLocalProductList().toString()))) {
-            DumperOptions options = new DumperOptions();
-            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-            Yaml yaml = new Yaml(options);
-            String yamlOtput = yaml.dump(entry);
-            writer.write(yamlOtput);
-        }
+        Map entry = new HashMap<>();
+        Map<String,String> map = new HashMap<>();
+        map.put("some","stuff");
+        entry.put(ProductList.PRODUCTS, map);
+        entry.put(ProductList.REPOSITORIES, new ArrayList<>(Collections.singletonList("file://some repos")));
+        Utils.writeYaml(entry,new File(de.getRunner().getProductList().getLocalProductList().toString()));
+        List<String> list = de.listProducts();
         assertEquals(de.listProducts(), Collections.singletonList("stuff"));
         //reload product list
         assertEquals(de.refreshProducts(), Collections.singletonList("unTILL"));

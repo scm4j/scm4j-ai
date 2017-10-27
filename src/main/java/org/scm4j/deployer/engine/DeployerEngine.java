@@ -1,6 +1,7 @@
 package org.scm4j.deployer.engine;
 
 import com.google.common.collect.Lists;
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,7 @@ public class DeployerEngine implements IProductDeployer {
     private static final String INSTALLERS_JAR_NAME = "scm4j-deployer-installers";
 
     private final File workingFolder;
-    private final File flashFolder;
+    private final File portableFolder;
     private final String productListArtifactoryUrl;
     private final DeployerRunner runner;
     private final File deployedProductsFolder;
@@ -31,48 +32,53 @@ public class DeployerEngine implements IProductDeployer {
         if (flashFolder == null)
             flashFolder = workingFolder;
         this.workingFolder = workingFolder;
-        this.flashFolder = flashFolder;
+        this.portableFolder = flashFolder;
         this.productListArtifactoryUrl = productListArtifactoryUrl;
         deployedProductsFolder = new File(workingFolder,DEPLOYED_PRODUCTS);
         this.runner = new DeployerRunner(flashFolder, workingFolder, productListArtifactoryUrl);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void deploy(String artifactId, String version) {
-        Map<String, Set<String>> deployedProducts = Utils.readYml(deployedProductsFolder);
+        Map<String,List<String>> deployedProducts = Utils.readYml(deployedProductsFolder);
         StringBuilder productName = new StringBuilder().append(artifactId).append("-").append(version);
-        if(deployedProducts.getOrDefault(artifactId, new HashSet<>()).contains(version)) {
+        if(deployedProducts.get(artifactId).contains(version)) {
             log.warn(productName.append(" already installed!").toString());
         } else {
             File productFile = download(artifactId, version);
             IProduct product = runner.getProduct(productFile);
-            if(!product.getDependentProducts().isEmpty()) {
-                deployDependent(product, deployedProducts);
-                deployedProducts = Utils.readYml(deployedProductsFolder);
-            }
-            File installersJar = runner.getDepCtx().get(artifactId).getArtifacts().get(INSTALLERS_JAR_NAME);
-            //TODO check existing product and copy from flash to local machine
-            List<IComponent> components = product.getProductStructure().getComponents();
-            for (IComponent component : components) {
-                installComponent(component, Command.DEPLOY, installersJar);
-            }
-            if(deployedProducts.get(artifactId) == null) {
-                deployedProducts.put(artifactId, new HashSet<>());
-                deployedProducts.get(artifactId).add(version);
+            if(product.isInstalled(artifactId)) {
+                log.warn(productName.append(" already installed!").toString());
             } else {
-                deployedProducts.get(artifactId).add(version);
+                if (!product.getDependentProducts().isEmpty()) {
+                    deployDependent(product, deployedProducts);
+                    deployedProducts = Utils.readYml(deployedProductsFolder);
+                }
+                File installersJar = runner.getDepCtx().get(artifactId).getArtifacts().get(INSTALLERS_JAR_NAME);
+                //TODO check existing product and copy from flash to local machine
+                List<IComponent> components = product.getProductStructure().getComponents();
+                for (IComponent component : components) {
+                    installComponent(component, Command.DEPLOY, installersJar);
+                }
+                if (deployedProducts.get(artifactId) == null) {
+                    deployedProducts.put(artifactId, new ArrayList<>());
+                    deployedProducts.get(artifactId).add(version);
+                } else {
+                    deployedProducts.get(artifactId).add(version);
+                }
+                Utils.writeYaml(deployedProducts, deployedProductsFolder);
+                log.info(productName.append(" successfully installed!").toString());
             }
-            Utils.writeYaml(deployedProducts, deployedProductsFolder);
-            log.info(productName.append(" successfully installed!").toString());
         }
     }
 
-    private void deployDependent(IProduct product, Map<String, Set<String>> deployedProducts) {
+    private void deployDependent(IProduct product, Map<String, List<String>> deployedProducts) {
             List<String> dependents = product.getDependentProducts();
             for(String dep : dependents) {
                 log.info("Need to install " + dep);
                 String[] artIdPlusVers = dep.split("-");
-                if(deployedProducts.getOrDefault(artIdPlusVers[0], new HashSet<>()).contains(artIdPlusVers[1])) {
+                if(deployedProducts.getOrDefault(artIdPlusVers[0], new ArrayList<>()).contains(artIdPlusVers[1])) {
                     continue;
                 } else {
                     File productFile = download(artIdPlusVers[0], artIdPlusVers[1]);
@@ -105,10 +111,10 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     @SneakyThrows
+    @SuppressWarnings("unchecked")
     public List<String> listProducts() {
-        return runner.getProductList().readFromProductList().get(ProductList.PRODUCTS).stream()
-                .map(s -> StringUtils.substringAfter(s, ":"))
-                .collect(Collectors.toList());
+        Map<String, Map<String,String>> entry = runner.getProductList().readFromProductList();
+        return new ArrayList<>(entry.get(ProductList.PRODUCTS).values());
     }
 
     @Override
@@ -146,31 +152,29 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @Override
-    public Map<String, Set<String>> listDeployedProducts() {
+    public Map listDeployedProducts() {
         return Utils.readYml(new File(workingFolder, DEPLOYED_PRODUCTS));
     }
 
     @SneakyThrows
     private void installComponent(IComponent component, Command command, File installerFile) {
-        IInstallationProcedure procedure = component.getInstallationProcedure();
-        Map<String, Map<String, Object>> params = procedure.getActionsParams();
+        IDeploymentProcedure procedure = component.getInstallationProcedure();
         String artifactId = component.getArtifactCoords().getArtifactId();
         DeploymentContext context = runner.getDepCtx().get(artifactId);
-        context.setParams(params);
         List<IAction> actions = procedure.getActions();
         if (command == Command.UNDEPLOY)
             actions = Lists.reverse(actions);
         for (IAction action : actions) {
             Object obj = Utils.createClassFromJar(installerFile, action.getInstallerClassName());
             if (obj instanceof IComponentDeployer) {
-                IComponentDeployer installer = (IComponentDeployer) obj;
-                installer.init(context);
+                IComponentDeployer deployer = (IComponentDeployer) obj;
+                deployer.init(context, action.getParams());
                 switch (command) {
                     case DEPLOY:
-                        installer.deploy();
+                        deployer.deploy();
                         break;
                     case UNDEPLOY:
-                        installer.undeploy();
+                        deployer.undeploy();
                         break;
                     case UPGRADE:
                         break;

@@ -135,23 +135,24 @@ public class ArtifactoryWriter {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void appendProductList(String groupId, String artifactId, File productListLocation) throws Exception {
 
         File remoteProductListFileLocation = new File(productListLocation,
                 Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
                         ProductList.PRODUCT_LIST_ARTIFACT_ID, PRODUCT_LIST_DEFAULT_VERSION, ".yml"));
 
-        Map<String, Set<String>> products = getProductListContent(remoteProductListFileLocation);
+        Map products = getProductListContent(remoteProductListFileLocation);
 
-        if (!products.get(ProductList.PRODUCTS).contains(Utils.coordsToString(groupId, artifactId))) {
-            products.get(ProductList.PRODUCTS).add(Utils.coordsToString(groupId, artifactId));
+        if (!((Map)products.get(ProductList.PRODUCTS)).keySet().contains(Utils.coordsToString(groupId, artifactId))) {
+            ((Map)products.get(ProductList.PRODUCTS)).put(Utils.coordsToString(groupId, artifactId),artifactId);
             remoteProductListFileLocation.delete();
             remoteProductListFileLocation.createNewFile();
             writeProductListContent(products, remoteProductListFileLocation);
         }
     }
 
-    private void writeProductListContent(Map<String, Set<String>> products, File remoteProductListFileLocation)
+    private void writeProductListContent(Map products, File remoteProductListFileLocation)
             throws Exception {
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
@@ -162,16 +163,16 @@ public class ArtifactoryWriter {
         }
     }
 
-    private Map<String, Set<String>> getProductListContent(File remoteProductListFileLocation)
+    @SuppressWarnings("unchecked")
+    private Map getProductListContent(File remoteProductListFileLocation)
             throws IOException {
         try (FileReader reader = new FileReader(remoteProductListFileLocation)) {
             YAML = new Yaml();
-            @SuppressWarnings("unchecked")
-            Map<String, Set<String>> res = YAML.loadAs(reader, HashMap.class);
+            Map res = YAML.loadAs(reader, HashMap.class);
             if (res == null) {
                 res = new HashMap<>();
-                res.put(ProductList.PRODUCTS, new HashSet<>());
-                res.put(ProductList.REPOSITORIES, new HashSet<>());
+                res.put((ProductList.PRODUCTS), new HashMap<>());
+                res.put(ProductList.REPOSITORIES, new ArrayList<>());
             }
             return res;
         } catch (IOException e) {

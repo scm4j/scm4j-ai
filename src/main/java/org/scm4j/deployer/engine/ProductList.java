@@ -19,14 +19,14 @@ import java.util.*;
 public class ProductList {
 
     private ArtifactoryReader productListReader;
-    private Set<ArtifactoryReader> repos;
-    private Set<String> products;
+    private List<ArtifactoryReader> repos;
+    private Map<String,String> products;
     private Set<String> versions;
     private List<String> downloadedProducts;
     private File localRepo;
     private File localProductList;
     private File versionsYml;
-    private Map<String, Set<String>> productListEntry;
+    private Map productListEntry;
     private Map<String, Set<String>> productsVersions;
 
     public static final String PRODUCT_LIST_GROUP_ID = "org.scm4j.ai";
@@ -43,7 +43,7 @@ public class ProductList {
     }
 
 
-    public Map<String, Set<String>> readFromProductList() throws Exception {
+    public Map readFromProductList() throws Exception {
         String productListReleaseVersion = getLocalProductListReleaseVersion();
         if (productListReleaseVersion == null) {
             downloadProductList();
@@ -54,14 +54,13 @@ public class ProductList {
                 versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
                 versionsYml.createNewFile();
             }
-            return productListEntry;
         } else {
             localProductList = new File(localRepo, Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
                     productListReleaseVersion, ".yml"));
             versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
             loadProductListEntry();
-            return productListEntry;
         }
+        return productListEntry;
     }
 
     //TODO refactor this
@@ -74,8 +73,8 @@ public class ProductList {
     private void downloadProductsVersions() throws ENoMetadata {
         versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
         productsVersions = new HashMap<>();
-        Set<String> vers = new HashSet<>();
-        for (String product : products) {
+        Set<String> vers = new TreeSet<>();
+        for (String product : products.keySet()) {
             String artifactId = StringUtils.substringAfter(product, ":");
             for (ArtifactoryReader reader : repos) {
                 vers.addAll(reader.getProductVersions(StringUtils.substringBefore(product, ":"), artifactId));
@@ -85,20 +84,22 @@ public class ProductList {
         Utils.writeYaml(productsVersions, versionsYml);
     }
 
+    @SuppressWarnings("unchecked")
     private void loadProductVersions(String artifactId) {
         productsVersions = Utils.readYml(versionsYml);
         if (productsVersions == null)
             productsVersions = new HashMap<>();
-        versions = new HashSet<>();
-        versions.addAll(productsVersions.getOrDefault(artifactId, new HashSet<>()));
+        versions = new TreeSet<>();
+        versions.addAll(productsVersions.getOrDefault(artifactId, new TreeSet<>()));
     }
 
+    @SuppressWarnings("unchecked")
     public void refreshProductVersions(String groupId, String artifactId) throws ENoMetadata {
         productsVersions = Utils.readYml(versionsYml);
         if (productsVersions == null) {
             productsVersions = new HashMap<>();
         }
-        Set<String> vers = new HashSet<>();
+        Set<String> vers = new TreeSet<>();
         for (ArtifactoryReader reader : repos) {
             vers.addAll(reader.getProductVersions(groupId, artifactId));
         }
@@ -140,18 +141,13 @@ public class ProductList {
         writeProductListMetadata(productListReleaseVersion);
     }
 
+    @SuppressWarnings("unchecked")
     private void loadProductListEntry() {
         productListEntry = Utils.readYml(localProductList);
-        repos = new LinkedHashSet<>();
-        productListEntry.get(REPOSITORIES).forEach(name -> repos.add(ArtifactoryReader.getByUrl(name)));
-        products = new HashSet<>();
-        products.addAll(productListEntry.get(PRODUCTS));
-    }
-
-    @SneakyThrows
-    public void appendLocalRepo() {
-        productListEntry.get(REPOSITORIES).add(localRepo.toURI().toURL().toString());
-        Utils.writeYaml(productListEntry, localProductList);
+        repos = new ArrayList<>();
+        ((List<String>) productListEntry.get(REPOSITORIES)).forEach(name -> repos.add(ArtifactoryReader.getByUrl(name)));
+        products = new HashMap<>();
+        products.putAll((Map<String,String>)productListEntry.get(PRODUCTS));
     }
 
     @SneakyThrows

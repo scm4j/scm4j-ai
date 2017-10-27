@@ -154,7 +154,7 @@ public class Utils {
     }
 
     public static String getGroupId(DeployerRunner runner, String artifactId) {
-        String groupAndArtifactID = runner.getProductList().getProducts().stream()
+        String groupAndArtifactID = runner.getProductList().getProducts().keySet().stream()
                 .filter(s -> s.contains(artifactId))
                 .limit(1)
                 .collect(Collectors.toList())
@@ -163,7 +163,7 @@ public class Utils {
     }
 
     @SneakyThrows
-    public static void writeYaml(Map<String, Set<String>> entry, File output) {
+    public static void writeYaml(Map entry, File output) {
         @Cleanup
         FileWriter writer = new FileWriter(output);
         DumperOptions options = new DumperOptions();
@@ -175,12 +175,12 @@ public class Utils {
 
     @SuppressWarnings("unchecked")
     @SneakyThrows
-    public static Map<String, Set<String>> readYml(File input) {
+    public static Map readYml(File input) {
         if (input.exists()) {
             @Cleanup
             FileReader reader = new FileReader(input);
             Yaml yaml = new Yaml();
-            return (Map<String, Set<String>>) yaml.load(reader);
+            return (Map) yaml.load(reader);
         } else {
             return new HashMap<>();
         }

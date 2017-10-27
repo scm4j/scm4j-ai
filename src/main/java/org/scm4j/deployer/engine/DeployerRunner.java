@@ -83,7 +83,7 @@ public class DeployerRunner {
     private File download(String groupId, String artifactId, String version, String extension, File productFile) {
         for (ArtifactoryReader repo : productList.getRepos()) {
             try {
-                if (!productList.getProducts().contains(Utils.coordsToString(groupId, artifactId))
+                if (!productList.getProducts().keySet().contains(Utils.coordsToString(groupId, artifactId))
                         || !repo.getProductVersions(groupId, artifactId).contains(version)) {
                     continue;
                 }
@@ -99,7 +99,6 @@ public class DeployerRunner {
             File localMetadataFolder = new File(flashRepository, Utils.coordsToFolderStructure(groupId, artifactId));
             File localMetadata = new File(localMetadataFolder, ArtifactoryReader.LOCAL_METADATA_FILE_NAME);
             localMetadata.renameTo(new File(localMetadataFolder, ArtifactoryReader.METADATA_FILE_NAME));
-            productList.appendLocalRepo();
             return productFile;
         }
         return null;
@@ -174,9 +173,9 @@ public class DeployerRunner {
         Optional<org.apache.maven.model.Dependency> apiDep = model.getDependencies().stream()
                 .filter(dep -> dep.getArtifactId().equals("scm4j-deployer-api"))
                 .findFirst();
-        String apiVersion = apiDep.isPresent() ? apiDep.get().getVersion() : "empty";
-        if (apiVersion.endsWith("SNAPSHOT") || (!apiVersion.equals("empty") &&
-                IProduct.class.getPackage().isCompatibleWith(apiVersion))) {
+        String apiVersion = apiDep.isPresent() ? apiDep.get().getVersion() : "";
+        if (apiVersion.endsWith("SNAPSHOT") || apiVersion.isEmpty() ||
+                IProduct.class.getPackage().isCompatibleWith(apiVersion)) {
             String mainClassName = Utils.getExportedClassName(productFile);
             Object obj = Utils.createClassFromJar(productFile, mainClassName);
             if (obj instanceof IProduct) {

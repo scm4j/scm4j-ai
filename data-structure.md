@@ -1,5 +1,5 @@
 # product-list-(ver).yml
--```yaml
+```yaml
  #Map coordinates -> product name
  products: 
    - com.company:product1: Product1 

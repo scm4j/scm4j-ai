@@ -10,7 +10,8 @@ This component automates installation (deployment) of products which are represe
 # Terms
 
 - `product list`: artifact (yaml file) which describes `products` and maven repositories
-- `product`: jar-artifact whose main class has public static `getProductStructure` method which returns  `IProductStructure` interface. - `IProductStructure`: lists `components`
+- `product`: jar-artifact whose main class has public static `getProductStructure` method which returns  `product structure`
+- `product structure`: implements `IProductStructure` interface, lists `component`s
 - `component`: inplements `IComponent` interface, represented by  artifact coordinates and one or few `deployment procedure`
 - `deployment procedure`: implements `IDeploymentProcedure`, lists `actions'
 - `action`: implements IAction and represented by `component deployer` class and `params` 

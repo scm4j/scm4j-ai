@@ -1,7 +1,7 @@
 # product-list-(ver).yml
 ```yaml
  
- #Map coordinates -> product name
+ #Map coordinates -> product display name
  products: 
    com.company:product1: Product1 
    com.company:product2: Product2

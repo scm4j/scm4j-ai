@@ -1,11 +1,9 @@
 package org.scm4j.deployer.engine;
 
 import com.google.common.collect.Lists;
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.scm4j.deployer.api.*;
@@ -13,7 +11,6 @@ import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 
 import java.io.File;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Data
 @Slf4j

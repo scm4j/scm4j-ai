@@ -155,7 +155,7 @@ public class DeployerEngine implements IProductDeployer {
 
     @SneakyThrows
     private void installComponent(IComponent component, Command command, File installerFile) {
-        IDeploymentProcedure procedure = component.getInstallationProcedure();
+        IDeploymentProcedure procedure = component.getDeploymentProcedure();
         String artifactId = component.getArtifactCoords().getArtifactId();
         DeploymentContext context = runner.getDepCtx().get(artifactId);
         List<IAction> actions = procedure.getActions();

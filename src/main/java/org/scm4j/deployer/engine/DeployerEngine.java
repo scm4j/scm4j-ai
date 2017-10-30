@@ -49,7 +49,11 @@ public class DeployerEngine implements IProductDeployer {
                 log.warn(productName.append(" already installed!").toString());
             } else {
                 if (!product.getDependentProducts().isEmpty()) {
-                    deployDependent(product, deployedProducts);
+                    List<String> dependents = product.getDependentProducts();
+                    for(String dependent : dependents) {
+                        Artifact depArt = new DefaultArtifact(dependent);
+                        deploy(depArt.getArtifactId(), depArt.getVersion());
+                    }
                     deployedProducts = Utils.readYml(deployedProductsFolder);
                 }
                 File installersJar = runner.getDepCtx().get(artifactId).getArtifacts().get(INSTALLERS_JAR_NAME);
@@ -68,25 +72,6 @@ public class DeployerEngine implements IProductDeployer {
                 log.info(productName.append(" successfully installed!").toString());
             }
         }
-    }
-
-    private void deployDependent(IProduct product, Map<String, List<String>> deployedProducts) {
-            List<String> dependents = product.getDependentProducts();
-            for(String dep : dependents) {
-                log.info("Need to install " + dep);
-                String[] artIdPlusVers = dep.split("-");
-                if(deployedProducts.getOrDefault(artIdPlusVers[0], new ArrayList<>()).contains(artIdPlusVers[1])) {
-                    continue;
-                } else {
-                    File productFile = download(artIdPlusVers[0], artIdPlusVers[1]);
-                    IProduct dependent = runner.getProduct(productFile);
-                    if(dependent.isInstalled(artIdPlusVers[0])) {
-                        continue;
-                    } else {
-                        deploy(artIdPlusVers[0],artIdPlusVers[1]);
-                    }
-                }
-            }
     }
 
     @Override

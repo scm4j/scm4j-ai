@@ -48,7 +48,7 @@ public class DeployerRunner {
 
     @SneakyThrows
     public DeployerRunner(File flashFolder, File workingFolder, String productListArtifactoryUrl) {
-        if(flashFolder == null)
+        if (flashFolder == null)
             flashFolder = workingFolder;
         this.repository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
         this.flashRepository = new File(flashFolder, REPOSITORY_FOLDER_NAME);
@@ -109,12 +109,11 @@ public class DeployerRunner {
         List<Artifact> components = new ArrayList<>();
         session = Utils.newRepositorySystemSession(system, TMP_REPOSITORY);
         CollectRequest collectRequest = new CollectRequest();
-        List<String> urls = productList.getRepos().stream()
+        //TODO add localrepo in runtime
+        productList.getRepos().stream()
                 .map(ArtifactoryReader::toString)
-                .sorted()
-                .collect(Collectors.toList());
-        urls.forEach(url -> collectRequest.addRepository
-                (new RemoteRepository.Builder("", "default", url).build()));
+                .forEach(url -> collectRequest.addRepository
+                        (new RemoteRepository.Builder("", "default", url).build()));
         DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
         for (Artifact artifact : artifacts) {
             collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));

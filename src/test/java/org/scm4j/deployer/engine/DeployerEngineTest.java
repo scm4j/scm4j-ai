@@ -268,11 +268,4 @@ public class DeployerEngineTest {
         assertEquals(ctx.getDeploymentURL(), new URL("file://localhost/C:/tools/UBL"));
         assertNull(ctx.getParams());
     }
-
-    @Test
-    public void teadfasf() {
-        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), "https://dev.untill.com/artifactory/repo");
-        de.listProducts();
-        de.deploy("firebird", "2.5");
-    }
 }

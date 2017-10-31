@@ -1,4 +1,4 @@
-# product list
+# product list (`product-list.yml`)
 
 Is represented by `product-list.yml` file inside `product artifact`
 
@@ -16,14 +16,12 @@ Is represented by `product-list.yml` file inside `product artifact`
   
  ```
 
-# product versions
+# product versions (`product-versions.yml`)
 
-- product-versions.yml
 - cache of repository content
 - located in `portable folder` and  `working folder`
 
-# deployed products
+# deployed products (`deployed-product.yml`)
 
-- deployed-product.yml
 - located in `working folder`
 

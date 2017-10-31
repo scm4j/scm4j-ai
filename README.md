@@ -49,7 +49,7 @@ Scenarious are represeneted by methods of `DeployerEngine`
   - Old version uninstalled
 - New version is installed
 
-- If `portable folder` is specified it is implicitly used as a repository
+- If `portable folder` is specified it is implicitly used as a main repository (before all repos listed in `product list`
 
 # Self-upgrade
 

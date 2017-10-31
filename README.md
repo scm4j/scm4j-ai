@@ -47,7 +47,9 @@ Scenarious are represeneted by methods of `DeployerEngine`
   - Old version is stopped
   - If `stop` fails all components are `disabled` and `REBOOT_NEEDED` is returned
   - Old version uninstalled
-- New version is installedq
+- New version is installed
+
+- If `portable folder` is specified it is implicitly used as a repository
 
 # Self-upgrade
 

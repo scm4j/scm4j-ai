@@ -48,8 +48,7 @@ Scenarious are represeneted by methods of `DeployerEngine`
   - If `stop` fails all components are `disabled` and `REBOOT_NEEDED` is returned
   - Old version uninstalled
 - New version is installed
-
-- If `portable folder` is specified it is implicitly used as a main repository (before all repos listed in `product list`
+- If `portable folder` is specified it is implicitly used as a main repository (before all repos listed in `product list`)
 
 # Self-upgrade
 

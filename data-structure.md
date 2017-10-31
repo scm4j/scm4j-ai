@@ -18,5 +18,11 @@ Is represented by `product-list.yml` file inside `product artifact`
 
 # product versions
 
+- product-versions.yml
+- located in `portable folder` and  `working folder`
+
 # deployed products
+
+- deployed-product.yml
+- located in `working folder`
 

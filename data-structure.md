@@ -21,7 +21,7 @@ Is represented by `product-list.yml` file inside `product artifact`
 - cache of repository content
 - located in `portable folder` and  `working folder`
 
-# deployed-product.yml
+# deployed-products.yml
 
 - located in `working folder`
 

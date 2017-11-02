@@ -8,8 +8,7 @@ import org.eclipse.aether.transfer.TransferResource;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -17,6 +16,7 @@ public class ConsoleTransferListener
         extends AbstractTransferListener {
     private static final int MB = 1048576;
     private static final int KB = 1024;
+    private String record;
     //TODO only one record per mb
     private final Map<TransferResource, Long> downloads = new ConcurrentHashMap<>();
     private int lastLength;
@@ -48,7 +48,10 @@ public class ConsoleTransferListener
         pad(buffer, pad);
         buffer.append('\r');
 
-        log.info(buffer.toString());
+        if (record != null && !record.equals(buffer.toString()))
+            log.info(buffer.toString());
+
+        record = buffer.toString();
     }
 
     private String getStatus(long complete, long total) {

@@ -32,10 +32,6 @@ jacocoTestReport {
     }
 }
 
-jacoco {
-    toolVersion = "0.7.9"
-}
-
 test {
     testLogging {
         events "failed"

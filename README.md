@@ -41,6 +41,7 @@ Scenarious are represeneted by methods of `DeployerEngine`
 # Deployment
 
 - Existing product version is queried using `listDeployedProducts`, if not found  IProjectStructure.`queryLegacyVersion()` is used.
+- If legacy version exists it is removed by IProjectStructure.removeLegacyVersion (REBOOT_NEEDED)
 - If old version exists and upgrade is needed
   - `IProjectStructure` is asked which version could uninstall old version (`uninstaller version`)
   - Uninstaller version is downloaded, if needed

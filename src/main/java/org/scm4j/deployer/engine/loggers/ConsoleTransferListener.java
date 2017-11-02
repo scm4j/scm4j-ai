@@ -16,10 +16,9 @@ public class ConsoleTransferListener
         extends AbstractTransferListener {
     private static final int MB = 1048576;
     private static final int KB = 1024;
-    private String record;
-    //TODO only one record per mb
     private final Map<TransferResource, Long> downloads = new ConcurrentHashMap<>();
     private int lastLength;
+    private String record;
 
     @Override
     public void transferInitiated(TransferEvent event) {

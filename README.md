@@ -5,21 +5,21 @@ Status: in development
 
 
 # Overview
-This component automates installation (deployment) of products which are represented by artifacts in maven repositories. `download` and `install` are different actions, so all dependencies might be downloaded first and then installed (after some time).
+This component automates installation (deployment) of products which are represented by artifacts in maven repositories. `download` and `install` are different actions, and if we want to install product without network connection we must download product and all dependencies before installation. If `scm4j-deployer-engine` can't find valid repository in `portable` or `working folder` then they downloads from network.
 
 # Terms
 
-- `product list`: artifact (yaml file) which describes `products` and maven repositories
-- `product`: jar-artifact whose main class has public static `getProductStructure` method which returns  `product structure`
-- `product structure`: lists `component`s
-- `component`: represented by  artifact coordinates and one or few `deployment procedure`
-- `deployment procedure`: lists `actions'
-- `action`: represented by `component deployer` class and `params` 
-- `component deployer`: Is instantiated during `deployment procedure`, action paremeters are passed using `init` method. All deployer classes must be in `product` dependencies.
-- `working folder`: Used to keep downloaded components and internal data structures
-- `portable folder`:  If specified used as a target for `download` command and as an implicit repository. Scenario: download all components to a `portable folder` (normally located at the USB flash drive), go to a place where internet is not presented and install products there using `portable folder` as a source
+- `product list`: artifact (yaml file) which lists `products` and maven repositories.
+- `product`: jar-artifact whose main class has public method `getProductStructure` which returns  `product structure`.
+- `product structure`: lists `component's`.
+- `component`: represented by  artifact coordinates and one or few `deployment procedure`.
+- `deployment procedure`: lists `actions`.
+- `action`: represented by `component deployer` class and `params`. 
+- `component deployer`: Is instantiated during `deployment procedure`, action paremeters are passed using `init` method. All deployer classes must be in `scm4j-deployer-installers.jar` who represented as `IProduct` dependency.
+- `working folder`: Used to keep downloaded components and internal data structures.
+- `portable folder`:  If specified used as a target for `download` command and as an implicit repository. Scenario: download all components to a `portable folder` (normally located at the USB flash drive), go to a place where internet is not presented and install products there using `portable folder` as a source.
 
-Thus all dependencies of product artifcat are "deployers" and their dependencies i.e. implement deployment  logic. Deployment "data" is represented by artifacts which are listed by `IProductStructure` interface.
+Thus all dependencies of product artifact are "deployers" and their dependencies i.e. implement deployment  logic. Deployment "data" is represented by artifacts which are listed by `IProductStructure` interface.
 
 # Data Structure
 
@@ -36,14 +36,14 @@ Scenarious are represeneted by methods of `DeployerEngine`
 - `refreshProductVersions`: refreshes offline cache
 - `download`: downloads given product
 - `deploy`: deploys given product
-- `listDeployedProducts`: lists all deployed product from `Deployed products registry`
+- `listDeployedProducts`: lists all deployed product from `deployed-products.yml`
 
 # Deployment
 
-- Existing product version is queried using `listDeployedProducts`, if not found  IProjectStructure.`queryLegacyVersion()` is used.
-- If legacy version exists it is removed by IProjectStructure.removeLegacyVersion (REBOOT_NEEDED)
+- Existing product version is queried using `listDeployedProducts`, if not found  IProduct.`isInstalled()` is used.
+- If legacy version exists it is removed by IProduct.`removeLegacyProduct()`
 - If old version exists and upgrade is needed
-  - `IProjectStructure` is asked which version could uninstall old version (`uninstaller version`)
+  - `IProductStructure` is asked which `scm4j-deployer-installers` version could uninstall old version (`uninstaller version`)
   - Uninstaller version is downloaded, if needed
   - Old version is stopped
   - If `stop` fails all components are `disabled` and `REBOOT_NEEDED` is returned

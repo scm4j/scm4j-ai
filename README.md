@@ -41,6 +41,7 @@ Scenarious are represeneted by methods of `DeployerEngine`
 # Deployment
 
 - Existing product version is queried using `listDeployedProducts`, if not found  IProjectStructure.`queryLegacyVersion()` is used.
+- If legacy version exists it is removed by IProjectStructure.removeLegacyVersion (REBOOT_NEEDED)
 - If old version exists and upgrade is needed
   - `IProjectStructure` is asked which version could uninstall old version (`uninstaller version`)
   - Uninstaller version is downloaded, if needed
@@ -48,6 +49,7 @@ Scenarious are represeneted by methods of `DeployerEngine`
   - If `stop` fails all components are `disabled` and `REBOOT_NEEDED` is returned
   - Old version uninstalled
 - New version is installed
+- If `portable folder` is specified it is implicitly used as a main repository (before all repos listed in `product list`)
 
 # Self-upgrade
 

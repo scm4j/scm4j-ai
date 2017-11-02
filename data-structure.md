@@ -1,4 +1,4 @@
-# product list
+# product-list.yml
 
 Is represented by `product-list.yml` file inside `product artifact`
 
@@ -15,3 +15,13 @@ Is represented by `product-list.yml` file inside `product artifact`
   - http://central.maven.org/maven2
   
  ```
+
+# product-versions.yml
+
+- cache of repository content
+- located in `portable folder` and  `working folder`
+
+# deployed-products.yml
+
+- located in `working folder`
+

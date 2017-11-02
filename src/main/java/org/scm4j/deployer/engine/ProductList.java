@@ -11,23 +11,14 @@ import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
 import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.net.URL;
 import java.util.*;
 
 @Data
 public class ProductList {
-
-    private ArtifactoryReader productListReader;
-    private List<ArtifactoryReader> repos;
-    private Map<String,String> products;
-    private Set<String> versions;
-    private List<String> downloadedProducts;
-    private File localRepo;
-    private File localProductList;
-    private File versionsYml;
-    private Map productListEntry;
-    private Map<String, Set<String>> productsVersions;
 
     public static final String PRODUCT_LIST_GROUP_ID = "org.scm4j.ai";
     public static final String PRODUCT_LIST_ARTIFACT_ID = "product-list";
@@ -36,6 +27,16 @@ public class ProductList {
     public static final String VERSIONS = "Versions";
     public static final String VERSIONS_ARTIFACT_ID = "products-versions.yml";
     public static final String DOWNLOADED_PRODUCTS = "downloaded products";
+    private ArtifactoryReader productListReader;
+    private List<ArtifactoryReader> repos;
+    private Map<String, String> products;
+    private Set<String> versions;
+    private List<String> downloadedProducts;
+    private File localRepo;
+    private File localProductList;
+    private File versionsYml;
+    private Map productListEntry;
+    private Map<String, Set<String>> productsVersions;
 
     public ProductList(File localRepo, ArtifactoryReader productListReader) {
         this.localRepo = localRepo;
@@ -63,14 +64,16 @@ public class ProductList {
         return productListEntry;
     }
 
-    //TODO refactor this
+    @SuppressWarnings("unchecked")
     public Map<String, Set<String>> readProductVersions(String artifactId) {
-        loadProductVersions(artifactId);
+        productsVersions = Utils.readYml(versionsYml);
+        if (productsVersions == null)
+            productsVersions = new HashMap<>();
+        versions = new TreeSet<>();
+        versions.addAll(productsVersions.getOrDefault(artifactId, new TreeSet<>()));
         return productsVersions;
     }
 
-    //TODO issue: can't find metadata and versions, if artifactId in productList key != productList value
-    @SneakyThrows
     private void downloadProductsVersions() throws ENoMetadata {
         versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
         productsVersions = new HashMap<>();
@@ -83,15 +86,6 @@ public class ProductList {
             productsVersions.put(artifactId, vers);
         }
         Utils.writeYaml(productsVersions, versionsYml);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void loadProductVersions(String artifactId) {
-        productsVersions = Utils.readYml(versionsYml);
-        if (productsVersions == null)
-            productsVersions = new HashMap<>();
-        versions = new TreeSet<>();
-        versions.addAll(productsVersions.getOrDefault(artifactId, new TreeSet<>()));
     }
 
     @SuppressWarnings("unchecked")
@@ -148,7 +142,7 @@ public class ProductList {
         repos = new ArrayList<>();
         ((List<String>) productListEntry.get(REPOSITORIES)).forEach(name -> repos.add(ArtifactoryReader.getByUrl(name)));
         products = new HashMap<>();
-        products.putAll((Map<String,String>)productListEntry.get(PRODUCTS));
+        products.putAll((Map<String, String>) productListEntry.get(PRODUCTS));
     }
 
     @SneakyThrows

@@ -23,8 +23,8 @@ public class ArtifactoryWriter {
     public static final String PRODUCT_LIST_VERSION = "1.2.0";
     private static final String TEST_POMS = "org/scm4j/deployer/engine/poms/";
     private static final String TEST_CLASS = "org/scm4j/deployer/engine/testclasses/";
-    private File artifactoryFolder;
     private static Yaml YAML;
+    private final File artifactoryFolder;
 
     public ArtifactoryWriter(File artifactoryFolder) {
         this.artifactoryFolder = artifactoryFolder;
@@ -105,8 +105,8 @@ public class ArtifactoryWriter {
 
         File artifactPom = new File(artifactVersionPath, Utils.coordsToFileName(artifactId, version, ".pom"));
 
-        if(content.contains("Data") || content.contains("Runner"))
-            createProductJar(content,artifactFile);
+        if (content.contains("Data") || content.contains("Runner"))
+            createProductJar(content, artifactFile);
         else
             FileUtils.writeStringToFile(artifactFile, content, Charset.forName("UTF-8"));
 
@@ -128,7 +128,7 @@ public class ArtifactoryWriter {
             jos.putNextEntry(entry);
             byte[] buffer = new byte[1024];
             int len;
-            while((len = bin.read(buffer)) != -1) {
+            while ((len = bin.read(buffer)) != -1) {
                 jos.write(buffer, 0, len);
             }
             jos.closeEntry();
@@ -144,8 +144,8 @@ public class ArtifactoryWriter {
 
         Map products = getProductListContent(remoteProductListFileLocation);
 
-        if (!((Map)products.get(ProductList.PRODUCTS)).keySet().contains(Utils.coordsToString(groupId, artifactId))) {
-            ((Map)products.get(ProductList.PRODUCTS)).put(Utils.coordsToString(groupId, artifactId),artifactId);
+        if (!((Map) products.get(ProductList.PRODUCTS)).keySet().contains(Utils.coordsToString(groupId, artifactId))) {
+            ((Map) products.get(ProductList.PRODUCTS)).put(Utils.coordsToString(groupId, artifactId), artifactId);
             remoteProductListFileLocation.delete();
             remoteProductListFileLocation.createNewFile();
             writeProductListContent(products, remoteProductListFileLocation);
@@ -164,8 +164,7 @@ public class ArtifactoryWriter {
     }
 
     @SuppressWarnings("unchecked")
-    private Map getProductListContent(File remoteProductListFileLocation)
-            throws IOException {
+    private Map getProductListContent(File remoteProductListFileLocation) {
         try (FileReader reader = new FileReader(remoteProductListFileLocation)) {
             YAML = new Yaml();
             Map res = YAML.loadAs(reader, HashMap.class);

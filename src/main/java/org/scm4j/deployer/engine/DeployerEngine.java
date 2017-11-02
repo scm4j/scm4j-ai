@@ -25,39 +25,38 @@ public class DeployerEngine implements IProductDeployer {
     private final DeployerRunner runner;
     private final File deployedProductsFolder;
 
-    public DeployerEngine(File flashFolder, File workingFolder, String productListArtifactoryUrl) {
-        if (flashFolder == null)
-            flashFolder = workingFolder;
+    public DeployerEngine(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
+        if (portableFolder == null)
+            portableFolder = workingFolder;
         this.workingFolder = workingFolder;
-        this.portableFolder = flashFolder;
+        this.portableFolder = portableFolder;
         this.productListArtifactoryUrl = productListArtifactoryUrl;
-        deployedProductsFolder = new File(workingFolder,DEPLOYED_PRODUCTS);
-        this.runner = new DeployerRunner(flashFolder, workingFolder, productListArtifactoryUrl);
+        deployedProductsFolder = new File(workingFolder, DEPLOYED_PRODUCTS);
+        this.runner = new DeployerRunner(portableFolder, workingFolder, productListArtifactoryUrl);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public void deploy(String artifactId, String version) {
-        Map<String,List<String>> deployedProducts = Utils.readYml(deployedProductsFolder);
+        Map<String, List<String>> deployedProducts = Utils.readYml(deployedProductsFolder);
         StringBuilder productName = new StringBuilder().append(artifactId).append("-").append(version);
-        if(deployedProducts.getOrDefault(artifactId, new ArrayList<>()).contains(version)) {
+        if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).contains(version)) {
             log.warn(productName.append(" already installed!").toString());
         } else {
             File productFile = download(artifactId, version);
             IProduct product = runner.getProduct(productFile);
-            if(product.isInstalled(artifactId)) {
+            if (product.isInstalled(artifactId)) {
                 log.warn(productName.append(" already installed!").toString());
             } else {
                 if (!product.getDependentProducts().isEmpty()) {
                     List<String> dependents = product.getDependentProducts();
-                    for(String dependent : dependents) {
+                    for (String dependent : dependents) {
                         Artifact depArt = new DefaultArtifact(dependent);
                         deploy(depArt.getArtifactId(), depArt.getVersion());
                     }
                     deployedProducts = Utils.readYml(deployedProductsFolder);
                 }
                 File installersJar = runner.getDepCtx().get(artifactId).getArtifacts().get(INSTALLERS_JAR_NAME);
-                //TODO check existing product and copy from flash to local machine
                 List<IComponent> components = product.getProductStructure().getComponents();
                 for (IComponent component : components) {
                     installComponent(component, Command.DEPLOY, installersJar);
@@ -95,7 +94,7 @@ public class DeployerEngine implements IProductDeployer {
     @SneakyThrows
     @SuppressWarnings("unchecked")
     public List<String> listProducts() {
-        Map<String, Map<String,String>> entry = runner.getProductList().readFromProductList();
+        Map<String, Map<String, String>> entry = runner.getProductList().readFromProductList();
         return new ArrayList<>(entry.get(ProductList.PRODUCTS).values());
     }
 
@@ -106,7 +105,6 @@ public class DeployerEngine implements IProductDeployer {
         return listProducts();
     }
 
-    //TODO sort result
     @Override
     public Map<String, Boolean> listProductVersions(String artifactId) {
         Optional<Set<String>> versions = Optional.ofNullable
@@ -117,9 +115,9 @@ public class DeployerEngine implements IProductDeployer {
         return downloadedVersions;
     }
 
-    private Boolean versionExists(String artifactId, String version) {
+    private boolean versionExists(String artifactId, String version) {
         String groupId = Utils.getGroupId(runner, artifactId);
-        File productVersionFolder = new File(runner.getRepository(), Utils.coordsToFolderStructure(groupId, artifactId, version));
+        File productVersionFolder = new File(runner.getWorkingRepository(), Utils.coordsToFolderStructure(groupId, artifactId, version));
         return productVersionFolder.exists();
     }
 

@@ -32,6 +32,20 @@ public class ArtifactoryReader {
     }
 
     @SneakyThrows
+    public static ArtifactoryReader getByUrl(String repoUrl) {
+        URL url = new URL(repoUrl);
+        String userInfoStr = url.getUserInfo();
+        if (userInfoStr != null) {
+            String[] userInfo = userInfoStr.split(":");
+            repoUrl = repoUrl.replace(userInfoStr + "@", "");
+            if (userInfo.length == 2) {
+                return new ArtifactoryReader(repoUrl, userInfo[0], userInfo[1]);
+            }
+        }
+        return new ArtifactoryReader(repoUrl, null, null);
+    }
+
+    @SneakyThrows
     public List<String> getProductVersions(String groupId, String artifactId) {
         MetadataXpp3Reader reader = new MetadataXpp3Reader();
         URL url = getProductMetaDataURL(groupId, artifactId);
@@ -43,7 +57,6 @@ public class ArtifactoryReader {
             return Collections.emptyList();
         }
     }
-
 
     @SneakyThrows
     public String getProductListReleaseVersion() {
@@ -79,20 +92,6 @@ public class ArtifactoryReader {
     @SneakyThrows
     public URL getProductMetaDataURL(String groupId, String artifactId) {
         return new URL(new URL(url, Utils.coordsToUrlStructure(groupId, artifactId) + "/"), METADATA_FILE_NAME);
-    }
-
-    @SneakyThrows
-    public static ArtifactoryReader getByUrl(String repoUrl) {
-        URL url = new URL(repoUrl);
-        String userInfoStr = url.getUserInfo();
-        if (userInfoStr != null) {
-            String[] userInfo = userInfoStr.split(":");
-            repoUrl = repoUrl.replace(userInfoStr + "@", "");
-            if (userInfo.length == 2) {
-                return new ArtifactoryReader(repoUrl, userInfo[0], userInfo[1]);
-            }
-        }
-        return new ArtifactoryReader(repoUrl, null, null);
     }
 
     @SneakyThrows

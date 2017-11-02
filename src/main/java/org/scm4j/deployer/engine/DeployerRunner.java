@@ -41,21 +41,19 @@ public class DeployerRunner {
     private static final String DEFAULT_DEPLOYMENT_URL = "file://localhost/C:/tools/";
     private final Map<String, DeploymentContext> depCtx = new HashMap<>();
     private final ProductList productList;
-    private final File repository;
-    private final File flashRepository;
+    private final File workingRepository;
+    private final File portableRepository;
     private RepositorySystem system;
     private RepositorySystemSession session;
 
     @SneakyThrows
-    public DeployerRunner(File flashFolder, File workingFolder, String productListArtifactoryUrl) {
-        if (flashFolder == null)
-            flashFolder = workingFolder;
-        this.repository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
-        this.flashRepository = new File(flashFolder, REPOSITORY_FOLDER_NAME);
-        if (!repository.exists())
-            repository.mkdirs();
+    public DeployerRunner(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
+        this.workingRepository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
+        this.portableRepository = new File(portableFolder, REPOSITORY_FOLDER_NAME);
+        if (!portableRepository.exists())
+            portableRepository.mkdirs();
         ArtifactoryReader productListReader = ArtifactoryReader.getByUrl(productListArtifactoryUrl);
-        this.productList = new ProductList(repository, productListReader);
+        this.productList = new ProductList(portableRepository, productListReader);
         this.system = Utils.newRepositorySystem();
     }
 
@@ -64,11 +62,17 @@ public class DeployerRunner {
             throw new EProductListEntryNotFound("Product list doesn't loaded");
         }
         String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
-        File res = new File(flashRepository, fileRelativePath);
+        File res = new File(portableRepository, fileRelativePath);
         if (res.exists()) {
             List<Artifact> artifacts = getComponents(res);
             artifacts.add(new DefaultArtifact(groupId, artifactId, extension, version));
-            resolveDependencies(artifacts);
+            artifacts = resolveDependencies(artifacts);
+            if (!portableRepository.equals(workingRepository)) {
+                if (!workingRepository.exists())
+                    workingRepository.mkdirs();
+                saveComponents(artifacts, workingRepository);
+                res = new File(workingRepository, fileRelativePath);
+            }
         } else {
             res = download(groupId, artifactId, version, extension, res);
             if (res == null) {
@@ -92,11 +96,11 @@ public class DeployerRunner {
             }
             List<Artifact> artifacts = resolveDependencies(
                     Collections.singletonList(new DefaultArtifact(groupId, artifactId, extension, version)));
-            saveComponents(artifacts, flashRepository);
+            saveComponents(artifacts, portableRepository);
             artifacts = getComponents(productFile);
             artifacts = resolveDependencies(artifacts);
-            saveComponents(artifacts, flashRepository);
-            File localMetadataFolder = new File(flashRepository, Utils.coordsToFolderStructure(groupId, artifactId));
+            saveComponents(artifacts, portableRepository);
+            File localMetadataFolder = new File(portableRepository, Utils.coordsToFolderStructure(groupId, artifactId));
             File localMetadata = new File(localMetadataFolder, ArtifactoryReader.LOCAL_METADATA_FILE_NAME);
             localMetadata.renameTo(new File(localMetadataFolder, ArtifactoryReader.METADATA_FILE_NAME));
             return productFile;
@@ -109,11 +113,9 @@ public class DeployerRunner {
         List<Artifact> components = new ArrayList<>();
         session = Utils.newRepositorySystemSession(system, TMP_REPOSITORY);
         CollectRequest collectRequest = new CollectRequest();
-        //TODO add localrepo in runtime
-        productList.getRepos().stream()
-                .map(ArtifactoryReader::toString)
-                .forEach(url -> collectRequest.addRepository
-                        (new RemoteRepository.Builder("", "default", url).build()));
+        List<String> urls = productList.getRepos().stream().map(ArtifactoryReader::toString).collect(Collectors.toList());
+        urls.add(0, portableRepository.toURI().toURL().toString());
+        urls.forEach(url -> collectRequest.addRepository(new RemoteRepository.Builder("", "default", url).build()));
         DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
         for (Artifact artifact : artifacts) {
             collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
@@ -172,7 +174,7 @@ public class DeployerRunner {
         Optional<org.apache.maven.model.Dependency> apiDep = model.getDependencies().stream()
                 .filter(dep -> dep.getArtifactId().equals("scm4j-deployer-api"))
                 .findFirst();
-        String apiVersion = apiDep.isPresent() ? apiDep.get().getVersion() : "";
+        String apiVersion = apiDep.map(org.apache.maven.model.Dependency::getVersion).orElse("");
         if (apiVersion.endsWith("SNAPSHOT") || apiVersion.isEmpty() ||
                 IProduct.class.getPackage().isCompatibleWith(apiVersion)) {
             String mainClassName = Utils.getExportedClassName(productFile);

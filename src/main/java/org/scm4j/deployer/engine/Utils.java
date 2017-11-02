@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 
 public class Utils {
 
-    //TODO change Utils for work with Coords
     public static String coordsToString(String groupId, String artifactId, String version, String extension) {
         return coordsToString(groupId, artifactId) + ":" + version + ":" + StringUtils.prependIfMissing(extension, ".");
     }
@@ -83,14 +82,14 @@ public class Utils {
     public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system, File repository) {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
         DefaultArtifactTypeRegistry stereotypes = new DefaultArtifactTypeRegistry();
-        stereotypes.add( new DefaultArtifactType( "pom" ) );
-        stereotypes.add( new DefaultArtifactType( "maven-plugin", "jar", "", "java" ) );
+        stereotypes.add(new DefaultArtifactType("pom"));
+        stereotypes.add(new DefaultArtifactType("maven-plugin", "jar", "", "java"));
         stereotypes.add(new DefaultArtifactType("zip"));
         stereotypes.add(new DefaultArtifactType("exe"));
-        stereotypes.add( new DefaultArtifactType( "javadoc", "jar", "javadoc", "java" ) );
-        stereotypes.add( new DefaultArtifactType( "java-source", "jar", "sources", "java", false, false ) );
-        stereotypes.add( new DefaultArtifactType( "war", "war", "", "java", false, true ) );
-        session.setArtifactTypeRegistry( stereotypes );
+        stereotypes.add(new DefaultArtifactType("javadoc", "jar", "javadoc", "java"));
+        stereotypes.add(new DefaultArtifactType("java-source", "jar", "sources", "java", false, false));
+        stereotypes.add(new DefaultArtifactType("war", "war", "", "java", false, true));
+        session.setArtifactTypeRegistry(stereotypes);
         LocalRepository localRepo = new LocalRepository(repository);
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
         session.setTransferListener(new ConsoleTransferListener());
@@ -116,7 +115,7 @@ public class Utils {
     @SneakyThrows
     public static Object createClassFromJar(File jarFile, String className) {
         @Cleanup
-        URLClassLoader loader = URLClassLoader.newInstance(new URL[] {jarFile.toURI().toURL()});
+        URLClassLoader loader = URLClassLoader.newInstance(new URL[]{jarFile.toURI().toURL()});
         Class<?> clazz;
         try {
             clazz = Class.forName(className, true, loader);
@@ -132,21 +131,21 @@ public class Utils {
         List<String> dependentClasses = new ArrayList<>();
         JarFile file = new JarFile(jarFile);
         Enumeration<JarEntry> entries = file.entries();
-        while(entries.hasMoreElements()) {
+        while (entries.hasMoreElements()) {
             JarEntry je = entries.nextElement();
-            if(je.getName().contains(className)) {
-                dependentClasses.add(je.getName().substring(0,je.getName().length()-6)
+            if (je.getName().contains(className)) {
+                dependentClasses.add(je.getName().substring(0, je.getName().length() - 6)
                         .replace("/", "."));
             }
         }
-        for(String name : dependentClasses) {
+        for (String name : dependentClasses) {
             if (name.endsWith(className)) {
                 fullClassName = name;
             } else {
                 Class.forName(name, true, loader);
             }
         }
-        if(fullClassName != null) {
+        if (fullClassName != null) {
             return fullClassName;
         } else {
             throw new EClassNotFound(className + " class not found");

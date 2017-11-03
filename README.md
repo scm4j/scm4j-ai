@@ -18,6 +18,7 @@ This component automates installation (deployment) of products which are represe
 - `component deployer`: Is instantiated during `deployment procedure`, action paremeters are passed using `init` method. All deployer classes must be in `scm4j-deployer-installers.jar` who represented as `IProduct` dependency.
 - `working folder`: Used to keep downloaded components and internal data structures.
 - `portable folder`:  If specified used as a target for `download` command and as an implicit repository. Scenario: download all components to a `portable folder` (normally located at the USB flash drive), go to a place where internet is not presented and install products there using `portable folder` as a source.
+- `legacy version`: product version who deploys without `scm4j-installer`.
 
 Thus all dependencies of product artifact are "deployers" and their dependencies i.e. implement deployment  logic. Deployment "data" is represented by artifacts which are listed by `IProductStructure` interface.
 
@@ -40,9 +41,9 @@ Scenarious are represeneted by methods of `DeployerEngine`
 
 # Deployment
 
-- Existing product version is queried using `listDeployedProducts`, if not found  IProduct.`isInstalled` is used:
-  - If legacy version exists and equals `IProduct` version, version writes in `deployed-products.yml` and installation ends.
-  - If legacy version older `IProduct` version, it is removed by IProduct.`removeLegacyProduct()`.
+- Existing product version is queried using `listDeployedProducts`, if not found  IProduct.`isInstalled` trying to find `legacy version`
+  - If `legacy version` exists and equals `IProduct` version, version writes in `deployed-products.yml` and installation ends.
+  - If `legacy version` older `IProduct` version, it is removed by IProduct.`removeLegacyProduct()`.
 - If old version exists and upgrade is needed
   - `IProductStructure` is asked which `scm4j-deployer-installers` version could uninstall old version (`uninstaller version`)
   - Uninstaller version is downloaded, if needed

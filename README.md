@@ -41,16 +41,23 @@ Scenarious are represeneted by methods of `DeployerEngine`
 
 # Deployment
 
-- Existing product version is queried using `listDeployedProducts`, if not found  IProduct.`isInstalled` trying to find `legacy version`
-  - If `legacy version` exists and equals `IProduct` version, version writes in `deployed-products.yml` and installation ends.
-  - If `legacy version` older `IProduct` version, it is removed by IProduct.`removeLegacyProduct()`.
-- If old version exists and upgrade is needed
-  - `IProductStructure` is asked which `scm4j-deployer-installers` version could uninstall old version (`uninstaller version`)
-  - Uninstaller version is downloaded, if needed
-  - Old version is stopped
-  - If `stop` fails all components are `disabled` and `REBOOT_NEEDED` is returned
-  - Old version uninstalled
+Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSION
+
+- INCOMPATIBLE_API_VERSION: Product should depend on `deployer-api` which is compatible with one used by engine
+
+Steps
+
+- API compatibility is checked
+- `Deployed product` (`DP`) version is queried using `listDeployedProducts`, if not found  IProduct.`queryLegacyProduct` (`LP`) is used
+- If `LP` exists 
+    - If `LP`-version equals `IProduct` version, version is saved to `deployed-products.yml` and installation ends
+    - If `LP`-version less than `IProduct` version, it is removed by IProduct.`removeLegacyProduct()`
+- If `DP` exists
+  - `DP` deployers and components are downloaded
+  - `DP` is stopped
+  - If `stop` fails all `DP`-components are `disabled` and `NEED_REBOOT` is returned
 - New version is installed
+  - `DP`-components are compared
 - If `portable folder` is specified it is implicitly used as a main repository (before all repos listed in `product list`)
 
 # Self-upgrade

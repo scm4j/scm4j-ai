@@ -40,8 +40,9 @@ Scenarious are represeneted by methods of `DeployerEngine`
 
 # Deployment
 
-- Existing product version is queried using `listDeployedProducts`, if not found  IProduct.`isInstalled()` is used.
-- If legacy version exists it is removed by IProduct.`removeLegacyProduct()`
+- Existing product version is queried using `listDeployedProducts`, if not found  IProduct.`isInstalled` is used:
+  - If legacy version exists and equals `IProduct` version, version writes in `deployed-products.yml` and installation ends.
+  - If legacy version older `IProduct` version, it is removed by IProduct.`removeLegacyProduct()`.
 - If old version exists and upgrade is needed
   - `IProductStructure` is asked which `scm4j-deployer-installers` version could uninstall old version (`uninstaller version`)
   - Uninstaller version is downloaded, if needed

@@ -9,16 +9,16 @@ This component automates installation (deployment) of products which are represe
 
 # Terms
 
-- `product list`: artifact (yaml file) which lists `products` and maven repositories.
-- `product`: jar-artifact whose main class has public method `getProductStructure` which returns  `product structure`.
-- `product structure`: lists `component's`.
-- `component`: represented by  artifact coordinates and one or few `deployment procedure`.
-- `deployment procedure`: lists `actions`.
-- `action`: represented by `component deployer` class and `params`. 
-- `component deployer`: Is instantiated during `deployment procedure`, action paremeters are passed using `init` method. All deployer classes must be in `scm4j-deployer-installers.jar` who represented as `IProduct` dependency.
-- `working folder`: Used to keep downloaded components and internal data structures.
-- `portable folder`:  If specified used as a target for `download` command and as an implicit repository. Scenario: download all components to a `portable folder` (normally located at the USB flash drive), go to a place where internet is not presented and install products there using `portable folder` as a source.
-- `legacy version`: product version who deploys without `scm4j-installer`.
+- `product list`: artifact (yaml file) which lists `products` and maven repositories
+- `product`: jar-artifact whose main class has public method `getProductStructure` which returns  `product structure`
+- `product structure`: lists `component's`
+- `component`: represented by  artifact coordinates and one or few `deployment procedure`
+- `deployment procedure`: lists `actions`
+- `action`: represented by `component deployer` class and `params`
+- `component deployer`: Is instantiated during `deployment procedure`, action paremeters are passed using `init` method
+- `working folder`: Used to keep downloaded components and internal data structures
+- `portable folder`:  If specified used as a target for `download` command and as an implicit repository. Scenario: download all components to a `portable folder` (normally located at the USB flash drive), go to a place where internet is not presented and install products there using `portable folder` as a source
+- `legacy version`: product version who deploys without `scm4j-installer`
 
 Thus all dependencies of product artifact are "deployers" and their dependencies i.e. implement deployment  logic. Deployment "data" is represented by artifacts which are listed by `IProductStructure` interface.
 

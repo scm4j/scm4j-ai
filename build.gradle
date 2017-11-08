@@ -23,7 +23,7 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 group = 'org.scm4j'
-version = new File('version').text
+version = file('version').text.trim()
 
 jacocoTestReport {
     reports {

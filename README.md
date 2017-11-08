@@ -48,7 +48,7 @@ Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSI
 Steps
 
 - API compatibility is checked
-- `Deployed product` (`DP`) version is queried using `listDeployedProducts`, if not found  IProduct.`queryLegacyProduct` (`LP`) is used
+- `Deployed product` (`DP`) version is queried using `listDeployedProducts`, if not found  ILegacyProduct.`queryLegacyProduct` (`LP`) is used
 - If `LP` exists 
     - If `LP`-version equals `IProduct` version, version is saved to `deployed-products.yml` and installation ends
     - If `LP`-version less than `IProduct` version, it is removed by IProduct.`removeLegacyProduct()`

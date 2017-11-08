@@ -41,7 +41,7 @@ Scenarious are represeneted by methods of `DeployerEngine`
 
 # Deployment
 
-Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSION
+Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSION, ALREADY_INSTALLED
 
 - INCOMPATIBLE_API_VERSION: Product should depend on `deployer-api` which is compatible with one used by engine
 

@@ -15,7 +15,6 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.artifact.DefaultArtifactTypeRegistry;
-import org.scm4j.deployer.engine.exceptions.EClassNotFound;
 import org.scm4j.deployer.engine.loggers.ConsoleRepositoryListener;
 import org.scm4j.deployer.engine.loggers.ConsoleTransferListener;
 import org.yaml.snakeyaml.DumperOptions;
@@ -24,11 +23,9 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -110,46 +107,6 @@ public class Utils {
             }
         }
         throw new RuntimeException();
-    }
-
-    @SneakyThrows
-    public static Object createClassFromJar(File jarFile, String className) {
-        @Cleanup
-        URLClassLoader loader = URLClassLoader.newInstance(new URL[]{jarFile.toURI().toURL()});
-        Class<?> clazz;
-        try {
-            clazz = Class.forName(className, true, loader);
-        } catch (ClassNotFoundException e) {
-            clazz = Class.forName(findClassName(jarFile, className, loader), true, loader);
-        }
-        return clazz.newInstance();
-    }
-
-    @SneakyThrows
-    private static String findClassName(File jarFile, String className, ClassLoader loader) {
-        String fullClassName = null;
-        List<String> dependentClasses = new ArrayList<>();
-        JarFile file = new JarFile(jarFile);
-        Enumeration<JarEntry> entries = file.entries();
-        while (entries.hasMoreElements()) {
-            JarEntry je = entries.nextElement();
-            if (je.getName().contains(className)) {
-                dependentClasses.add(je.getName().substring(0, je.getName().length() - 6)
-                        .replace("/", "."));
-            }
-        }
-        for (String name : dependentClasses) {
-            if (name.endsWith(className)) {
-                fullClassName = name;
-            } else {
-                Class.forName(name, true, loader);
-            }
-        }
-        if (fullClassName != null) {
-            return fullClassName;
-        } else {
-            throw new EClassNotFound(className + " class not found");
-        }
     }
 
     public static String getGroupId(DeployerRunner runner, String artifactId) {

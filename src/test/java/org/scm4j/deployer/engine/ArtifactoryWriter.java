@@ -105,7 +105,7 @@ public class ArtifactoryWriter {
 
         File artifactPom = new File(artifactVersionPath, Utils.coordsToFileName(artifactId, version, ".pom"));
 
-        if (content.contains("Data") || content.contains("Runner"))
+        if (content.contains("Data") || content.contains("Executor"))
             createProductJar(content, artifactFile);
         else
             FileUtils.writeStringToFile(artifactFile, content, Charset.forName("UTF-8"));

@@ -17,7 +17,6 @@ import java.util.*;
 public class DeployerEngine implements IProductDeployer {
 
     private static final String DEPLOYED_PRODUCTS = "deployed-products.yml";
-    private static final String INSTALLERS_JAR_NAME = "scm4j-deployer-installers";
 
     private final File workingFolder;
     private final File portableFolder;
@@ -37,16 +36,22 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void deploy(String artifactId, String version) {
+    public DeploymentResult deploy(String artifactId, String version) {
         Map<String, List<String>> deployedProducts = Utils.readYml(deployedProductsFolder);
         StringBuilder productName = new StringBuilder().append(artifactId).append("-").append(version);
         if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).contains(version)) {
             log.warn(productName.append(" already installed!").toString());
+            return DeploymentResult.ALREADY_INSTALLED;
         } else {
-            File productFile = download(artifactId, version);
-            IProduct product = runner.getProduct(productFile);
-            if (product.isInstalled(artifactId)) {
-                log.warn(productName.append(" already installed!").toString());
+            download(artifactId, version);
+            IProduct product = runner.getProduct();
+            if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).isEmpty() &&
+                    product instanceof ILegacyProduct && ((ILegacyProduct) product).queryLegacyProduct()) {
+                //TODO delete old product and deploy new
+                ILegacyProduct legacyProduct = (ILegacyProduct) product;
+//                validatelegacyProduct(legacyProduct, version);
+                log.info(productName.append(" already installed!").toString());
+                return DeploymentResult.ALREADY_INSTALLED;
             } else {
                 if (!product.getDependentProducts().isEmpty()) {
                     List<String> dependents = product.getDependentProducts();
@@ -56,10 +61,10 @@ public class DeployerEngine implements IProductDeployer {
                     }
                     deployedProducts = Utils.readYml(deployedProductsFolder);
                 }
-                File installersJar = runner.getDepCtx().get(artifactId).getArtifacts().get(INSTALLERS_JAR_NAME);
                 List<IComponent> components = product.getProductStructure().getComponents();
+                List<Integer> result = new ArrayList<>();
                 for (IComponent component : components) {
-                    installComponent(component, Command.DEPLOY, installersJar);
+                    result.add(installComponent(component, Command.DEPLOY));
                 }
                 if (deployedProducts.get(artifactId) == null) {
                     deployedProducts.put(artifactId, new ArrayList<>());
@@ -69,9 +74,18 @@ public class DeployerEngine implements IProductDeployer {
                 }
                 Utils.writeYaml(deployedProducts, deployedProductsFolder);
                 log.info(productName.append(" successfully installed!").toString());
+                return result.stream().anyMatch(code -> code != 0) ? DeploymentResult.NEED_REBOOT : DeploymentResult.OK;
             }
         }
     }
+
+//    private DeploymentResult validatelegacyProduct(ILegacyProduct legacyProduct, String version) {
+//        if(legacyProduct.getLegacyVersion().equals(new Version(version)))
+//            return DeploymentResult.ALREADY_INSTALLED;
+//        if(legacyProduct.getLegacyVersion().isGreaterThan(new Version(version)))
+//            return DeploymentResult.NEWER_VERSION_EXISTS;
+//
+//    }
 
     @Override
     public File download(String artifactId, String version) {
@@ -82,12 +96,13 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @Override
-    public void undeploy(String artifactId, String version) {
-
+    public DeploymentResult undeploy(String artifactId, String version) {
+        return DeploymentResult.OK;
     }
 
     @Override
-    public void upgrade(String artifactId, String version) {
+    public DeploymentResult upgrade(String artifactId, String version) {
+        return DeploymentResult.OK;
     }
 
     @Override
@@ -132,34 +147,36 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @Override
-    public Map listDeployedProducts() {
-        return Utils.readYml(new File(workingFolder, DEPLOYED_PRODUCTS));
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> listDeployedProducts() {
+        return (Map<String, Object>) Utils.readYml(new File(workingFolder, DEPLOYED_PRODUCTS));
     }
 
     @SneakyThrows
-    private void installComponent(IComponent component, Command command, File installerFile) {
+    private int installComponent(IComponent component, Command command) {
         IDeploymentProcedure procedure = component.getDeploymentProcedure();
         String artifactId = component.getArtifactCoords().getArtifactId();
         DeploymentContext context = runner.getDepCtx().get(artifactId);
+        context.setDeploymentURL(runner.getProduct().getProductStructure().getDefaultDeploymentURL());
         List<IAction> actions = procedure.getActions();
         if (command == Command.UNDEPLOY)
             actions = Lists.reverse(actions);
+        List<Integer> returnCodes = new ArrayList<>();
         for (IAction action : actions) {
-            Object obj = Utils.createClassFromJar(installerFile, action.getInstallerClassName());
-            if (obj instanceof IComponentDeployer) {
-                IComponentDeployer deployer = (IComponentDeployer) obj;
-                deployer.init(context, action.getParams());
-                switch (command) {
-                    case DEPLOY:
-                        deployer.deploy();
-                        break;
-                    case UNDEPLOY:
-                        deployer.undeploy();
-                        break;
-                    case UPGRADE:
-                        break;
-                }
+            IComponentDeployer deployer = action.getInstallerClass().newInstance();
+            deployer.init(context, action.getParams());
+            switch (command) {
+                case DEPLOY:
+                    returnCodes.add(deployer.deploy());
+                    break;
+                case UNDEPLOY:
+                    returnCodes.add(deployer.undeploy());
+                    break;
+                default:
+                    throw new IllegalArgumentException();
             }
         }
+        return returnCodes.stream().anyMatch(code -> code != 0) ? 1 : 0;
     }
 }
+

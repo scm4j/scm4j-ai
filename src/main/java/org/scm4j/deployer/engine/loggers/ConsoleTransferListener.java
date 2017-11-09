@@ -8,7 +8,8 @@ import org.eclipse.aether.transfer.TransferResource;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.*;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -103,7 +104,8 @@ public class ConsoleTransferListener
         transferCompleted(event);
 
         if (!(event.getException() instanceof MetadataNotFoundException)) {
-            log.trace(event.getException().getMessage(), event.getException());
+            if (log.isDebugEnabled())
+                log.debug(event.getException().getMessage(), event.getException());
         }
     }
 
@@ -117,7 +119,8 @@ public class ConsoleTransferListener
     }
 
     public void transferCorrupted(TransferEvent event) {
-        log.trace(event.getException().getMessage(), event.getException());
+        if (log.isDebugEnabled())
+            log.debug(event.getException().getMessage(), event.getException());
     }
 
     private long toMB(long bytes) {

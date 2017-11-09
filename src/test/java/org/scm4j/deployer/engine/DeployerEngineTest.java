@@ -48,8 +48,8 @@ public class DeployerEngineTest {
                 "ProductStructureDataLoader", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "124.5", "jar",
                 "ProductStructureDataLoader", env.getArtifactory1Folder());
-        aw.installArtifact(TEST_UNTILL_GROUP_ID, "installers", "0.1.0", "jar",
-                "ExeRunner", env.getArtifactory1Folder());
+        aw.installArtifact(TEST_UNTILL_GROUP_ID, "scm4j-deployer-installers", "0.1.0", "jar",
+                "Executor", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, "scm4j-deployer-api", "0.1.0", "jar",
                 "Api", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, ublArtifactId, "22.2", "war",
@@ -157,19 +157,19 @@ public class DeployerEngineTest {
     }
 
     //works only first time, because deps for resolving lies in tmp dir
-    @Ignore
+    @Test
     public void testDownloadAndDeployProduct() throws Exception {
-        DeployerRunner runner = new DeployerRunner(null, env.getEnvFolder(), env.getArtifactory1Url());
-        runner.getProductList().readFromProductList();
-        File testFile = runner.get(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar");
+        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
+        de.listProducts();
+        File testFile = de.download(untillArtifactId, "123.4");
         assertTrue(FileUtils.contentEquals(testFile, new File(env.getArtifactory2Folder(),
                 Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
                         untillArtifactId, "123.4", "jar"))));
-        testFile = new File(runner.getWorkingRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
+        testFile = new File(de.getRunner().getPortableRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
                 "22.2", ".war"));
         assertTrue(testFile.exists());
         assertEquals(FileUtils.readFileToString(testFile, Charset.forName("UTF-8")), TEST_UBL_22_2_CONTENT);
-        testFile = new File(runner.getWorkingRepository(), Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,
+        testFile = new File(de.getRunner().getPortableRepository(), Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,
                 axisJaxrpcArtifact, "1.4", "jar"));
         assertTrue(testFile.exists());
         assertEquals(FileUtils.readFileToString(testFile, Charset.forName("UTF-8")), TEST_DEP_CONTENT);
@@ -266,7 +266,6 @@ public class DeployerEngineTest {
         assertEquals(ctx.getMainArtifact(), "UBL");
         assertTrue(ctx.getArtifacts().containsKey("UBL"));
         assertTrue(ctx.getArtifacts().containsKey("axis"));
-        assertEquals(ctx.getDeploymentURL(), new URL("file://localhost/C:/tools/UBL"));
         assertNull(ctx.getParams());
     }
 
@@ -278,4 +277,5 @@ public class DeployerEngineTest {
         File localUntillFile = de.download(untillArtifactId, "123.4");
         FileUtils.contentEquals(untillFile, localUntillFile);
     }
+
 }

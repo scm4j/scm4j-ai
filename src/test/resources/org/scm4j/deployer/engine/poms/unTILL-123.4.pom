@@ -10,7 +10,7 @@
     <dependencies>
         <dependency>
             <groupId>eu.untill</groupId>
-            <artifactId>installers</artifactId>
+            <artifactId>scm4j-deployer-installers</artifactId>
             <version>0.1.0</version>
             <scope>compile</scope>
         </dependency>

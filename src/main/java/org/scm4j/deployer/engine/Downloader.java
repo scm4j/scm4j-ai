@@ -24,7 +24,7 @@ import org.eclipse.aether.util.filter.DependencyFilterUtils;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.IComponent;
 import org.scm4j.deployer.api.IProduct;
-import org.scm4j.deployer.engine.exceptions.EArtifactNotFound;
+import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 
@@ -62,8 +62,7 @@ class Downloader {
         this.system = Utils.newRepositorySystem();
     }
 
-    @SneakyThrows
-    File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
+    File get(String groupId, String artifactId, String version, String extension) throws EIncompatibleApiVersion {
         if (productList.getRepos() == null || productList.getProducts() == null) {
             throw new EProductListEntryNotFound("Product list doesn't loaded");
         }
@@ -88,13 +87,16 @@ class Downloader {
                         + " is not found in all known repositories");
             }
         }
-        loader.close();
-        FileUtils.deleteDirectory(TMP_REPOSITORY);
+        try {
+            loader.close();
+            FileUtils.deleteDirectory(TMP_REPOSITORY);
+        } catch (Exception e) {
+            throw new RuntimeException();
+        }
         return res;
     }
 
-    @SneakyThrows
-    private File download(String groupId, String artifactId, String version, String extension, File productFile) {
+    private File download(String groupId, String artifactId, String version, String extension, File productFile) throws EIncompatibleApiVersion {
         for (ArtifactoryReader repo : productList.getRepos()) {
             try {
                 if (!productList.getProducts().keySet().contains(Utils.coordsToString(groupId, artifactId))
@@ -197,7 +199,7 @@ class Downloader {
     }
 
     @SneakyThrows
-    private void loadProduct(File productFile) {
+    private void loadProduct(File productFile) throws EIncompatibleApiVersion {
         MavenXpp3Reader mavenreader = new MavenXpp3Reader();
         File pomfile = new File(productFile.getParent(), productFile.getName().replace("jar", "pom"));
         Model model;
@@ -222,7 +224,7 @@ class Downloader {
                 throw new RuntimeException();
             }
         } else {
-            throw new EProductNotFound("Can't load " + productFile.getName() + " class to classpath");
+            throw new EIncompatibleApiVersion("Can't load " + productFile.getName() + " class to classpath");
         }
     }
 }

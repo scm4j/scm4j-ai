@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.scm4j.deployer.api.*;
+import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -21,20 +22,20 @@ class Deployer {
 
     private final File workingFolder;
     private final File portableFolder;
-    private final File deployedProductsFolder;
+    private final File deployedProductsFile;
     private final Downloader downloader;
 
     Deployer(File portableFolder, File workingFolder, Downloader downloader) {
         this.workingFolder = workingFolder;
         this.portableFolder = portableFolder;
         this.downloader = downloader;
-        deployedProductsFolder = new File(workingFolder, DEPLOYED_PRODUCTS);
+        deployedProductsFile = new File(workingFolder, DEPLOYED_PRODUCTS);
     }
 
     //TODO divide method
     @SuppressWarnings("unchecked")
-    DeploymentResult deploy(String groupId, String artifactId, String version, String extention) {
-        Map<String, List<String>> deployedProducts = Utils.readYml(deployedProductsFolder);
+    DeploymentResult deploy(String groupId, String artifactId, String version, String extention) throws EIncompatibleApiVersion {
+        Map<String, List<String>> deployedProducts = Utils.readYml(deployedProductsFile);
         StringBuilder productName = new StringBuilder().append(artifactId).append("-").append(version);
         if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).contains(version)) {
             log.warn(productName.append(" already installed!").toString());
@@ -56,7 +57,7 @@ class Deployer {
                         Artifact depArt = new DefaultArtifact(dependent);
                         deploy(depArt.getGroupId(), depArt.getArtifactId(), depArt.getVersion(), depArt.getExtension());
                     }
-                    deployedProducts = Utils.readYml(deployedProductsFolder);
+                    deployedProducts = Utils.readYml(deployedProductsFile);
                 }
                 List<IComponent> components = product.getProductStructure().getComponents();
                 List<Integer> result = new ArrayList<>();
@@ -69,7 +70,7 @@ class Deployer {
                 } else {
                     deployedProducts.get(artifactId).add(version);
                 }
-                Utils.writeYaml(deployedProducts, deployedProductsFolder);
+                Utils.writeYaml(deployedProducts, deployedProductsFile);
                 log.info(productName.append(" successfully installed!").toString());
                 return result.stream().anyMatch(code -> code != 0) ? DeploymentResult.NEED_REBOOT : DeploymentResult.OK;
             }

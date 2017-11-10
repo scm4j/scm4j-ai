@@ -4,6 +4,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.scm4j.deployer.api.DeploymentContext;
+import org.scm4j.deployer.api.DeploymentResult;
+import org.scm4j.deployer.api.IProductStructure;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -15,6 +17,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.Assert.*;
 
@@ -278,4 +282,30 @@ public class DeployerEngineTest {
         FileUtils.contentEquals(untillFile, localUntillFile);
     }
 
+    @Test
+    public void testDeploy() throws Exception {
+        DeployerEngine de = new DeployerEngine(null, env.getBaseTestFolder(), env.getArtifactory1Url());
+        de.listProducts();
+        Map<String, Object> actual = new LinkedHashMap<>();
+        Set<String> versions = new HashSet<>();
+        versions.add("123.4");
+        actual.put("unTILL", versions);
+        ExecutorService exec = Executors.newSingleThreadExecutor();
+        exec.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(1000);
+                    Process p = Runtime.getRuntime().exec("taskkill /f /im notepad.exe");
+                } catch (Exception e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+        DeploymentResult res = de.deploy(untillArtifactId, "123.4");
+        IProductStructure component = de.getDownloader().getProduct().getProductStructure();
+        assertEquals(res, DeploymentResult.NEED_REBOOT);
+        assertEquals(de.getDeployer().listDeployedProducts().toString(), actual.toString());
+        assertEquals(component.getComponents().toString(), ProductStructureData.getProductStructure().getComponents().toString());
+    }
 }

@@ -1,9 +1,11 @@
 package org.scm4j.deployer.engine.exceptions;
 
-public class EClassNotFound extends RuntimeException {
+public class EIncompatibleApiVersion extends Exception {
     private static final long serialVersionUID = 1L;
 
-    public EClassNotFound(String message) {
+    public EIncompatibleApiVersion(String message) {
         super(message);
     }
+
+
 }

@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.aether.artifact.Artifact;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IProductDeployer;
+import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 
 import java.io.File;
@@ -37,10 +38,15 @@ public class DeployerEngine implements IProductDeployer {
     @SuppressWarnings("unchecked")
     public DeploymentResult deploy(String artifactId, String version) {
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
-        return deployer.deploy(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), artifact.getExtension());
+        try {
+            return deployer.deploy(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), artifact.getExtension());
+        } catch (EIncompatibleApiVersion e) {
+            return DeploymentResult.INCOMPATIBLE_API_VERSION;
+        }
     }
 
     @Override
+    @SneakyThrows
     public File download(String artifactId, String version) {
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
         return downloader.get(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),

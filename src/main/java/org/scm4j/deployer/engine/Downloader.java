@@ -37,7 +37,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Data
-public class DeployerRunner {
+class Downloader {
 
     private static final String REPOSITORY_FOLDER_NAME = "repository";
     private static final File TMP_REPOSITORY = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp");
@@ -52,7 +52,7 @@ public class DeployerRunner {
     private IProduct product;
 
     @SneakyThrows
-    public DeployerRunner(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
+    Downloader(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
         this.workingRepository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
         this.portableRepository = new File(portableFolder, REPOSITORY_FOLDER_NAME);
         if (!portableRepository.exists())
@@ -63,7 +63,7 @@ public class DeployerRunner {
     }
 
     @SneakyThrows
-    public File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
+    File get(String groupId, String artifactId, String version, String extension) throws EArtifactNotFound {
         if (productList.getRepos() == null || productList.getProducts() == null) {
             throw new EProductListEntryNotFound("Product list doesn't loaded");
         }
@@ -190,14 +190,14 @@ public class DeployerRunner {
         return artifacts;
     }
 
-    public List<Artifact> getComponents() {
+    private List<Artifact> getComponents() {
         return product.getProductStructure().getComponents().stream()
                 .map(IComponent::getArtifactCoords)
                 .collect(Collectors.toList());
     }
 
     @SneakyThrows
-    public void loadProduct(File productFile) {
+    private void loadProduct(File productFile) {
         MavenXpp3Reader mavenreader = new MavenXpp3Reader();
         File pomfile = new File(productFile.getParent(), productFile.getName().replace("jar", "pom"));
         Model model;

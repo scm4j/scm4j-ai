@@ -18,7 +18,7 @@ import java.net.URL;
 import java.util.*;
 
 @Data
-public class ProductList {
+class ProductList {
 
     public static final String PRODUCT_LIST_GROUP_ID = "org.scm4j.ai";
     public static final String PRODUCT_LIST_ARTIFACT_ID = "product-list";
@@ -27,24 +27,24 @@ public class ProductList {
     public static final String VERSIONS = "Versions";
     public static final String VERSIONS_ARTIFACT_ID = "products-versions.yml";
     public static final String DOWNLOADED_PRODUCTS = "downloaded products";
-    private ArtifactoryReader productListReader;
+    private final ArtifactoryReader productListReader;
+    private final File localRepo;
     private List<ArtifactoryReader> repos;
     private Map<String, String> products;
     private Set<String> versions;
     private List<String> downloadedProducts;
-    private File localRepo;
     private File localProductList;
     private File versionsYml;
     private Map productListEntry;
     private Map<String, Set<String>> productsVersions;
 
-    public ProductList(File localRepo, ArtifactoryReader productListReader) {
+    ProductList(File localRepo, ArtifactoryReader productListReader) {
         this.localRepo = localRepo;
         this.productListReader = productListReader;
     }
 
 
-    public Map readFromProductList() throws Exception {
+    Map readFromProductList() throws Exception {
         String productListReleaseVersion = getLocalProductListReleaseVersion();
         if (productListReleaseVersion == null) {
             downloadProductList();
@@ -65,7 +65,7 @@ public class ProductList {
     }
 
     @SuppressWarnings("unchecked")
-    public Map<String, Set<String>> readProductVersions(String artifactId) {
+    Map<String, Set<String>> readProductVersions(String artifactId) {
         productsVersions = Utils.readYml(versionsYml);
         if (productsVersions == null)
             productsVersions = new HashMap<>();
@@ -89,7 +89,7 @@ public class ProductList {
     }
 
     @SuppressWarnings("unchecked")
-    public void refreshProductVersions(String groupId, String artifactId) throws ENoMetadata {
+    void refreshProductVersions(String groupId, String artifactId) throws ENoMetadata {
         productsVersions = Utils.readYml(versionsYml);
         if (productsVersions == null) {
             productsVersions = new HashMap<>();
@@ -107,7 +107,7 @@ public class ProductList {
     }
 
     @SneakyThrows
-    public String getLocalProductListReleaseVersion() {
+    String getLocalProductListReleaseVersion() {
         File metadataFolder = new File(localRepo, Utils.coordsToFolderStructure(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID));
         File metadataFile = new File(metadataFolder, ArtifactoryReader.METADATA_FILE_NAME);
         if (metadataFile.exists()) {
@@ -122,7 +122,7 @@ public class ProductList {
         }
     }
 
-    public void downloadProductList() throws Exception {
+    void downloadProductList() throws Exception {
         String productListReleaseVersion = productListReader.getProductListReleaseVersion();
         URL remoteProductListUrl = productListReader.getProductUrl(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
                 productListReleaseVersion, ".yml");

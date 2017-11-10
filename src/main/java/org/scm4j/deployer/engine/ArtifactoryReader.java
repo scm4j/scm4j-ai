@@ -15,24 +15,24 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 
-public class ArtifactoryReader {
+class ArtifactoryReader {
 
-    public static final String METADATA_FILE_NAME = "maven-metadata.xml";
-    public static final String LOCAL_METADATA_FILE_NAME = "maven-metadata-local.xml";
+    static final String METADATA_FILE_NAME = "maven-metadata.xml";
+    static final String LOCAL_METADATA_FILE_NAME = "maven-metadata-local.xml";
 
     private final URL url;
     private final String password;
     private final String userName;
 
     @SneakyThrows
-    public ArtifactoryReader(String url, String userName, String password) {
+    ArtifactoryReader(String url, String userName, String password) {
         this.userName = userName;
         this.password = password;
         this.url = new URL(StringUtils.appendIfMissing(url, "/"));
     }
 
     @SneakyThrows
-    public static ArtifactoryReader getByUrl(String repoUrl) {
+    static ArtifactoryReader getByUrl(String repoUrl) {
         URL url = new URL(repoUrl);
         String userInfoStr = url.getUserInfo();
         if (userInfoStr != null) {
@@ -46,7 +46,7 @@ public class ArtifactoryReader {
     }
 
     @SneakyThrows
-    public List<String> getProductVersions(String groupId, String artifactId) {
+    List<String> getProductVersions(String groupId, String artifactId) {
         MetadataXpp3Reader reader = new MetadataXpp3Reader();
         URL url = getProductMetaDataURL(groupId, artifactId);
         try (InputStream is = getContentStream(url)) {
@@ -59,7 +59,7 @@ public class ArtifactoryReader {
     }
 
     @SneakyThrows
-    public String getProductListReleaseVersion() {
+    String getProductListReleaseVersion() {
         @Cleanup
         InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID,
                 ProductList.PRODUCT_LIST_ARTIFACT_ID));
@@ -70,7 +70,7 @@ public class ArtifactoryReader {
     }
 
     @SneakyThrows
-    public InputStream getContentStream(URL url) {
+    private InputStream getContentStream(URL url) {
         if (url.getProtocol().equals("file")) {
             return url.openStream();
         } else {
@@ -85,17 +85,12 @@ public class ArtifactoryReader {
     }
 
     @SneakyThrows
-    public InputStream getContentStream(String groupId, String artifactId, String version, String extension) {
-        return getContentStream(getProductUrl(groupId, artifactId, version, extension));
-    }
-
-    @SneakyThrows
-    public URL getProductMetaDataURL(String groupId, String artifactId) {
+    private URL getProductMetaDataURL(String groupId, String artifactId) {
         return new URL(new URL(url, Utils.coordsToUrlStructure(groupId, artifactId) + "/"), METADATA_FILE_NAME);
     }
 
     @SneakyThrows
-    public URL getProductUrl(String groupId, String artifactId, String version, String extension) {
+    URL getProductUrl(String groupId, String artifactId, String version, String extension) {
         return new URL(this.url, Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension)
                 .replace("\\", "/"));
     }

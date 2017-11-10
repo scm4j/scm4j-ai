@@ -6,6 +6,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.artifact.DefaultArtifactType;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
@@ -109,13 +111,18 @@ public class Utils {
         throw new RuntimeException();
     }
 
-    public static String getGroupId(DeployerRunner runner, String artifactId) {
-        String groupAndArtifactID = runner.getProductList().getProducts().keySet().stream()
+    public static String getGroupId(Downloader downloader, String artifactId) {
+        String groupAndArtifactID = downloader.getProductList().getProducts().keySet().stream()
                 .filter(s -> s.contains(artifactId))
                 .limit(1)
                 .collect(Collectors.toList())
                 .get(0);
         return StringUtils.substringBefore(groupAndArtifactID, ":");
+    }
+
+    public static Artifact initializeArtifact(Downloader downloader, String artifactId, String version) {
+        String groupId = getGroupId(downloader, artifactId);
+        return new DefaultArtifact(groupId, artifactId, "jar", version);
     }
 
     @SneakyThrows

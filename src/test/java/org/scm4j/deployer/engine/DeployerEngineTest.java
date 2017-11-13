@@ -282,6 +282,7 @@ public class DeployerEngineTest {
         FileUtils.contentEquals(untillFile, localUntillFile);
     }
 
+    //only on windows
     @Test
     public void testDeploy() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getBaseTestFolder(), env.getArtifactory1Url());
@@ -291,15 +292,16 @@ public class DeployerEngineTest {
         versions.add("123.4");
         actual.put("unTILL", versions);
         ExecutorService exec = Executors.newSingleThreadExecutor();
-        exec.submit(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(1000);
-                    Process p = Runtime.getRuntime().exec("taskkill /f /im notepad.exe");
-                } catch (Exception e) {
-                    Thread.currentThread().interrupt();
+        exec.submit(() -> {
+            try {
+                Thread.sleep(1000);
+                if (System.getenv("os.name").toLowerCase().contains("win")) {
+                    Runtime.getRuntime().exec("taskkill /f /im notepad.exe");
+                } else {
+                    Runtime.getRuntime().exec("killall -KILL nano");
                 }
+            } catch (Exception e) {
+                Thread.currentThread().interrupt();
             }
         });
         DeploymentResult res = de.deploy(untillArtifactId, "123.4");

@@ -34,6 +34,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Data
@@ -51,12 +52,17 @@ class Downloader {
     private URLClassLoader loader;
     private IProduct product;
 
+    private Function<Artifact, String> fileSetter = art -> Utils.coordsToRelativeFilePath(art.getGroupId(),
+            art.getArtifactId(), art.getVersion(), art.getExtension());
+
     @SneakyThrows
     Downloader(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
         this.workingRepository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
         this.portableRepository = new File(portableFolder, REPOSITORY_FOLDER_NAME);
         if (!portableRepository.exists())
             portableRepository.mkdirs();
+        if (!workingRepository.exists())
+            workingRepository.mkdirs();
         ArtifactoryReader productListReader = ArtifactoryReader.getByUrl(productListArtifactoryUrl);
         this.productList = new ProductList(portableRepository, productListReader);
         this.system = Utils.newRepositorySystem();
@@ -69,17 +75,10 @@ class Downloader {
         String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
         File res = new File(portableRepository, fileRelativePath);
         if (res.exists()) {
-            loadProduct(res);
-            List<Artifact> artifacts = getComponents();
-            artifacts.add(new DefaultArtifact(groupId, artifactId, extension, version));
-            artifacts = resolveDependencies(artifacts);
-            if (!portableRepository.equals(workingRepository)) {
-                if (!workingRepository.exists())
-                    workingRepository.mkdirs();
-                saveComponents(artifacts, workingRepository);
-                instantiateClassLoader(artifacts);
-                res = new File(workingRepository, fileRelativePath);
-            }
+            List<Artifact> artifacts = resolveDependencies(
+                    Collections.singletonList(new DefaultArtifact(groupId, artifactId, extension, version)));
+            saveProduct(artifacts, workingRepository, res);
+            res = new File(workingRepository, fileRelativePath);
         } else {
             res = download(groupId, artifactId, version, extension, res);
             if (res == null) {
@@ -96,6 +95,15 @@ class Downloader {
         return res;
     }
 
+    private void saveProduct(List<Artifact> artifacts, File repository, File productFile) throws EIncompatibleApiVersion {
+        artifacts = saveComponents(artifacts, repository);
+        instantiateClassLoader(artifacts);
+        loadProduct(productFile);
+        artifacts = getComponents();
+        artifacts = resolveDependencies(artifacts);
+        saveComponents(artifacts, repository);
+    }
+
     private File download(String groupId, String artifactId, String version, String extension, File productFile) throws EIncompatibleApiVersion {
         for (ArtifactoryReader repo : productList.getRepos()) {
             try {
@@ -108,12 +116,7 @@ class Downloader {
             }
             List<Artifact> artifacts = resolveDependencies(
                     Collections.singletonList(new DefaultArtifact(groupId, artifactId, extension, version)));
-            artifacts = saveComponents(artifacts, portableRepository);
-            instantiateClassLoader(artifacts);
-            loadProduct(productFile);
-            artifacts = getComponents();
-            artifacts = resolveDependencies(artifacts);
-            saveComponents(artifacts, portableRepository);
+            saveProduct(artifacts, portableRepository, productFile);
             File localMetadataFolder = new File(portableRepository, Utils.coordsToFolderStructure(groupId, artifactId));
             File localMetadata = new File(localMetadataFolder, ArtifactoryReader.LOCAL_METADATA_FILE_NAME);
             localMetadata.renameTo(new File(localMetadataFolder, ArtifactoryReader.METADATA_FILE_NAME));
@@ -152,8 +155,7 @@ class Downloader {
                 List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
                 artifactResults.forEach(artifactResult -> {
                     Artifact art = artifactResult.getArtifact();
-                    art = art.setFile(new File(workingRepository, Utils.coordsToRelativeFilePath(art.getGroupId(),
-                            art.getArtifactId(), art.getVersion(), art.getExtension())));
+                    art = fileSetter(art, workingRepository, fileSetter);
                     components.add(art);
                 });
                 depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, components));
@@ -162,6 +164,11 @@ class Downloader {
             }
         }
         return components;
+    }
+
+    private Artifact fileSetter(Artifact art, File repository, Function<Artifact, String> func) {
+        art = art.setFile(new File(repository, func.apply(art)));
+        return art;
     }
 
     @SneakyThrows
@@ -177,18 +184,14 @@ class Downloader {
         session = Utils.newRepositorySystemSession(system, repository);
         InstallRequest installRequest = new InstallRequest();
         for (Artifact artifact : artifacts) {
-            artifact = artifact.setFile(new File(TMP_REPOSITORY, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
-                    artifact.getArtifactId(), artifact.getVersion(), artifact.getExtension())));
+            artifact = fileSetter(artifact, TMP_REPOSITORY, fileSetter);
             Artifact pomArtifact = new SubArtifact(artifact, "", "pom");
             pomArtifact = pomArtifact.setFile(new File(TMP_REPOSITORY, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
                     artifact.getArtifactId(), artifact.getVersion(), ".pom")));
             installRequest.addArtifact(artifact).addArtifact(pomArtifact);
         }
         system.install(session, installRequest);
-        artifacts = artifacts.stream()
-                .map(artifact -> artifact.setFile(new File(repository, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
-                        artifact.getArtifactId(), artifact.getVersion(), artifact.getExtension()))))
-                .collect(Collectors.toList());
+        artifacts = artifacts.stream().map(art -> fileSetter(art, repository, fileSetter)).collect(Collectors.toList());
         return artifacts;
     }
 

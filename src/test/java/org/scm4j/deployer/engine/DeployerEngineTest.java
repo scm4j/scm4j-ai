@@ -282,8 +282,7 @@ public class DeployerEngineTest {
         FileUtils.contentEquals(untillFile, localUntillFile);
     }
 
-    //only on windows
-    @Test
+    @Ignore
     public void testDeploy() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getBaseTestFolder(), env.getArtifactory1Url());
         de.listProducts();
@@ -295,11 +294,7 @@ public class DeployerEngineTest {
         exec.submit(() -> {
             try {
                 Thread.sleep(1000);
-                if (System.getenv("os.name").toLowerCase().contains("win")) {
-                    Runtime.getRuntime().exec("taskkill /f /im notepad.exe");
-                } else {
-                    Runtime.getRuntime().exec("killall -KILL nano");
-                }
+                Runtime.getRuntime().exec("taskkill /f /im notepad.exe");
             } catch (Exception e) {
                 Thread.currentThread().interrupt();
             }

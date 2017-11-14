@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.DeploymentResult;
-import org.scm4j.deployer.api.IProductStructure;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -17,10 +16,11 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static org.junit.Assert.*;
+import static org.scm4j.deployer.api.DeploymentResult.*;
+import static org.scm4j.deployer.engine.Deployer.Command.DEPLOY;
+import static org.scm4j.deployer.engine.Deployer.Command.START;
 
 public class DeployerEngineTest {
 
@@ -49,9 +49,7 @@ public class DeployerEngineTest {
         ArtifactoryWriter aw = new ArtifactoryWriter(env.getArtifactory1Folder());
         aw.generateProductListArtifact();
         aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "124.5", "jar",
-                "ProductStructureDataLoader", env.getArtifactory1Folder());
-        aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "124.5", "jar",
-                "ProductStructureDataLoader", env.getArtifactory1Folder());
+                "ProductStructureLoader", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, "scm4j-deployer-installers", "0.1.0", "jar",
                 "Executor", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, "scm4j-deployer-api", "0.1.0", "jar",
@@ -282,27 +280,36 @@ public class DeployerEngineTest {
         FileUtils.contentEquals(untillFile, localUntillFile);
     }
 
-    @Ignore
+    @Test
+    @SuppressWarnings("unchecked")
     public void testDeploy() throws Exception {
-        DeployerEngine de = new DeployerEngine(null, env.getBaseTestFolder(), env.getArtifactory1Url());
+        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
+        Deployer dep = de.getDeployer();
         de.listProducts();
-        Map<String, Object> actual = new LinkedHashMap<>();
-        Set<String> versions = new HashSet<>();
-        versions.add("123.4");
-        actual.put("unTILL", versions);
-        ExecutorService exec = Executors.newSingleThreadExecutor();
-        exec.submit(() -> {
-            try {
-                Thread.sleep(1000);
-                Runtime.getRuntime().exec("taskkill /f /im notepad.exe");
-            } catch (Exception e) {
-                Thread.currentThread().interrupt();
-            }
-        });
-        DeploymentResult res = de.deploy(untillArtifactId, "123.4");
-        IProductStructure component = de.getDownloader().getProduct().getProductStructure();
-        assertEquals(res, DeploymentResult.NEED_REBOOT);
-        assertEquals(de.getDeployer().listDeployedProducts().toString(), actual.toString());
-        assertEquals(component.getComponents().toString(), ProductStructureData.getProductStructure().getComponents().toString());
+        DeploymentResult dr = de.deploy(untillArtifactId, "123.4");
+        assertEquals(dr, FAILED);
+        dr = de.deploy(untillArtifactId, "123.4");
+        assertEquals(dr, FAILED);
+        DeploymentResult depRes = dep.installComponent(ProductStructureData.getProductStructure().getComponents().get(0), DEPLOY);
+        assertEquals(depRes, OK);
+        depRes = dep.installComponent(ProductStructureData.getProductStructure().getComponents().get(1), DEPLOY);
+        assertEquals(depRes, OK);
+        depRes = dep.installComponent(ProductStructureData.getProductStructure().getComponents().get(2), DEPLOY);
+        assertEquals(depRes, FAILED);
+        try {
+            dep.installComponent(ProductStructureData.getProductStructure().getComponents().get(2), START);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        dr = de.deploy(untillArtifactId, "124.5");
+        assertEquals(dr, OK);
+        dr = de.deploy(untillArtifactId, "124.5");
+        assertEquals(dr, ALREADY_INSTALLED);
+        Map<String, Object> map = new LinkedHashMap<>();
+        List<String> set = new ArrayList<>();
+        set.add("124.5");
+        map.put(untillArtifactId, set);
+        Map<String, Object> yaml = Utils.readYml(dep.getDeployedProductsFile());
+        assertEquals(yaml.toString(), map.toString());
     }
 }

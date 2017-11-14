@@ -149,6 +149,7 @@ class Downloader {
         urls.forEach(url -> collectRequest.addRepository(new RemoteRepository.Builder("", "default", url).build()));
         DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
         for (Artifact artifact : artifacts) {
+            List<Artifact> deps = new ArrayList<>();
             collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
             DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
             try {
@@ -156,9 +157,10 @@ class Downloader {
                 artifactResults.forEach(artifactResult -> {
                     Artifact art = artifactResult.getArtifact();
                     art = fileSetter(art, workingRepository, fileSetter);
-                    components.add(art);
+                    deps.add(art);
                 });
-                depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, components));
+                depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, deps));
+                components.addAll(deps);
             } catch (DependencyResolutionException e) {
                 throw new RuntimeException();
             }

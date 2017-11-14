@@ -17,21 +17,21 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
-public class ArtifactoryWriter {
+class ArtifactoryWriter {
 
-    public static final String PRODUCT_LIST_DEFAULT_VERSION = "1.1.0";
-    public static final String PRODUCT_LIST_VERSION = "1.2.0";
+    static final String PRODUCT_LIST_DEFAULT_VERSION = "1.1.0";
+    static final String PRODUCT_LIST_VERSION = "1.2.0";
     private static final String TEST_POMS = "org/scm4j/deployer/engine/poms/";
     private static final String TEST_CLASS = "org/scm4j/deployer/engine/testclasses/";
     private static Yaml YAML;
     private final File artifactoryFolder;
 
-    public ArtifactoryWriter(File artifactoryFolder) {
+    ArtifactoryWriter(File artifactoryFolder) {
         this.artifactoryFolder = artifactoryFolder;
         artifactoryFolder.mkdirs();
     }
 
-    public void generateProductListArtifact() {
+    void generateProductListArtifact() {
         try {
 
             Metadata metaData = getProductListArtifactMetadata();
@@ -76,8 +76,8 @@ public class ArtifactoryWriter {
         return metaData;
     }
 
-    public void installArtifact(String groupId, String artifactId, String version, String extension,
-                                String content, File productListLocation) {
+    void installArtifact(String groupId, String artifactId, String version, String extension,
+                         String content, File productListLocation) {
         try {
 
             File artifactRoot = new File(artifactoryFolder, Utils.coordsToFolderStructure(groupId, artifactId));
@@ -105,7 +105,7 @@ public class ArtifactoryWriter {
 
         File artifactPom = new File(artifactVersionPath, Utils.coordsToFileName(artifactId, version, ".pom"));
 
-        if (content.contains("Data") || content.contains("Executor"))
+        if (content.contains("Structure") || content.contains("Executor"))
             createProductJar(content, artifactFile);
         else
             FileUtils.writeStringToFile(artifactFile, content, Charset.forName("UTF-8"));

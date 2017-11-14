@@ -5,9 +5,9 @@ import org.scm4j.deployer.api.ProductStructure;
 import org.scm4j.deployer.engine.deployers.FailedDeployer;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
 
-class ProductStructureData {
+public class ProductStructureData {
 
-    static IProductStructure getProductStructure() {
+    public static IProductStructure getProductStructure() {
         return ProductStructure.create("file://C:/unTill")
                 .addComponent("eu.untill:UBL:war:22.2")
                 .addAction(OkDeployer.class)

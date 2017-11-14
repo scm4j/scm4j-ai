@@ -309,7 +309,7 @@ public class DeployerEngineTest {
         List<String> set = new ArrayList<>();
         set.add("124.5");
         map.put(untillArtifactId, set);
-        Map<String, Object> yaml = Utils.readYml(dep.getDeployedProductsFile());
+        Map<String, Object> yaml = de.listDeployedProducts();
         assertEquals(yaml.toString(), map.toString());
     }
 }

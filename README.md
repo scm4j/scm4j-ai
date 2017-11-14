@@ -59,7 +59,7 @@ Steps
   - If `stop` fails all `DP`-components are `disabled` and `NEED_REBOOT` is returned
 - If `DP` have `dependent products`
   -  `dependent products` installs recursively
-  - if one of the `dependent product` installation fails- `DP` installation fails
+  - if one of `dependent products` installation fails- `DP` installation fails
   - if `dependent product` installation return `NEED_REBOOT` ??? 
 - New version is installed
   - `DP`-components are compared

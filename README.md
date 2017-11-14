@@ -11,7 +11,8 @@ This component automates installation (deployment) of products which are represe
 
 - `product list`: artifact (yaml file) which lists `products` and maven repositories
 - `product`: jar-artifact whose main class has public method `getProductStructure` which returns  `product structure`
-- `product structure`: lists `component's`
+- `product structure`: lists `component's` and `dependent products` if they are exists
+- `dependent products`: without which it is impossible to install the current product
 - `component`: represented by  artifact coordinates and one or few `deployment procedure`
 - `deployment procedure`: lists `actions`
 - `action`: represented by `component deployer` class and `params`
@@ -41,7 +42,7 @@ Scenarious are represeneted by methods of `DeployerEngine`
 
 # Deployment
 
-Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSION, ALREADY_INSTALLED
+Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSION, ALREADY_INSTALLED, FAILED
 
 - INCOMPATIBLE_API_VERSION: Product should depend on `deployer-api` which is compatible with one used by engine
 
@@ -56,6 +57,10 @@ Steps
   - `DP` deployers and components are downloaded
   - `DP` is stopped
   - If `stop` fails all `DP`-components are `disabled` and `NEED_REBOOT` is returned
+- If `DP` have `dependent products`
+  -  `dependent products` installs recursively
+  - if one of the `dependent product` installation fails- `DP` installation fails
+  - if `dependent product` installation return `NEED_REBOOT` ??? 
 - New version is installed
   - `DP`-components are compared
 - If `portable folder` is specified it is implicitly used as a main repository (before all repos listed in `product list`)

@@ -65,6 +65,10 @@ Steps
   - `DP`-components are compared
 - If `portable folder` is specified it is implicitly used as a main repository (before all repos listed in `product list`)
 
+## Error Handline
+
+If error occurs during component deployment previously deployed components are stopped and undeployed (NEED_REBOOT is ignored), FAILED is returned
+
 # Self-upgrade
 
 org.scm4j.deployer.engine.Deployer

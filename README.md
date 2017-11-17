@@ -49,26 +49,28 @@ Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSI
 Steps
 
 - API compatibility is checked
-- `Deployed product` (`DP`) version is queried using `listDeployedProducts`, if not found  ILegacyProduct.`queryLegacyProduct` (`LP`) is used
-- If `LP` exists 
+- Previously `deployed product` (`DP`) version is queried using `listDeployedProducts`, if not found  ILegacyProduct.`queryLegacyProduct` (`LP`) is used
+- Handle legacy installation (if `LP` exists)
     - If `LP`-version equals `IProduct` version, version is saved to `deployed-products.yml` and installation ends
     - If `LP`-version less than `IProduct` version, it is removed by IProduct.`removeLegacyProduct()`
-- If `DP` exists
+- Stop `DP`
   - `DP` deployers and components are downloaded
-  - `DP` is stopped
+  - All `DP` components are stopped in reverse order
   - If `stop` fails all `DP`-components are `disabled` and `NEED_REBOOT` is returned
-- If `DP` have `dependent products`
-  -  `dependent products` installs recursively
-  - if one of `dependent products` installation fails- `DP` installation fails
-  - if `dependent product` installation return `NEED_REBOOT` ??? 
-- New version is installed
-  - `DP`-components are compared
+- Install dependencies (If product has `dependency products`)
+  - all `dependency products` are installed recursively
+  - if one of `dependency products` installation fails - `DP` installation fails
+  - if `dependency product` installation returns `NEED_REBOOT` - `DP` returns `NEED_REBOOT`
+- Deployment
+  - Components which does not exist anymore stopped and undeployed, updated components redeployed (stop/undeploy/deploy), new components deployed
+- Start
+  - All components started
 - If `portable folder` is specified it is implicitly used as a main repository (before all repos listed in `product list`)
+
+## Error Handling
+
+If error occurs during component deployment previously deployed components are stopped and undeployed (NEED_REBOOT is ignored), FAILED is returned
 
 # Self-upgrade
 
 org.scm4j.deployer.engine.Deployer
-
-# Manual and Legacy Installations
-
-In some cases it is important to detect that products has been installed not using org.scm4j.deployer.engine.Deployer (legacy versions or manual installations)

@@ -1,12 +1,13 @@
-package org.scm4j.deployer.engine;
+package org.scm4j.deployer.engine.productstructures;
 
+import org.scm4j.deployer.api.IProduct;
 import org.scm4j.deployer.api.IProductStructure;
 import org.scm4j.deployer.api.ProductStructure;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
 
-public class TestProductStructure {
+public class OkStructure implements IProduct {
 
-    public static IProductStructure getProductStructure() {
+    public IProductStructure getProductStructure() {
         return ProductStructure.create("file://C:/unTill")
                 .addComponent("eu.untill:UBL:war:22.2")
                 .addComponentDeployer(new OkDeployer())

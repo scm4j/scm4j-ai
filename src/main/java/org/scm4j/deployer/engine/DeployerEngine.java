@@ -39,7 +39,7 @@ public class DeployerEngine implements IProductDeployer {
     public DeploymentResult deploy(String artifactId, String version) {
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
         try {
-            return deployer.deploy(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), artifact.getExtension());
+            return deployer.deploy(artifact);
         } catch (EIncompatibleApiVersion e) {
             return DeploymentResult.INCOMPATIBLE_API_VERSION;
         }

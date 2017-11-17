@@ -6,6 +6,9 @@ import org.junit.*;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
+import org.scm4j.deployer.engine.productstructures.FailStructure;
+import org.scm4j.deployer.engine.productstructures.OkStructure;
+import org.scm4j.deployer.engine.productstructures.RebootStructure;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -49,7 +52,7 @@ public class DeployerEngineTest {
         ArtifactoryWriter aw = new ArtifactoryWriter(env.getArtifactory1Folder());
         aw.generateProductListArtifact();
         aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "124.5", "jar",
-                "ProductStructureLoader", env.getArtifactory1Folder());
+                "ProductStructureDataLoader", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, "scm4j-deployer-installers", "0.1.0", "jar",
                 "Executor", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, "scm4j-deployer-api", "0.1.0", "jar",
@@ -285,30 +288,32 @@ public class DeployerEngineTest {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         Deployer dep = de.getDeployer();
         de.listProducts();
-        DeploymentResult dr = de.deploy(untillArtifactId, "123.4");
-        assertEquals(dr, FAILED);
-        dr = de.deploy(untillArtifactId, "123.4");
-        assertEquals(dr, FAILED);
-        DeploymentResult depRes = dep.installComponent(ProductStructureData.getProductStructure().getComponents().get(0), DEPLOY);
-        assertEquals(depRes, OK);
-        depRes = dep.installComponent(ProductStructureData.getProductStructure().getComponents().get(1), DEPLOY);
-        assertEquals(depRes, OK);
-        depRes = dep.installComponent(ProductStructureData.getProductStructure().getComponents().get(2), DEPLOY);
-        assertEquals(depRes, FAILED);
-        try {
-            dep.installComponent(ProductStructureData.getProductStructure().getComponents().get(2), START);
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        dr = de.deploy(untillArtifactId, "124.5");
+        DeploymentResult dr = de.deploy(untillArtifactId, "124.5");
         assertEquals(dr, OK);
         dr = de.deploy(untillArtifactId, "124.5");
         assertEquals(dr, ALREADY_INSTALLED);
+        DeploymentResult depRes = dep.installComponent(new FailStructure().getProductStructure().getComponents().get(0), DEPLOY);
+        assertEquals(depRes, OK);
+        depRes = dep.installComponent(new FailStructure().getProductStructure().getComponents().get(1), DEPLOY);
+        assertEquals(depRes, OK);
+        depRes = dep.installComponent(new FailStructure().getProductStructure().getComponents().get(2), DEPLOY);
+        assertEquals(depRes, FAILED);
+        try {
+            dep.installComponent(new FailStructure().getProductStructure().getComponents().get(2), START);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
         Map<String, Object> map = new LinkedHashMap<>();
         List<String> set = new ArrayList<>();
         set.add("124.5");
         map.put(untillArtifactId, set);
         Map<String, Object> yaml = de.listDeployedProducts();
         assertEquals(yaml.toString(), map.toString());
+        dr = dep.deploy(new OkStructure(), "test", "0.0.0");
+        assertEquals(dr, OK);
+        dr = dep.deploy(new FailStructure(), "test", "0.0.0");
+        assertEquals(dr, FAILED);
+        dr = dep.deploy(new RebootStructure(), "test", "0.0.0");
+        assertEquals(dr, NEED_REBOOT);
     }
 }

@@ -13,6 +13,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.scm4j.deployer.api.DeploymentResult.*;
 import static org.scm4j.deployer.engine.Deployer.Command.DEPLOY;
@@ -30,6 +31,7 @@ class Deployer {
     private final File deployedProductsFile;
     private final Downloader downloader;
     private File legacyProductFolder;
+
     Deployer(File portableFolder, File workingFolder, Downloader downloader) {
         this.workingFolder = workingFolder;
         this.portableFolder = portableFolder;
@@ -39,41 +41,48 @@ class Deployer {
 
     //TODO divide method
     @SuppressWarnings("unchecked")
-    DeploymentResult deploy(String groupId, String artifactId, String version, String extention) throws EIncompatibleApiVersion {
+    DeploymentResult deploy(Artifact art) throws EIncompatibleApiVersion {
+        String artifactId = art.getArtifactId();
+        String version = art.getVersion();
         deployedProducts = Utils.readYml(deployedProductsFile);
-        StringBuilder productName = new StringBuilder().append(artifactId).append("-").append(version);
         if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).contains(version)) {
-            log.warn(productName.append(" already installed!").toString());
+            log.warn(Utils.productName(artifactId, version).append(" already installed!").toString());
             return ALREADY_INSTALLED;
         } else {
-            downloader.get(groupId, artifactId, version, extention);
+            downloader.get(art.getGroupId(), artifactId, version, art.getExtension());
             IProduct product = downloader.getProduct();
-            if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).isEmpty() &&
-                    product instanceof ILegacyProduct && ((ILegacyProduct) product).queryLegacyProduct()) {
-                //TODO delete old product and deploy new
-                ILegacyProduct legacyProduct = (ILegacyProduct) product;
-//                validatelegacyProduct(legacyProduct, version);
-                log.info(productName.append(" already installed!").toString());
-                return ALREADY_INSTALLED;
-            } else {
-                if (!product.getDependentProducts().isEmpty()) {
-                    DeploymentResult dependentResult = deployDependent(product, productName);
-                    if (dependentResult.equals(FAILED)) {
-                        log.info(productName.append(" failed, because dependent products installation uncompleted").toString());
-                        return FAILED;
-                    }
-                }
-                deployedProducts = Utils.readYml(deployedProductsFile);
-            }
-            List<IComponent> components = product.getProductStructure().getComponents();
-            List<DeploymentResult> results = new ArrayList<>();
-            for (IComponent component : components) {
-                results.add(installComponent(component, DEPLOY));
-            }
-            deployedProducts.putIfAbsent(artifactId, new ArrayList<>());
-            deployedProducts.get(artifactId).add(version);
-            return commonDeploymentResult(results, productName);
+            return deploy(product, artifactId, version);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    DeploymentResult deploy(IProduct product, String artifactId, String version) throws EIncompatibleApiVersion {
+        StringBuilder productName = Utils.productName(artifactId, version);
+        if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).isEmpty() &&
+                product instanceof ILegacyProduct && ((ILegacyProduct) product).queryLegacyProduct()) {
+            //TODO delete old product and deploy new
+            ILegacyProduct legacyProduct = (ILegacyProduct) product;
+//                validatelegacyProduct(legacyProduct, version);
+            log.info(productName.append(" already installed!").toString());
+            return ALREADY_INSTALLED;
+        } else {
+            if (!product.getDependentProducts().isEmpty()) {
+                DeploymentResult dependentResult = deployDependent(product, productName);
+                if (dependentResult.equals(FAILED)) {
+                    log.info(productName.append(" failed, because dependent products installation uncompleted").toString());
+                    return FAILED;
+                }
+            }
+            deployedProducts = Utils.readYml(deployedProductsFile);
+        }
+        List<IComponent> components = product.getProductStructure().getComponents();
+        List<DeploymentResult> results = new ArrayList<>();
+        for (IComponent component : components) {
+            results.add(installComponent(component, DEPLOY));
+        }
+        deployedProducts.putIfAbsent(artifactId, new ArrayList<>());
+        deployedProducts.get(artifactId).add(version);
+        return commonDeploymentResult(results, productName);
     }
 
     @SneakyThrows
@@ -120,17 +129,19 @@ class Deployer {
             case FAILED:
                 log.info(productName.append(" failed!").toString());
                 break;
+            default:
+                throw new IllegalArgumentException();
         }
         return deploymentResult;
     }
 
     private DeploymentResult deployDependent(IProduct product, StringBuilder productName) throws EIncompatibleApiVersion {
-        List<String> dependents = product.getDependentProducts();
+        List<Artifact> dependents = product.getDependentProducts().stream()
+                .map(DefaultArtifact::new)
+                .collect(Collectors.toList());
         List<DeploymentResult> dependentResults = new ArrayList<>();
-        for (String dependent : dependents) {
-            Artifact depArt = new DefaultArtifact(dependent);
-            DeploymentResult dependentResult = deploy(depArt.getGroupId(), depArt.getArtifactId(),
-                    depArt.getVersion(), depArt.getExtension());
+        for (Artifact dependent : dependents) {
+            DeploymentResult dependentResult = deploy(dependent);
             dependentResults.add(dependentResult);
         }
         return commonDeploymentResult(dependentResults, productName);

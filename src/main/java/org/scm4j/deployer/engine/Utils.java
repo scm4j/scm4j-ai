@@ -148,4 +148,8 @@ public class Utils {
             return new HashMap<>();
         }
     }
+
+    public static StringBuilder productName(String artifactId, String version) {
+        return new StringBuilder().append(artifactId).append("-").append(version);
+    }
 }

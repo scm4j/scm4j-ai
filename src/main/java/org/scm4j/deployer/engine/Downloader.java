@@ -99,7 +99,7 @@ class Downloader {
         artifacts = saveComponents(artifacts, repository);
         instantiateClassLoader(artifacts);
         loadProduct(productFile);
-        artifacts = getComponents();
+        artifacts = componentsToArtifacts();
         artifacts = resolveDependencies(artifacts);
         saveComponents(artifacts, repository);
     }
@@ -197,10 +197,14 @@ class Downloader {
         return artifacts;
     }
 
-    private List<Artifact> getComponents() {
-        return product.getProductStructure().getComponents().stream()
+    private List<Artifact> componentsToArtifacts() {
+        return getComponents().stream()
                 .map(IComponent::getArtifactCoords)
                 .collect(Collectors.toList());
+    }
+
+    private List<IComponent> getComponents() {
+        return product.getProductStructure().getComponents();
     }
 
     private void loadProduct(File productFile) throws EIncompatibleApiVersion {

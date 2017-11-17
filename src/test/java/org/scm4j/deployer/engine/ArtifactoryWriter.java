@@ -86,7 +86,7 @@ class ArtifactoryWriter {
 
             appendMetadata(groupId, artifactId, version, artifactRoot);
 
-            if (content.contains("Data")) {
+            if (content.contains("Structure")) {
                 appendProductList(groupId, artifactId, productListLocation);
             }
 

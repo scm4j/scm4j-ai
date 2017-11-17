@@ -3,6 +3,7 @@ package org.scm4j.deployer.engine;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
+import org.scm4j.commons.Version;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
@@ -22,8 +23,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.scm4j.deployer.api.DeploymentResult.*;
-import static org.scm4j.deployer.engine.Deployer.Command.DEPLOY;
-import static org.scm4j.deployer.engine.Deployer.Command.START;
 
 public class DeployerEngineTest {
 
@@ -292,28 +291,17 @@ public class DeployerEngineTest {
         assertEquals(dr, OK);
         dr = de.deploy(untillArtifactId, "124.5");
         assertEquals(dr, ALREADY_INSTALLED);
-        DeploymentResult depRes = dep.installComponent(new FailStructure().getProductStructure().getComponents().get(0), DEPLOY);
-        assertEquals(depRes, OK);
-        depRes = dep.installComponent(new FailStructure().getProductStructure().getComponents().get(1), DEPLOY);
-        assertEquals(depRes, OK);
-        depRes = dep.installComponent(new FailStructure().getProductStructure().getComponents().get(2), DEPLOY);
-        assertEquals(depRes, FAILED);
-        try {
-            dep.installComponent(new FailStructure().getProductStructure().getComponents().get(2), START);
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
         Map<String, Object> map = new LinkedHashMap<>();
         List<String> set = new ArrayList<>();
         set.add("124.5");
         map.put(untillArtifactId, set);
         Map<String, Object> yaml = de.listDeployedProducts();
         assertEquals(yaml.toString(), map.toString());
-        dr = dep.deploy(new OkStructure(), "test", "0.0.0");
+        dr = dep.deploy(new OkStructure(), "test", new Version("0.0.0"));
         assertEquals(dr, OK);
-        dr = dep.deploy(new FailStructure(), "test", "0.0.0");
+        dr = dep.deploy(new FailStructure(), "test", new Version("0.0.0"));
         assertEquals(dr, FAILED);
-        dr = dep.deploy(new RebootStructure(), "test", "0.0.0");
+        dr = dep.deploy(new RebootStructure(), "test", new Version("0.0.0"));
         assertEquals(dr, NEED_REBOOT);
     }
 }

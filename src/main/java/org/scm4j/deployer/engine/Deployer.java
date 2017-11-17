@@ -6,10 +6,12 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.scm4j.commons.Version;
 import org.scm4j.deployer.api.*;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 
 import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -43,54 +45,96 @@ class Deployer {
     @SuppressWarnings("unchecked")
     DeploymentResult deploy(Artifact art) throws EIncompatibleApiVersion {
         String artifactId = art.getArtifactId();
-        String version = art.getVersion();
+        Version version = new Version(art.getVersion());
         deployedProducts = Utils.readYml(deployedProductsFile);
-        if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).contains(version)) {
-            log.warn(Utils.productName(artifactId, version).append(" already installed!").toString());
+        if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).contains(version.toString())) {
+            log.warn(Utils.productName(artifactId, version.toString()).append(" already installed!").toString());
             return ALREADY_INSTALLED;
         } else {
-            downloader.get(art.getGroupId(), artifactId, version, art.getExtension());
+            downloader.get(art.getGroupId(), artifactId, version.toString(), art.getExtension());
             IProduct product = downloader.getProduct();
             return deploy(product, artifactId, version);
         }
     }
 
+    @SneakyThrows
     @SuppressWarnings("unchecked")
-    DeploymentResult deploy(IProduct product, String artifactId, String version) throws EIncompatibleApiVersion {
-        StringBuilder productName = Utils.productName(artifactId, version);
+    DeploymentResult deploy(IProduct product, String artifactId, Version version) throws EIncompatibleApiVersion {
+        StringBuilder productName = Utils.productName(artifactId, version.toString());
+        DeploymentResult res;
+        ILegacyProduct legacyProduct = null;
         if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).isEmpty() &&
                 product instanceof ILegacyProduct && ((ILegacyProduct) product).queryLegacyProduct()) {
             //TODO delete old product and deploy new
-            ILegacyProduct legacyProduct = (ILegacyProduct) product;
-//                validatelegacyProduct(legacyProduct, version);
-            log.info(productName.append(" already installed!").toString());
-            return ALREADY_INSTALLED;
-        } else {
-            if (!product.getDependentProducts().isEmpty()) {
-                DeploymentResult dependentResult = deployDependent(product, productName);
-                if (dependentResult.equals(FAILED)) {
-                    log.info(productName.append(" failed, because dependent products installation uncompleted").toString());
-                    return FAILED;
-                }
-            }
-            deployedProducts = Utils.readYml(deployedProductsFile);
+            legacyProduct = (ILegacyProduct) product;
+            res = checkLegacyProduct(legacyProduct, artifactId, version);
+            if (res != OK)
+                return res;
         }
+        if (!product.getDependentProducts().isEmpty()) {
+            res = deployDependent(product, productName);
+            if (res != OK)
+                return res;
+        }
+        deployedProducts = Utils.readYml(deployedProductsFile);
         List<IComponent> components = product.getProductStructure().getComponents();
         List<DeploymentResult> results = new ArrayList<>();
         for (IComponent component : components) {
-            results.add(installComponent(component, DEPLOY));
+            String artId = component.getArtifactCoords().getArtifactId();
+            DeploymentContext context = downloader.getDepCtx().get(artId);
+            if (legacyProduct == null)
+                context.setDeploymentURL(downloader.getProduct().getProductStructure().getDefaultDeploymentURL());
+            else
+                context.setDeploymentURL(new URL(legacyProduct.getLegacyFile().toURI().toURL().toString()));
+            results.add(installComponent(component, DEPLOY, context));
         }
         deployedProducts.putIfAbsent(artifactId, new ArrayList<>());
-        deployedProducts.get(artifactId).add(version);
+        deployedProducts.get(artifactId).add(version.toString());
         return commonDeploymentResult(results, productName);
     }
 
+    private DeploymentResult checkLegacyProduct(ILegacyProduct legacyProduct, String artifactId, Version version) {
+        StringBuilder productName = Utils.productName(artifactId, version.toString());
+        if (legacyProduct.getLegacyVersion().equals(version)) {
+            log.info(productName.append(" already installed!").toString());
+            return ALREADY_INSTALLED;
+        }
+        if (legacyProduct.getLegacyVersion().isGreaterThan(version)) {
+            log.info(productName.append(" newer version exist!").toString());
+            return NEWER_VERSION_EXISTS;
+        }
+        DeploymentResult res = legacyProduct.removeLegacyProduct();
+        if (res == NEED_REBOOT) {
+            log.info(productName.append(" need reboot to uninstall legacy product!").toString());
+        }
+        if (res == FAILED) {
+            log.info(productName.append(" can't delete legacy product!").toString());
+        }
+        return res;
+    }
+
+    private DeploymentResult deployDependent(IProduct product, StringBuilder productName) throws EIncompatibleApiVersion {
+        List<Artifact> dependents = product.getDependentProducts().stream()
+                .map(DefaultArtifact::new)
+                .collect(Collectors.toList());
+        List<DeploymentResult> dependentResults = new ArrayList<>();
+        for (Artifact dependent : dependents) {
+            DeploymentResult dependentResult = deploy(dependent);
+            dependentResults.add(dependentResult);
+        }
+        DeploymentResult res = commonDeploymentResult(dependentResults, productName);
+        if (res == FAILED) {
+            log.info(productName.append(" failed, because dependent products installation uncompleted").toString());
+        }
+        if (res == NEED_REBOOT) {
+            log.info(productName.append(" dependent product installed, but need reboot to make installation complete").toString());
+        }
+        return res;
+    }
+
     @SneakyThrows
-    DeploymentResult installComponent(IComponent component, Command command) {
+    private DeploymentResult installComponent(IComponent component, Command command, IDeploymentContext context) {
         IDeploymentProcedure procedure = component.getDeploymentProcedure();
-        String artifactId = component.getArtifactCoords().getArtifactId();
-        DeploymentContext context = downloader.getDepCtx().get(artifactId);
-        context.setDeploymentURL(downloader.getProduct().getProductStructure().getDefaultDeploymentURL());
         List<IComponentDeployer> deployers = procedure.getComponentDeployers();
         if (command == UNDEPLOY)
             deployers = Lists.reverse(deployers);
@@ -135,27 +179,7 @@ class Deployer {
         return deploymentResult;
     }
 
-    private DeploymentResult deployDependent(IProduct product, StringBuilder productName) throws EIncompatibleApiVersion {
-        List<Artifact> dependents = product.getDependentProducts().stream()
-                .map(DefaultArtifact::new)
-                .collect(Collectors.toList());
-        List<DeploymentResult> dependentResults = new ArrayList<>();
-        for (Artifact dependent : dependents) {
-            DeploymentResult dependentResult = deploy(dependent);
-            dependentResults.add(dependentResult);
-        }
-        return commonDeploymentResult(dependentResults, productName);
-    }
-
     public enum Command {DEPLOY, UNDEPLOY, UPGRADE, START, STOP}
-
-//    private DeploymentResult validatelegacyProduct(ILegacyProduct legacyProduct, String version) {
-//        if(legacyProduct.getLegacyVersion().equals(new Version(version)))
-//            return DeploymentResult.ALREADY_INSTALLED;
-//        if(legacyProduct.getLegacyVersion().isGreaterThan(new Version(version)))
-//            return DeploymentResult.NEWER_VERSION_EXISTS;
-//        legacyProductFolder = legacyProduct.getLegacyFile();
-//    }
 
     @SuppressWarnings("unchecked")
     Map<String, Object> listDeployedProducts() {

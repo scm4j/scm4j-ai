@@ -268,7 +268,6 @@ public class DeployerEngineTest {
         assertEquals(ctx.getMainArtifact(), "UBL");
         assertTrue(ctx.getArtifacts().containsKey("UBL"));
         assertTrue(ctx.getArtifacts().containsKey("axis"));
-        assertNull(ctx.getParams());
     }
 
     @Test

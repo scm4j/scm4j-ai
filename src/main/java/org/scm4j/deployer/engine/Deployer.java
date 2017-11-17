@@ -22,15 +22,14 @@ import static org.scm4j.deployer.engine.Deployer.Command.UNDEPLOY;
 @Data
 class Deployer {
 
-    private Map<String, List<String>> deployedProducts;
-
     private static final String DEPLOYED_PRODUCTS = "deployed-products.yml";
 
+    private Map<String, List<String>> deployedProducts;
     private final File workingFolder;
     private final File portableFolder;
     private final File deployedProductsFile;
     private final Downloader downloader;
-
+    private File legacyProductFolder;
     Deployer(File portableFolder, File workingFolder, Downloader downloader) {
         this.workingFolder = workingFolder;
         this.portableFolder = portableFolder;
@@ -60,7 +59,7 @@ class Deployer {
                 if (!product.getDependentProducts().isEmpty()) {
                     DeploymentResult dependentResult = deployDependent(product, productName);
                     if (dependentResult.equals(FAILED)) {
-                        log.info(productName.append(" failed, because dependent products installation failed").toString());
+                        log.info(productName.append(" failed, because dependent products installation uncompleted").toString());
                         return FAILED;
                     }
                 }
@@ -75,6 +74,34 @@ class Deployer {
             deployedProducts.get(artifactId).add(version);
             return commonDeploymentResult(results, productName);
         }
+    }
+
+    @SneakyThrows
+    DeploymentResult installComponent(IComponent component, Command command) {
+        IDeploymentProcedure procedure = component.getDeploymentProcedure();
+        String artifactId = component.getArtifactCoords().getArtifactId();
+        DeploymentContext context = downloader.getDepCtx().get(artifactId);
+        context.setDeploymentURL(downloader.getProduct().getProductStructure().getDefaultDeploymentURL());
+        List<IComponentDeployer> deployers = procedure.getComponentDeployers();
+        if (command == UNDEPLOY)
+            deployers = Lists.reverse(deployers);
+        List<DeploymentResult> returnCodes = new ArrayList<>();
+        for (IComponentDeployer deployer : deployers) {
+            deployer.init(context);
+            switch (command) {
+                case DEPLOY:
+                    returnCodes.add(deployer.deploy());
+                    break;
+                case UNDEPLOY:
+                    returnCodes.add(deployer.undeploy());
+                    break;
+                default:
+                    throw new IllegalArgumentException();
+            }
+        }
+        return returnCodes.stream().anyMatch(res -> res.equals(FAILED)) ?
+                FAILED : returnCodes.stream().anyMatch(res -> res.equals(NEED_REBOOT)) ?
+                NEED_REBOOT : OK;
     }
 
     private DeploymentResult commonDeploymentResult(List<DeploymentResult> results, StringBuilder productName) {
@@ -109,43 +136,15 @@ class Deployer {
         return commonDeploymentResult(dependentResults, productName);
     }
 
-    @SneakyThrows
-    DeploymentResult installComponent(IComponent component, Command command) {
-        IDeploymentProcedure procedure = component.getDeploymentProcedure();
-        String artifactId = component.getArtifactCoords().getArtifactId();
-        DeploymentContext context = downloader.getDepCtx().get(artifactId);
-        context.setDeploymentURL(downloader.getProduct().getProductStructure().getDefaultDeploymentURL());
-        List<IAction> actions = procedure.getActions();
-        if (command == UNDEPLOY)
-            actions = Lists.reverse(actions);
-        List<DeploymentResult> returnCodes = new ArrayList<>();
-        for (IAction action : actions) {
-            IComponentDeployer deployer = action.getInstallerClass().newInstance();
-            deployer.init(context, action.getParams());
-            switch (command) {
-                case DEPLOY:
-                    returnCodes.add(deployer.deploy());
-                    break;
-                case UNDEPLOY:
-                    returnCodes.add(deployer.undeploy());
-                    break;
-                default:
-                    throw new IllegalArgumentException();
-            }
-        }
-        return returnCodes.stream().anyMatch(res -> res.equals(FAILED)) ?
-                FAILED : returnCodes.stream().anyMatch(res -> res.equals(NEED_REBOOT)) ?
-                NEED_REBOOT : OK;
-    }
+    public enum Command {DEPLOY, UNDEPLOY, UPGRADE, START, STOP}
+
 //    private DeploymentResult validatelegacyProduct(ILegacyProduct legacyProduct, String version) {
 //        if(legacyProduct.getLegacyVersion().equals(new Version(version)))
 //            return DeploymentResult.ALREADY_INSTALLED;
 //        if(legacyProduct.getLegacyVersion().isGreaterThan(new Version(version)))
 //            return DeploymentResult.NEWER_VERSION_EXISTS;
-//        File legacyProductFolder = legacyProduct.getLegacyFile();
+//        legacyProductFolder = legacyProduct.getLegacyFile();
 //    }
-
-    public enum Command {DEPLOY, UNDEPLOY, UPGRADE, START, STOP}
 
     @SuppressWarnings("unchecked")
     Map<String, Object> listDeployedProducts() {

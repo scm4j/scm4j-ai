@@ -4,8 +4,6 @@ import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 
-import java.util.Map;
-
 public class FailedDeployer implements IComponentDeployer {
     @Override
     public DeploymentResult deploy() {
@@ -28,7 +26,7 @@ public class FailedDeployer implements IComponentDeployer {
     }
 
     @Override
-    public void init(IDeploymentContext depCtx, Map<String, Object> params) {
+    public void init(IDeploymentContext depCtx) {
 
     }
 }

@@ -203,7 +203,6 @@ class Downloader {
                 .collect(Collectors.toList());
     }
 
-    @SneakyThrows
     private void loadProduct(File productFile) throws EIncompatibleApiVersion {
         MavenXpp3Reader mavenreader = new MavenXpp3Reader();
         File pomfile = new File(productFile.getParent(), productFile.getName().replace("jar", "pom"));
@@ -222,7 +221,12 @@ class Downloader {
         if (apiVersion.endsWith("SNAPSHOT") || apiVersion.isEmpty() ||
                 IProduct.class.getPackage().isCompatibleWith(apiVersion)) {
             String mainClassName = Utils.getExportedClassName(productFile);
-            Object obj = loader.loadClass(mainClassName).getConstructor().newInstance();
+            Object obj;
+            try {
+                obj = loader.loadClass(mainClassName).getConstructor().newInstance();
+            } catch (Exception e) {
+                throw new RuntimeException();
+            }
             if (obj instanceof IProduct) {
                 product = (IProduct) obj;
             } else {

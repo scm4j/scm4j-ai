@@ -49,12 +49,7 @@ class ProductList {
         if (productListReleaseVersion == null) {
             downloadProductList();
             loadProductListEntry();
-            try {
-                downloadProductsVersions();
-            } catch (ENoMetadata e) {
-                versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
-                versionsYml.createNewFile();
-            }
+            downloadProductsVersions();
         } else {
             localProductList = new File(localRepo, Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
                     productListReleaseVersion, ".yml"));
@@ -74,7 +69,7 @@ class ProductList {
         return productsVersions;
     }
 
-    private void downloadProductsVersions() throws ENoMetadata {
+    private void downloadProductsVersions() {
         versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
         productsVersions = new HashMap<>();
         for (String product : products.keySet()) {

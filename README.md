@@ -56,7 +56,7 @@ Steps
 - Stop `DP`
   - `DP` deployers and components are downloaded
   - All `DP` components are stopped in reverse order
-  - If `stop` fails all `DP`-components are `disabled` and `NEED_REBOOT` is returned
+  - If `stop` fails all `DP`-components are `disabled`,`NEED_REBOOT` is returned and all already deployed components undeploy
 - Install dependencies (If product has `dependency products`)
   - all `dependency products` are installed recursively
   - if one of `dependency products` installation fails - `DP` installation fails

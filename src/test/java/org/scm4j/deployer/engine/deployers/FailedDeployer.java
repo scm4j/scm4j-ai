@@ -5,14 +5,27 @@ import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeploymentContext;
 
 public class FailedDeployer implements IComponentDeployer {
+
+    private static int count = 0;
+
+    public static int getCount() {
+        return count;
+    }
+
+    public static void setCount(int count) {
+        FailedDeployer.count = count;
+    }
+
     @Override
     public DeploymentResult deploy() {
+        count++;
         return DeploymentResult.FAILED;
     }
 
     @Override
     public DeploymentResult undeploy() {
-        return null;
+        count--;
+        return DeploymentResult.OK;
     }
 
     @Override
@@ -28,5 +41,10 @@ public class FailedDeployer implements IComponentDeployer {
     @Override
     public void init(IDeploymentContext depCtx) {
 
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName();
     }
 }

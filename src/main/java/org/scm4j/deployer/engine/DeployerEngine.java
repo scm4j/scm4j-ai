@@ -12,6 +12,8 @@ import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 import java.io.File;
 import java.util.*;
 
+import static org.scm4j.deployer.engine.Deployer.Command.DEPLOY;
+
 @Data
 @Slf4j
 public class DeployerEngine implements IProductDeployer {
@@ -39,7 +41,7 @@ public class DeployerEngine implements IProductDeployer {
     public DeploymentResult deploy(String artifactId, String version) {
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
         try {
-            return deployer.deploy(artifact);
+            return deployer.doCommand(artifact, DEPLOY);
         } catch (EIncompatibleApiVersion e) {
             return DeploymentResult.INCOMPATIBLE_API_VERSION;
         }

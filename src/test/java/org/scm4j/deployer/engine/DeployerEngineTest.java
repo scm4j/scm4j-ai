@@ -167,7 +167,6 @@ public class DeployerEngineTest {
                 StringUtils.appendIfMissing(env.getArtifactory2Url(), "/")));
     }
 
-    //works only first time, because deps for resolving lies in tmp dir
     @Test
     public void testDownloadAndDeployProduct() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
@@ -210,7 +209,7 @@ public class DeployerEngineTest {
         entry.put(ProductList.REPOSITORIES, new ArrayList<>(Collections.singletonList("file://some repos")));
         Utils.writeYaml(entry, new File(de.getDownloader().getProductList().getLocalProductList().toString()));
         List<String> list = de.listProducts();
-        assertEquals(de.listProducts(), Collections.singletonList("stuff"));
+        assertEquals(list, Collections.singletonList("stuff"));
         //reload product list
         assertEquals(de.refreshProducts(), Collections.singletonList("unTILL"));
     }
@@ -289,7 +288,6 @@ public class DeployerEngineTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testDeploy() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         Deployer dep = de.getDeployer();
@@ -317,5 +315,17 @@ public class DeployerEngineTest {
         assertEquals(OkDeployer.getCount(), 0);
         assertEquals(FailedDeployer.getCount(), 1);
         assertEquals(RebootDeployer.getCount(), 1);
+    }
+
+    @Test
+    public void testUndeploy() {
+        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
+        de.listProducts();
+        DeploymentResult dr = de.deploy(untillArtifactId, "124.5");
+        assertEquals(dr, OK);
+        assertEquals(OkDeployer.getCount(), 4);
+        dr = de.undeploy(untillArtifactId, "124.5");
+        assertEquals(dr, OK);
+        assertEquals(OkDeployer.getCount(), 0);
     }
 }

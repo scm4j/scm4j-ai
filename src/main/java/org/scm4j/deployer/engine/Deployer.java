@@ -11,7 +11,6 @@ import org.scm4j.deployer.api.*;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 
 import java.io.File;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,8 +18,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.scm4j.deployer.api.DeploymentResult.*;
-import static org.scm4j.deployer.engine.Deployer.Command.DEPLOY;
-import static org.scm4j.deployer.engine.Deployer.Command.UNDEPLOY;
+import static org.scm4j.deployer.engine.Deployer.Command.*;
 
 @Slf4j
 @Data
@@ -51,7 +49,7 @@ class Deployer {
         deployedProducts = Utils.readYml(deployedProductsFile);
         if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).contains(version.toString())) {
             if (command == DEPLOY) {
-                log.info(Utils.productName(artifactId, version.toString()).append(" already installed!").toString());
+                log.info(Utils.productName(artifactId, version.toString()).append(" already deployed").toString());
                 return ALREADY_INSTALLED;
             }
             downloader.get(art.getGroupId(), artifactId, version.toString(), art.getExtension());
@@ -88,12 +86,33 @@ class Deployer {
 
     DeploymentResult undeploy(IProduct product, String artifactId, Version version) {
         StringBuilder productName = Utils.productName(artifactId, version.toString());
-        return OK;
+        DeploymentResult res = OK;
+        List<IComponent> components = product.getProductStructure().getComponents();
+        components = Lists.reverse(components);
+        for (IComponent component : components) {
+            res = applyCommand(component, STOP);
+            if (res != OK)
+                return res;
+        }
+        for (IComponent component : components) {
+            res = applyCommand(component, UNDEPLOY);
+            if (res != OK)
+                return res;
+        }
+        log.info(productName.append(" successfully undeployed").toString());
+        return res;
     }
 
-    DeploymentResult upgrade(IProduct product, String artifactId, Version version) {
+    //TODO find diff between components and upgrade only difference
+    DeploymentResult upgrade(IProduct product, String artifactId, Version version) throws EIncompatibleApiVersion {
         StringBuilder productName = Utils.productName(artifactId, version.toString());
-        return OK;
+        DeploymentResult res = undeploy(product, artifactId, version);
+        if (res != OK)
+            return res;
+        res = deploy(product, artifactId, version);
+        if (res == OK)
+            log.info(productName.append(" successfully upgraded").toString());
+        return res;
     }
 
     @SneakyThrows
@@ -101,11 +120,12 @@ class Deployer {
     DeploymentResult deploy(IProduct product, String artifactId, Version version) throws EIncompatibleApiVersion {
         StringBuilder productName = Utils.productName(artifactId, version.toString());
         DeploymentResult res;
-        ILegacyProduct legacyProduct = null;
         if (deployedProducts.getOrDefault(artifactId, new ArrayList<>()).isEmpty() &&
                 product instanceof ILegacyProduct && ((ILegacyProduct) product).queryLegacyProduct()) {
-            legacyProduct = (ILegacyProduct) product;
+            ILegacyProduct legacyProduct = (ILegacyProduct) product;
             res = checkLegacyProduct(legacyProduct, artifactId, version);
+            //TODO what to do with other components in depCtx
+            downloader.getDepCtx().get(artifactId).setDeploymentURL(legacyProduct.getLegacyFile().toURI().toURL());
             if (res != OK)
                 return res;
         }
@@ -115,29 +135,29 @@ class Deployer {
                 return res;
         }
         deployedProducts = Utils.readYml(deployedProductsFile);
-        res = installComponents(product, legacyProduct);
+        res = installComponents(product);
         if (res != OK)
             return res;
         deployedProducts.putIfAbsent(artifactId, new ArrayList<>());
         deployedProducts.get(artifactId).add(version.toString());
-        log.info(productName.append(" successfully installed!").toString());
+        log.info(productName.append(" successfully deployed").toString());
         Utils.writeYaml(deployedProducts, deployedProductsFile);
         return res;
     }
 
-    private DeploymentResult installComponents(IProduct product, ILegacyProduct legacyProduct) {
+    private DeploymentResult installComponents(IProduct product) {
         DeploymentResult res = OK;
         List<IComponent> components = product.getProductStructure().getComponents();
         List<IComponent> deployedComponents = new ArrayList<>();
         for (IComponent component : components) {
-            res = applyCommand(component, DEPLOY, legacyProduct);
+            res = applyCommand(component, DEPLOY);
             res.setProduct(product);
             if (res == FAILED || res == NEED_REBOOT) {
                 if (log.isDebugEnabled())
                     log.debug(component.getArtifactCoords().getArtifactId() + " failed");
                 deployedComponents = Lists.reverse(deployedComponents);
                 for (IComponent deployedComponent : deployedComponents) {
-                    applyCommand(deployedComponent, UNDEPLOY, legacyProduct);
+                    applyCommand(deployedComponent, UNDEPLOY);
                     if (log.isDebugEnabled())
                         log.debug(component.getArtifactCoords().getArtifactId() + " successfully undeployed");
                 }
@@ -170,24 +190,6 @@ class Deployer {
         return res;
     }
 
-//            if (res == FAILED || res == NEED_REBOOT) {
-//        deployedComponents = Lists.reverse(deployedComponents);
-//        for (IComponent deployedComponent : deployedComponents) {
-//            applyCommand(deployedComponent, UNDEPLOY, legacyProduct);
-//        }
-//        return res;
-//    }
-//        deployedComponents.add(component);
-//
-//        if (res == FAILED || res == NEED_REBOOT) {
-//        successfulDeployers = Lists.reverse(successfulDeployers);
-//        for (IComponentDeployer undeployer : successfulDeployers) {
-//            undeployer.undeploy();
-//        }
-//        return res;
-//    }
-//        successfulDeployers.add(deployer);
-
     private DeploymentResult deployDependent(IProduct product) throws EIncompatibleApiVersion {
         List<Artifact> dependents = product.getDependentProducts().stream()
                 .map(DefaultArtifact::new)
@@ -202,25 +204,13 @@ class Deployer {
     }
 
     @SneakyThrows
-    private DeploymentContext initComponent(IComponent comp, ILegacyProduct legacyProduct) {
-        String artId = comp.getArtifactCoords().getArtifactId();
-        DeploymentContext context = downloader.getDepCtx().get(artId);
-        if (legacyProduct == null)
-            context.setDeploymentURL(downloader.getProduct().getProductStructure().getDefaultDeploymentURL());
-        else
-            context.setDeploymentURL(new URL(legacyProduct.getLegacyFile().toURI().toURL().toString()));
-        return context;
-    }
-
-    @SneakyThrows
     //TODO all components stop's => undeploy => list reverse => deploy => start
-    private DeploymentResult applyCommand(IComponent component, Command command, ILegacyProduct legacyProduct) {
-        IDeploymentContext context = initComponent(component, legacyProduct);
+    private DeploymentResult applyCommand(IComponent component, Command command) {
         List<IComponentDeployer> deployers = component.getDeploymentProcedure().getComponentDeployers();
         DeploymentResult res;
         List<IComponentDeployer> successfulDeployers = new ArrayList<>();
         for (IComponentDeployer deployer : deployers) {
-            deployer.init(context);
+            deployer.init(downloader.getDepCtx().get(component.getArtifactCoords().getArtifactId()));
             switch (command) {
                 case DEPLOY:
                     res = deployer.deploy();
@@ -237,7 +227,7 @@ class Deployer {
                 default:
                     throw new IllegalArgumentException();
             }
-            if (res == FAILED || res == NEED_REBOOT) {
+            if (command == DEPLOY && (res == FAILED || res == NEED_REBOOT)) {
                 if (log.isDebugEnabled())
                     log.debug(deployer.getClass().getSimpleName() + " failed");
                 successfulDeployers = Lists.reverse(successfulDeployers);

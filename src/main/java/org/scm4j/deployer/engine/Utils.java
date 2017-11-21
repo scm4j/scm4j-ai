@@ -136,7 +136,6 @@ public class Utils {
         writer.write(yamlOutput);
     }
 
-    @SuppressWarnings("unchecked")
     @SneakyThrows
     public static Map readYml(File input) {
         if (input.exists()) {

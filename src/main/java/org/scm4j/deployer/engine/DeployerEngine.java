@@ -2,7 +2,6 @@ package org.scm4j.deployer.engine;
 
 import lombok.Data;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.aether.artifact.Artifact;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IProductDeployer;
@@ -12,10 +11,9 @@ import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 import java.io.File;
 import java.util.*;
 
-import static org.scm4j.deployer.engine.Deployer.Command.DEPLOY;
+import static org.scm4j.deployer.engine.Deployer.Command.*;
 
 @Data
-@Slf4j
 public class DeployerEngine implements IProductDeployer {
 
     private final File workingFolder;
@@ -37,7 +35,6 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public DeploymentResult deploy(String artifactId, String version) {
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
         try {
@@ -57,12 +54,22 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     public DeploymentResult undeploy(String artifactId, String version) {
-        return DeploymentResult.OK;
+        Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
+        try {
+            return deployer.doCommand(artifact, UNDEPLOY);
+        } catch (EIncompatibleApiVersion e) {
+            return DeploymentResult.INCOMPATIBLE_API_VERSION;
+        }
     }
 
     @Override
     public DeploymentResult upgrade(String artifactId, String version) {
-        return DeploymentResult.OK;
+        Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
+        try {
+            return deployer.doCommand(artifact, UPGRADE);
+        } catch (EIncompatibleApiVersion e) {
+            return DeploymentResult.INCOMPATIBLE_API_VERSION;
+        }
     }
 
     @Override
@@ -107,7 +114,6 @@ public class DeployerEngine implements IProductDeployer {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Map<String, Object> listDeployedProducts() {
         return deployer.listDeployedProducts();
     }

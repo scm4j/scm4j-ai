@@ -8,8 +8,6 @@ import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
 import org.scm4j.deployer.engine.dto.ProductDto;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -26,8 +24,6 @@ import static org.scm4j.deployer.api.DeploymentResult.ALREADY_INSTALLED;
 import static org.scm4j.deployer.api.DeploymentResult.OK;
 
 public class DeployerEngineTest {
-
-    private static final Logger log = LoggerFactory.getLogger(DeployerEngineTest.class);
 
     private static final String TEST_UBL_22_2_CONTENT = "ubl 22.2 artifact content";
     private static final String TEST_DEP_CONTENT = "dependency content";
@@ -299,14 +295,14 @@ public class DeployerEngineTest {
         map.put(untillArtifactId, dto);
         Map<String, Object> yaml = de.listDeployedProducts();
         assertEquals(yaml.toString(), map.toString());
-//        log.info("============OkDeployer started============");
+//        System.out.println("============OkDeployer started============");
 //        dr = dep.deploy(new OkStructure(), "test", new Version("0.0.0"));
 //        assertEquals(dr, OK);
 //        OkDeployer.setCount(0);
-//        log.info("============FailedDeployer started============");
+//        System.out.println("============FailedDeployer started============");
 //        dr = dep.deploy(new FailStructure(), "test", new Version("0.0.0"));
 //        assertEquals(dr, FAILED);
-//        log.info("============RebootDeployer started============");
+//        System.out.println("============RebootDeployer started============");
 //        dr = dep.deploy(new RebootStructure(), "test", new Version("0.0.0"));
 //        assertEquals(dr, NEED_REBOOT);
 //        assertEquals(OkDeployer.getCount(), 0);

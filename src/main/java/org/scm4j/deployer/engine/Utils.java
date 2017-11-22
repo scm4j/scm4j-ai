@@ -142,7 +142,7 @@ public class Utils {
             @Cleanup
             FileReader reader = new FileReader(input);
             Yaml yaml = new Yaml();
-            return (Map) yaml.load(reader);
+            return yaml.loadAs(reader, HashMap.class);
         } else {
             return new HashMap<>();
         }

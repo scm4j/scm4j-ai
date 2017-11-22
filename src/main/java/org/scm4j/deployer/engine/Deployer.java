@@ -12,7 +12,6 @@ import org.scm4j.deployer.engine.dto.ProductDto;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 
 import java.io.File;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +40,7 @@ class Deployer {
     private final File portableFolder;
     private final File deployedProductsFile;
     private final Downloader downloader;
-    private File legacyProductFolder;
+    private File deploymentPath;
 
     @SuppressWarnings("unchecked")
     DeploymentResult doCommand(Artifact art, Command command) throws EIncompatibleApiVersion {
@@ -55,6 +54,7 @@ class Deployer {
                 return ALREADY_INSTALLED;
             }
             downloader.get(art.getGroupId(), artifactId, version.toString(), art.getExtension());
+            deploymentPath = new File(deployedProducts.get(artifactId).getProductFileName());
             IProduct product = downloader.getProduct();
             switch (command) {
                 case UNDEPLOY:
@@ -119,19 +119,13 @@ class Deployer {
 
     @SuppressWarnings("unchecked")
     DeploymentResult deploy(IProduct product, String artifactId, Version version) throws EIncompatibleApiVersion {
-        DeploymentContext context = downloader.getDepCtx().get(artifactId);
-        context.setDeploymentURL(product.getProductStructure().getDefaultDeploymentURL());
         StringBuilder productName = Utils.productName(artifactId, version.toString());
         DeploymentResult res;
+        ILegacyProduct legacyProduct = null;
         if (deployedProducts.getOrDefault(artifactId, new ProductDto()).getVersions().isEmpty() &&
                 product instanceof ILegacyProduct && ((ILegacyProduct) product).queryLegacyProduct()) {
-            ILegacyProduct legacyProduct = (ILegacyProduct) product;
+            legacyProduct = (ILegacyProduct) product;
             res = checkLegacyProduct(legacyProduct, artifactId, version);
-            try {
-                context.setDeploymentURL(legacyProduct.getLegacyFile().toURI().toURL());
-            } catch (MalformedURLException e) {
-                throw new RuntimeException();
-            }
             if (res != OK)
                 return res;
         }
@@ -141,13 +135,21 @@ class Deployer {
                 return res;
         }
         deployedProducts = Utils.readYml(deployedProductsFile);
+        ProductDto dto;
+        if (deployedProducts.get(artifactId) == null) {
+            dto = new ProductDto();
+            if (legacyProduct != null)
+                dto.setProductFileName(legacyProduct.getLegacyFile().toString());
+            else
+                dto.setProductFileName(downloader.getProduct().getProductStructure().getDefaultDeploymentURL().toString());
+            deployedProducts.put(artifactId, dto);
+        }
+        dto = deployedProducts.get(artifactId);
+        deploymentPath = new File(dto.getProductFileName());
+        dto.getVersions().add(version.toString());
         res = installComponents(product);
         if (res != OK)
             return res;
-        deployedProducts.putIfAbsent(artifactId, new ProductDto());
-        ProductDto dto = deployedProducts.get(artifactId);
-        dto.getVersions().add(version.toString());
-        dto.setProductFileName(downloader.getDepCtx().get(artifactId).getDeploymentURL().toString());
         log.info(productName.append(" successfully deployed").toString());
         //TODO write file directory
         Utils.writeYaml(deployedProducts, deployedProductsFile);
@@ -168,7 +170,7 @@ class Deployer {
                 for (IComponent deployedComponent : deployedComponents) {
                     applyCommand(deployedComponent, UNDEPLOY);
                     if (log.isDebugEnabled())
-                        log.debug(component.getArtifactCoords().getArtifactId() + " successfully undeployed");
+                        log.debug(deployedComponent.getArtifactCoords().getArtifactId() + " successfully undeployed");
                 }
                 return res;
             }
@@ -213,15 +215,13 @@ class Deployer {
     }
 
     @SneakyThrows
-    //TODO all components stop's => undeploy => list reverse => deploy => start
     private DeploymentResult applyCommand(IComponent component, Command command) {
         List<IComponentDeployer> deployers = component.getDeploymentProcedure().getComponentDeployers();
         DeploymentResult res;
         List<IComponentDeployer> successfulDeployers = new ArrayList<>();
         for (IComponentDeployer deployer : deployers) {
             DeploymentContext context = downloader.getDepCtx().get(component.getArtifactCoords().getArtifactId());
-            if (context.getDeploymentURL() == null)
-                context.setDeploymentURL(downloader.getProduct().getProductStructure().getDefaultDeploymentURL());
+            context.setDeploymentURL(deploymentPath.toURI().toURL());
             deployer.init(context);
             switch (command) {
                 case DEPLOY:

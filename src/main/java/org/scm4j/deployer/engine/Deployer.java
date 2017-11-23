@@ -142,7 +142,7 @@ class Deployer {
             if (legacyProduct != null)
                 dto.setProductFileName(legacyProduct.getLegacyFile().toString());
             else
-                dto.setProductFileName(downloader.getProduct().getProductStructure().getDefaultDeploymentURL().toString());
+                dto.setProductFileName(downloader.getProduct().getProductStructure().getDefaultDeploymentURL().getPath());
             deployedProducts.put(artifactId, dto);
         }
         dto = deployedProducts.get(artifactId);
@@ -152,7 +152,6 @@ class Deployer {
         if (res != OK)
             return res;
         log.info(productName.append(" successfully deployed").toString());
-        //TODO write file directory
         Utils.writeYaml(deployedProducts, deployedProductsFile);
         return res;
     }
@@ -222,7 +221,7 @@ class Deployer {
         List<IComponentDeployer> successfulDeployers = new ArrayList<>();
         for (IComponentDeployer deployer : deployers) {
             DeploymentContext context = downloader.getDepCtx().get(component.getArtifactCoords().getArtifactId());
-            context.setDeploymentURL(new URL(deploymentPath.toString()));
+            context.setDeploymentURL(new URL(deploymentPath.toURI().toURL().toString()));
             deployer.init(context);
             switch (command) {
                 case DEPLOY:

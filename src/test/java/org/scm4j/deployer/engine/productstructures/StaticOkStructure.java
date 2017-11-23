@@ -6,7 +6,7 @@ import org.scm4j.deployer.engine.deployers.OkDeployer;
 
 public class StaticOkStructure {
     public static IProductStructure getProductStructure() {
-        return ProductStructure.create("file://C:/unTill")
+        return ProductStructure.create("file://C:/Program Files/unTill")
                 .addComponent("eu.untill:UBL:war:22.2")
                 .addComponentDeployer(new OkDeployer())
                 .parent()

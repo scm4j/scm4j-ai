@@ -12,6 +12,7 @@ import org.scm4j.deployer.engine.dto.ProductDto;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 
 import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -220,7 +221,7 @@ class Deployer {
         List<IComponentDeployer> successfulDeployers = new ArrayList<>();
         for (IComponentDeployer deployer : deployers) {
             DeploymentContext context = downloader.getDepCtx().get(component.getArtifactCoords().getArtifactId());
-            context.setDeploymentURL(deploymentPath.toURI().toURL());
+            context.setDeploymentURL(new URL(deploymentPath.toURI().toURL().toString().replace("%20", " ")));
             deployer.init(context);
             switch (command) {
                 case DEPLOY:

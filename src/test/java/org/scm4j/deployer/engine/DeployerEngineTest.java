@@ -295,7 +295,7 @@ public class DeployerEngineTest {
         assertEquals(dr, ALREADY_INSTALLED);
         Map<String, Object> map = new LinkedHashMap<>();
         ProductDto dto = new ProductDto();
-        dto.setProductFileName(de.getDownloader().getProduct().getProductStructure().getDefaultDeploymentURL().toString());
+        dto.setProductFileName(de.getDownloader().getProduct().getProductStructure().getDefaultDeploymentURL().getPath());
         dto.getVersions().add("124.5");
         map.put(untillArtifactId, dto);
         Map<String, Object> yaml = de.listDeployedProducts();

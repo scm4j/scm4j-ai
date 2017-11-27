@@ -62,7 +62,7 @@ Steps
   - if one of `dependency products` installation fails - `DP` installation fails
   - if `dependency product` installation returns `NEED_REBOOT` - `DP` returns `NEED_REBOOT`
 - Deployment
-  - Components which does not exist anymore stopped and undeployed, updated components redeployed (stop/undeploy/deploy), new components deployed
+  - Components which does not exist anymore are undeployed, updated components redeployed (stop/undeploy/deploy), new components deployed
 - Start
   - All components started
 - If `portable folder` is specified it is implicitly used as a main repository (before all repos listed in `product list`)

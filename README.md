@@ -50,7 +50,7 @@ Scenarious are represeneted by methods of `DeployerEngine`
 Steps
 
 - API compatibility is checked
-- Previously `deployed product` (`DP`) version is queried, if not found ILegacyProduct.`queryLegacyDeployedProduct` is used to get `DP`
+- Previously `deployed product` (`DP`) version is queried (deployed-products.yml), if not found ILegacyProduct.`queryLegacyDeployedProduct` is used to get `DP`
 - If `DP`.version equals to `RP`.version then `ALREADY_INSTALLED` is returned
 - If `DP`.version grater then `RP`.version then `NEWER_VERSION_EXISTS` is returned
 - Stop `DP`

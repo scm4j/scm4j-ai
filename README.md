@@ -44,13 +44,13 @@ Scenarious are represeneted by methods of `DeployerEngine`
 
 - Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSION, ALREADY_INSTALLED, FAILED
 - INCOMPATIBLE_API_VERSION: Product should depend on `deployer-api` which is compatible with one used by engine
-- DP - deployed products
+- DP - deployed product. Contains IProductStructure, Coords, and deployment URL
 - RP - required product
 
 Steps
 
 - API compatibility is checked
-- Previously `deployed product` (`DP`) version is queried using `listDeployedProducts`, if not found  ILegacyProduct.`queryLegacyProductStructure` is used to get `DP`
+- Previously `deployed product` (`DP`) version is queried, if not found ILegacyProduct.`queryLegacyDeployedProduct` is used to get `DP`
 - If `DP`.version equals to `RP`.version then `ALREADY_INSTALLED` is returned
 - If `DP`.version grater then `RP`.version then `NEWER_VERSION_EXISTS` is returned
 - Stop `DP`

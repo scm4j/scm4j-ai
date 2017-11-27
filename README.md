@@ -34,10 +34,10 @@ Scenarious are represeneted by methods of `DeployerEngine`
 - `DeployerEngine`: Constructor does NOT do any network operation
 - `listProducts`: gets data from offline cache of `product list`
 - `refreshProducts`: refreshes cache for `listProducts`
-- `listProductVersions`: gets data from offline cache (products-versions.yml)
+- `listProductVersions`: gets data from offline cache (products-versions.yml). Note: product MUST BE listed first
 - `refreshProductVersions`: refreshes offline cache
 - `download`: downloads given product
-- `deploy`: deploys given product
+- `deploy`: deploys given product. Note: product and version MUST BE listed first
 - `listDeployedProducts`: lists all deployed product from `deployed-products.yml`
 
 # Deployment

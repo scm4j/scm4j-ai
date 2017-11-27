@@ -74,3 +74,9 @@ If error occurs during component deployment previously deployed components are s
 # Self-upgrade
 
 org.scm4j.deployer.engine.Deployer
+
+# Related Components
+
+  - [scm4j-deployer-engine](../../../scm4j-deployer-engine/blob/master/README.md)
+  - [scm4j-deployer-api](../../../scm4j-deployer-api/blob/master/README.md)
+  - [scm4j-deployer-installers](../../../scm4j-deployer-installers/blob/master/README.md)

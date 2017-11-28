@@ -37,7 +37,7 @@ Scenarious are represeneted by methods of `DeployerEngine`
 - `listProductVersions`: gets data from offline cache (products-versions.yml)
 - `refreshProductVersions`: refreshes offline cache
 - `download`: downloads given product
-- `deploy`: deploys given product. Note: product and version MUST BE listed first
+- `deploy`: deploys given product
 - `listDeployedProducts`: lists all deployed product from `deployed-products.yml`
 
 # Deployment

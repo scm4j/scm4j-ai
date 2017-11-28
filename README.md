@@ -34,25 +34,25 @@ Scenarious are represeneted by methods of `DeployerEngine`
 - `DeployerEngine`: Constructor does NOT do any network operation
 - `listProducts`: gets data from offline cache of `product list`
 - `refreshProducts`: refreshes cache for `listProducts`
-- `listProductVersions`: gets data from offline cache (products-versions.yml)
+- `listProductVersions`: gets data from offline cache (products-versions.yml). Note: product MUST BE listed first
 - `refreshProductVersions`: refreshes offline cache
 - `download`: downloads given product
-- `deploy`: deploys given product
+- `deploy`: deploys given product. Note: product and version MUST BE listed first
 - `listDeployedProducts`: lists all deployed product from `deployed-products.yml`
 
 # Deployment
 
-Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSION, ALREADY_INSTALLED, FAILED
-
+- Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSION, ALREADY_INSTALLED, FAILED
 - INCOMPATIBLE_API_VERSION: Product should depend on `deployer-api` which is compatible with one used by engine
+- DP - deployed product. Contains IProductStructure, Coords, and deployment URL
+- RP - required product
 
 Steps
 
 - API compatibility is checked
-- Previously `deployed product` (`DP`) version is queried using `listDeployedProducts`, if not found  ILegacyProduct.`queryLegacyProduct` (`LP`) is used
-- Handle legacy installation (if `LP` exists)
-    - If `LP`-version equals `IProduct` version, version is saved to `deployed-products.yml` and installation ends
-    - If `LP`-version less than `IProduct` version, it is removed by IProduct.`removeLegacyProduct()`
+- Previously `deployed product` (`DP`) version is queried (deployed-products.yml), if not found ILegacyProduct.`queryLegacyDeployedProduct` is used to get `DP`
+- If `DP`.version equals to `RP`.version then `ALREADY_INSTALLED` is returned
+- If `DP`.version grater then `RP`.version then `NEWER_VERSION_EXISTS` is returned
 - Stop `DP`
   - `DP` deployers and components are downloaded
   - All `DP` components are stopped in reverse order
@@ -62,7 +62,7 @@ Steps
   - if one of `dependency products` installation fails - `DP` installation fails
   - if `dependency product` installation returns `NEED_REBOOT` - `DP` returns `NEED_REBOOT`
 - Deployment
-  - Components which does not exist anymore stopped and undeployed, updated components redeployed (stop/undeploy/deploy), new components deployed
+  - Components which does not exist anymore are undeployed, updated components redeployed (stop/undeploy/deploy), new components deployed
 - Start
   - All components started
 - If `portable folder` is specified it is implicitly used as a main repository (before all repos listed in `product list`)
@@ -74,3 +74,9 @@ If error occurs during component deployment previously deployed components are s
 # Self-upgrade
 
 org.scm4j.deployer.engine.Deployer
+
+# Related Components
+
+  - [scm4j-deployer-engine](../../../scm4j-deployer-engine/blob/master/README.md)
+  - [scm4j-deployer-api](../../../scm4j-deployer-api/blob/master/README.md)
+  - [scm4j-deployer-installers](../../../scm4j-deployer-installers/blob/master/README.md)

@@ -10,6 +10,7 @@ import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
 import org.scm4j.deployer.engine.exceptions.ENoMetadata;
+import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,7 +44,6 @@ class ProductList {
         this.productListReader = productListReader;
     }
 
-
     Map readFromProductList() throws Exception {
         String productListReleaseVersion = getLocalProductListReleaseVersion();
         if (productListReleaseVersion == null) {
@@ -59,14 +59,27 @@ class ProductList {
         return productListEntry;
     }
 
+    void downloadProductList() throws Exception {
+        String productListReleaseVersion = productListReader.getProductListReleaseVersion();
+        URL remoteProductListUrl = productListReader.getProductUrl(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
+                productListReleaseVersion, ".yml");
+        localProductList = new File(localRepo, Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
+                productListReleaseVersion, ".yml"));
+        if (!localProductList.exists()) {
+            localProductList.getParentFile().mkdirs();
+            localProductList.createNewFile();
+        }
+        FileUtils.copyURLToFile(remoteProductListUrl, localProductList);
+        writeProductListMetadata(productListReleaseVersion);
+    }
+
     @SuppressWarnings("unchecked")
-    Map<String, Set<String>> readProductVersions(String artifactId) {
-        productsVersions = Utils.readYml(versionsYml);
-        if (productsVersions == null)
-            productsVersions = new HashMap<>();
-        versions = new TreeSet<>();
-        versions.addAll(productsVersions.getOrDefault(artifactId, new TreeSet<>()));
-        return productsVersions;
+    private void loadProductListEntry() {
+        productListEntry = Utils.readYml(localProductList);
+        repos = new ArrayList<>();
+        ((List<String>) productListEntry.get(REPOSITORIES)).forEach(name -> repos.add(ArtifactoryReader.getByUrl(name)));
+        products = new HashMap<>();
+        products.putAll((Map<String, String>) productListEntry.get(PRODUCTS));
     }
 
     private void downloadProductsVersions() {
@@ -81,6 +94,20 @@ class ProductList {
             productsVersions.put(artifactId, vers);
         }
         Utils.writeYaml(productsVersions, versionsYml);
+    }
+
+    @SuppressWarnings("unchecked")
+    Map<String, Set<String>> readProductVersions(String artifactId) {
+        try {
+            productsVersions = Utils.readYml(versionsYml);
+        } catch (NullPointerException e) {
+            throw new EProductListEntryNotFound("Can't find product list");
+        }
+        if (productsVersions == null)
+            productsVersions = new HashMap<>();
+        versions = new TreeSet<>();
+        versions.addAll(productsVersions.getOrDefault(artifactId, new TreeSet<>()));
+        return productsVersions;
     }
 
     @SuppressWarnings("unchecked")
@@ -115,29 +142,6 @@ class ProductList {
         } else {
             return null;
         }
-    }
-
-    void downloadProductList() throws Exception {
-        String productListReleaseVersion = productListReader.getProductListReleaseVersion();
-        URL remoteProductListUrl = productListReader.getProductUrl(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
-                productListReleaseVersion, ".yml");
-        localProductList = new File(localRepo, Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
-                productListReleaseVersion, ".yml"));
-        if (!localProductList.exists()) {
-            localProductList.getParentFile().mkdirs();
-            localProductList.createNewFile();
-        }
-        FileUtils.copyURLToFile(remoteProductListUrl, localProductList);
-        writeProductListMetadata(productListReleaseVersion);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void loadProductListEntry() {
-        productListEntry = Utils.readYml(localProductList);
-        repos = new ArrayList<>();
-        ((List<String>) productListEntry.get(REPOSITORIES)).forEach(name -> repos.add(ArtifactoryReader.getByUrl(name)));
-        products = new HashMap<>();
-        products.putAll((Map<String, String>) productListEntry.get(PRODUCTS));
     }
 
     @SneakyThrows

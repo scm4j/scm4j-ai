@@ -36,6 +36,7 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     public DeploymentResult deploy(String artifactId, String version) {
+        listProducts();
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
         try {
             return deployer.doCommand(artifact, DEPLOY);
@@ -47,6 +48,7 @@ public class DeployerEngine implements IProductDeployer {
     @Override
     @SneakyThrows
     public File download(String artifactId, String version) {
+        listProducts();
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
         return downloader.get(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
                 artifact.getExtension());
@@ -54,6 +56,7 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     public DeploymentResult undeploy(String artifactId, String version) {
+        listProducts();
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
         try {
             return deployer.doCommand(artifact, UNDEPLOY);
@@ -64,6 +67,7 @@ public class DeployerEngine implements IProductDeployer {
 
     @Override
     public DeploymentResult upgrade(String artifactId, String version) {
+        listProducts();
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
         try {
             return deployer.doCommand(artifact, UPGRADE);

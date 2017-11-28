@@ -49,12 +49,24 @@ class ArtifactoryReader {
     List<String> getProductVersions(String groupId, String artifactId) {
         MetadataXpp3Reader reader = new MetadataXpp3Reader();
         URL url = getProductMetaDataURL(groupId, artifactId);
+        try {
+            return readVersions(url, reader);
+        } catch (FileNotFoundException e) {
+            url = getProductLocalMetaDataURL(groupId, artifactId);
+            try {
+                return readVersions(url, reader);
+            } catch (FileNotFoundException e1) {
+                return Collections.emptyList();
+            }
+        }
+    }
+
+    @SneakyThrows
+    private List<String> readVersions(URL url, MetadataXpp3Reader reader) throws FileNotFoundException {
         try (InputStream is = getContentStream(url)) {
             Metadata meta = reader.read(is);
             Versioning vers = meta.getVersioning();
             return vers.getVersions();
-        } catch (FileNotFoundException e) {
-            return Collections.emptyList();
         }
     }
 
@@ -87,6 +99,11 @@ class ArtifactoryReader {
     @SneakyThrows
     private URL getProductMetaDataURL(String groupId, String artifactId) {
         return new URL(new URL(url, Utils.coordsToUrlStructure(groupId, artifactId) + "/"), METADATA_FILE_NAME);
+    }
+
+    @SneakyThrows
+    private URL getProductLocalMetaDataURL(String groupId, String artifactId) {
+        return new URL(new URL(url, Utils.coordsToUrlStructure(groupId, artifactId) + "/"), LOCAL_METADATA_FILE_NAME);
     }
 
     @SneakyThrows

@@ -17,6 +17,7 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.artifact.DefaultArtifactTypeRegistry;
+import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import org.scm4j.deployer.engine.loggers.ConsoleRepositoryListener;
 import org.scm4j.deployer.engine.loggers.ConsoleTransferListener;
 import org.yaml.snakeyaml.DumperOptions;
@@ -26,6 +27,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -112,12 +114,13 @@ public class Utils {
     }
 
     public static String getGroupId(Downloader downloader, String artifactId) {
-        String groupAndArtifactID = downloader.getProductList().getProducts().keySet().stream()
+        List<String> groupAndArtifactID = downloader.getProductList().getProducts().keySet().stream()
                 .filter(s -> s.contains(artifactId))
                 .limit(1)
-                .collect(Collectors.toList())
-                .get(0);
-        return StringUtils.substringBefore(groupAndArtifactID, ":");
+                .collect(Collectors.toList());
+        if (groupAndArtifactID.isEmpty())
+            throw new EProductNotFound("Can't find product in product list");
+        return StringUtils.substringBefore(groupAndArtifactID.get(0), ":");
     }
 
     public static Artifact initializeArtifact(Downloader downloader, String artifactId, String version) {
@@ -137,7 +140,7 @@ public class Utils {
     }
 
     @SneakyThrows
-    public static Map readYml(File input) {
+    public static Map readYml(File input) throws NullPointerException {
         if (input.exists()) {
             @Cleanup
             FileReader reader = new FileReader(input);

@@ -4,19 +4,15 @@ import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.scm4j.commons.Version;
 import org.scm4j.deployer.api.*;
-import org.scm4j.deployer.engine.dto.ProductDto;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 
 import java.io.File;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.scm4j.deployer.api.DeploymentResult.*;
@@ -36,7 +32,7 @@ class Deployer {
 
     private static final String DEPLOYED_PRODUCTS = "deployed-products.yml";
 
-    private Map<String, ProductDto> deployedProducts;
+    private Map<String, DeployedProduct> deployedProducts;
     private final File workingFolder;
     private final File portableFolder;
     private final File deployedProductsFile;
@@ -47,24 +43,25 @@ class Deployer {
     DeploymentResult doCommand(Artifact art, Command command) throws EIncompatibleApiVersion {
         DeploymentResult res;
         String artifactId = art.getArtifactId();
-        Version version = new Version(art.getVersion());
+        String version = art.getVersion();
         deployedProducts = Utils.readYml(deployedProductsFile);
-        if (deployedProducts.getOrDefault(artifactId, new ProductDto()).getVersions().contains(version.toString())) {
+        if (Optional.ofNullable(deployedProducts.getOrDefault(artifactId, new DeployedProduct()).getProductVersion())
+                .orElse("").equals(version)) {
             if (command == DEPLOY) {
-                log.info(Utils.productName(artifactId, version.toString()).append(" already deployed").toString());
+                log.info(Utils.productName(artifactId, version).append(" already deployed").toString());
                 return ALREADY_INSTALLED;
             }
-            downloader.get(art.getGroupId(), artifactId, version.toString(), art.getExtension());
+            downloader.get(art.getGroupId(), artifactId, version, art.getExtension());
             deploymentPath = new File(deployedProducts.get(artifactId).getProductFileName());
             IProduct product = downloader.getProduct();
             switch (command) {
                 case UNDEPLOY:
                     res = undeploy(product, artifactId, version);
-                    res.setProduct(product);
+                    res.setProductCoords(art.toString());
                     return res;
                 case UPGRADE:
                     res = upgrade(product, artifactId, version);
-                    res.setProduct(product);
+                    res.setProductCoords(art.toString());
                     return res;
                 default:
                     throw new IllegalArgumentException();
@@ -73,13 +70,13 @@ class Deployer {
             switch (command) {
                 case UPGRADE:
                 case UNDEPLOY:
-                    log.info(Utils.productName(artifactId, version.toString()).append(" doesn't exists!").toString());
+                    log.info(Utils.productName(artifactId, version).append(" doesn't exists!").toString());
                     return FAILED;
                 case DEPLOY:
-                    downloader.get(art.getGroupId(), artifactId, version.toString(), art.getExtension());
+                    downloader.get(art.getGroupId(), artifactId, version, art.getExtension());
                     IProduct product = downloader.getProduct();
                     res = deploy(product, artifactId, version);
-                    res.setProduct(product);
+                    res.setProductCoords(art.toString());
                     return res;
                 default:
                     throw new IllegalArgumentException();
@@ -87,8 +84,8 @@ class Deployer {
         }
     }
 
-    private DeploymentResult undeploy(IProduct product, String artifactId, Version version) {
-        StringBuilder productName = Utils.productName(artifactId, version.toString());
+    private DeploymentResult undeploy(IProduct product, String artifactId, String version) {
+        StringBuilder productName = Utils.productName(artifactId, version);
         DeploymentResult res = OK;
         List<IComponent> components = product.getProductStructure().getComponents();
         components = Lists.reverse(components);
@@ -107,8 +104,8 @@ class Deployer {
     }
 
     //TODO find diff between components and upgrade only difference
-    DeploymentResult upgrade(IProduct product, String artifactId, Version version) throws EIncompatibleApiVersion {
-        StringBuilder productName = Utils.productName(artifactId, version.toString());
+    DeploymentResult upgrade(IProduct product, String artifactId, String version) throws EIncompatibleApiVersion {
+        StringBuilder productName = Utils.productName(artifactId, version);
         DeploymentResult res = undeploy(product, artifactId, version);
         if (res != OK)
             return res;
@@ -119,26 +116,26 @@ class Deployer {
     }
 
     @SuppressWarnings("unchecked")
-    DeploymentResult deploy(IProduct product, String artifactId, Version version) throws EIncompatibleApiVersion {
-        StringBuilder productName = Utils.productName(artifactId, version.toString());
+    DeploymentResult deploy(IProduct product, String artifactId, String version) throws EIncompatibleApiVersion {
+        StringBuilder productName = Utils.productName(artifactId, version);
         DeploymentResult res;
         ILegacyProduct legacyProduct = null;
-        if (deployedProducts.getOrDefault(artifactId, new ProductDto()).getVersions().isEmpty() &&
-                product instanceof ILegacyProduct && ((ILegacyProduct) product).queryLegacyProduct()) {
-            legacyProduct = (ILegacyProduct) product;
-            res = checkLegacyProduct(legacyProduct, artifactId, version);
-            if (res != OK)
-                return res;
-        }
         if (!product.getDependentProducts().isEmpty()) {
             res = deployDependent(product);
             if (res != OK)
                 return res;
         }
         deployedProducts = Utils.readYml(deployedProductsFile);
-        ProductDto dto;
+        if (deployedProducts.getOrDefault(artifactId, new DeployedProduct()).getProductVersion() == null &&
+                product instanceof ILegacyProduct && ((ILegacyProduct) product).queryLegacyProduct()) {
+            legacyProduct = (ILegacyProduct) product;
+            res = checkLegacyProduct(legacyProduct, artifactId, version);
+            if (res != OK)
+                return res;
+        }
+        DeployedProduct dto;
         if (deployedProducts.get(artifactId) == null) {
-            dto = new ProductDto();
+            dto = new DeployedProduct();
             if (legacyProduct != null)
                 dto.setProductFileName(legacyProduct.getLegacyFile().toString());
             else
@@ -147,7 +144,7 @@ class Deployer {
         }
         dto = deployedProducts.get(artifactId);
         deploymentPath = new File(dto.getProductFileName());
-        dto.getVersions().add(version.toString());
+        dto.setProductVersion(version);
         res = installComponents(product);
         if (res != OK)
             return res;
@@ -162,7 +159,6 @@ class Deployer {
         List<IComponent> deployedComponents = new ArrayList<>();
         for (IComponent component : components) {
             res = applyCommand(component, DEPLOY);
-            res.setProduct(product);
             if (res == FAILED || res == NEED_REBOOT) {
                 if (log.isDebugEnabled())
                     log.debug(component.getArtifactCoords().getArtifactId() + " failed");
@@ -181,13 +177,15 @@ class Deployer {
         return res;
     }
 
-    private DeploymentResult checkLegacyProduct(ILegacyProduct legacyProduct, String artifactId, Version version) {
-        StringBuilder productName = Utils.productName(artifactId, version.toString());
-        if (legacyProduct.getLegacyVersion().equals(version)) {
+    private DeploymentResult checkLegacyProduct(ILegacyProduct legacyProduct, String artifactId, String version) {
+        StringBuilder productName = Utils.productName(artifactId, version);
+        DefaultArtifactVersion vers = new DefaultArtifactVersion(version);
+        DefaultArtifactVersion legacyVers = new DefaultArtifactVersion(legacyProduct.getLegacyVersion());
+        if (vers.compareTo(legacyVers) == 0) {
             log.info(productName.append(" already installed!").toString());
             return ALREADY_INSTALLED;
         }
-        if (legacyProduct.getLegacyVersion().isGreaterThan(version)) {
+        if (vers.compareTo(legacyVers) < 0) {
             log.info(productName.append(" newer version exist").toString());
             return NEWER_VERSION_EXISTS;
         }

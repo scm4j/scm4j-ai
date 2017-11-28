@@ -3,13 +3,13 @@ package org.scm4j.deployer.engine;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
-import org.scm4j.commons.Version;
+import org.scm4j.deployer.api.DeployedProduct;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.engine.deployers.FailedDeployer;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
 import org.scm4j.deployer.engine.deployers.RebootDeployer;
-import org.scm4j.deployer.engine.dto.ProductDto;
+import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import org.scm4j.deployer.engine.productstructures.FailStructure;
 import org.scm4j.deployer.engine.productstructures.OkStructure;
@@ -18,7 +18,6 @@ import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
@@ -35,7 +34,7 @@ public class DeployerEngineTest {
     private static final String TEST_UNTILL_GROUP_ID = "eu.untill";
     private static final String TEST_JOOQ_GROUP_ID = "org.jooq";
     private static final String TEST_AXIS_GROUP_ID = "org.apache.axis";
-    private static final String TEST_ARTIFACTORY_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
+    static final String TEST_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
             .getPath();
 
     private static AITestEnvironment env = new AITestEnvironment();
@@ -46,7 +45,7 @@ public class DeployerEngineTest {
 
     @AfterClass
     public static void after() throws IOException {
-        FileUtils.deleteDirectory(new File(TEST_ARTIFACTORY_DIR));
+        FileUtils.deleteDirectory(new File(TEST_DIR));
     }
 
     @BeforeClass
@@ -84,17 +83,6 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testGetProducts() throws Exception {
-        Downloader runner = new Downloader(null, env.getEnvFolder(), env.getArtifactory1Url());
-        runner.getProductList().readFromProductList();
-        Map<String, String> products = runner.getProductList().getProducts();
-        assertNotNull(products);
-        assertTrue(products.keySet().containsAll(Collections.singleton(
-                "eu.untill:unTILL")));
-        assertTrue(products.size() == 1);
-    }
-
-    @Test
     public void testGetVersions() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         de.listProducts();
@@ -106,35 +94,49 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testNoReposNoWork() throws FileNotFoundException {
+    public void downloadUnknownProduct() throws Exception {
+        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         try {
-            new Downloader(null, env.getEnvFolder(), "random URL");
-            fail();
-        } catch (Exception e) {
-
-        }
-    }
-
-    @Test
-    public void testUnknownProduct() throws Exception {
-        Downloader runner = new Downloader(null, env.getEnvFolder(), env.getArtifactory1Url());
-        runner.getProductList().readFromProductList();
-        assertEquals(Collections.emptyList(),
-                runner.getProductList().getProductListReader().getProductVersions("eu.untill", "unknown artifact"));
-
-        try {
-            runner.get("eu.untill", "unknown artifact", "version", "extension");
+            de.download("xyz", "1234");
             fail();
         } catch (EProductNotFound e) {
         }
     }
 
     @Test
-    public void testUnknownVersion() throws Exception {
-        Downloader runner = new Downloader(null, env.getEnvFolder(), env.getArtifactory1Url());
-        runner.getProductList().readFromProductList();
+    public void listProductVersionsBeforeListProducts() {
+        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         try {
-            runner.get(TEST_UNTILL_GROUP_ID, ublArtifactId, "unknown version", ".jar");
+            de.listProductVersions(untillArtifactId);
+            fail();
+        } catch (EProductListEntryNotFound e) {
+        }
+    }
+
+    @Test
+    public void noReposNoWork() {
+        try {
+            new DeployerEngine(null, env.getEnvFolder(), "random URL");
+            fail();
+        } catch (Exception e) {
+        }
+    }
+
+    @Test
+    public void testUnknownVersion() {
+        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
+        try {
+            de.download(untillArtifactId, "xyz");
+            fail();
+        } catch (EProductNotFound e) {
+        }
+    }
+
+    @Test
+    public void testUnknownProduct() {
+        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
+        try {
+            de.download("xyz", "123.4");
             fail();
         } catch (EProductNotFound e) {
         }
@@ -153,11 +155,12 @@ public class DeployerEngineTest {
         assertEquals(expectedURL, url);
     }
 
+    //TODO refactor
     @Test
     public void testLoadRepos() throws Exception {
-        Downloader runner = new Downloader(null, env.getEnvFolder(), env.getArtifactory1Url());
-        runner.getProductList().readFromProductList();
-        List<ArtifactoryReader> repos = runner.getProductList().getRepos();
+        Downloader loader = new Downloader(null, env.getEnvFolder(), env.getArtifactory1Url());
+        loader.getProductList().readFromProductList();
+        List<ArtifactoryReader> repos = loader.getProductList().getRepos();
         assertNotNull(repos);
         repos.containsAll(Arrays.asList(
                 StringUtils.appendIfMissing(env.getArtifactory1Url(), "/"),
@@ -167,7 +170,6 @@ public class DeployerEngineTest {
     @Test
     public void testDownloadAndDeployProduct() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        de.listProducts();
         File testFile = de.download(untillArtifactId, "123.4");
         assertTrue(FileUtils.contentEquals(testFile, new File(env.getArtifactory2Folder(),
                 Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
@@ -184,12 +186,10 @@ public class DeployerEngineTest {
 
     @Test
     public void testDownloadAndDeployProductFromLocalHost() throws Exception {
-        DeployerEngine engine = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        engine.listProducts();
-        File product = engine.download(untillArtifactId, "123.4");
-        engine = new DeployerEngine(null, env.getBaseTestFolder(), engine.getDownloader().getWorkingRepository().toURI().toURL().toString());
-        engine.listProducts();
-        File product1 = engine.download(untillArtifactId, "123.4");
+        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
+        File product = de.download(untillArtifactId, "123.4");
+        de = new DeployerEngine(null, env.getBaseTestFolder(), de.getDownloader().getWorkingRepository().toURI().toURL().toString());
+        File product1 = de.download(untillArtifactId, "123.4");
         assertTrue(FileUtils.contentEquals(product, product1));
     }
 
@@ -239,7 +239,7 @@ public class DeployerEngineTest {
         testMap.put("124.5", false);
         assertEquals(de.refreshProductVersions(untillArtifactId), testMap);
         de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        de.getDownloader().getProductList().readFromProductList();
+        de.listProducts();
         assertEquals(de.listProductVersions(untillArtifactId), testMap);
         de.download(untillArtifactId, "123.4");
         testMap.replace("123.4", false, true);
@@ -267,7 +267,6 @@ public class DeployerEngineTest {
     @Test
     public void testCollectDeploymentContext() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        de.listProducts();
         de.download(untillArtifactId, "123.4");
         DeploymentContext ctx = de.getDownloader().getDepCtx().get("UBL");
         assertEquals(ctx.getMainArtifact(), "UBL");
@@ -278,7 +277,6 @@ public class DeployerEngineTest {
     @Test
     public void testCopyElementsFromPortableToWorkingFolder() throws Exception {
         DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getBaseTestFolder(), env.getArtifactory1Url());
-        de.listProducts();
         File untillFile = de.download(untillArtifactId, "123.4");
         File localUntillFile = de.download(untillArtifactId, "123.4");
         FileUtils.contentEquals(untillFile, localUntillFile);
@@ -288,27 +286,27 @@ public class DeployerEngineTest {
     public void testDeploy() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         Deployer dep = de.getDeployer();
-        de.listProducts();
         DeploymentResult dr = de.deploy(untillArtifactId, "124.5");
+        assertEquals(dr.getProductCoords(), "eu.untill:unTILL:jar:124.5");
         assertEquals(dr, OK);
         dr = de.deploy(untillArtifactId, "124.5");
         assertEquals(dr, ALREADY_INSTALLED);
         Map<String, Object> map = new LinkedHashMap<>();
-        ProductDto dto = new ProductDto();
+        DeployedProduct dto = new DeployedProduct();
         dto.setProductFileName(de.getDownloader().getProduct().getProductStructure().getDefaultDeploymentURL().getPath());
-        dto.getVersions().add("124.5");
+        dto.setProductVersion("124.5");
         map.put(untillArtifactId, dto);
         Map<String, Object> yaml = de.listDeployedProducts();
         assertEquals(yaml.toString(), map.toString());
         System.out.println("============OkDeployer started============");
-        dr = dep.deploy(new OkStructure(), "test", new Version("0.0.0"));
+        dr = dep.deploy(new OkStructure(), "test", "0.0.0");
         assertEquals(dr, OK);
         OkDeployer.setCount(0);
         System.out.println("============FailedDeployer started============");
-        dr = dep.deploy(new FailStructure(), "test", new Version("0.0.0"));
+        dr = dep.deploy(new FailStructure(), "test", "0.0.0");
         assertEquals(dr, FAILED);
         System.out.println("============RebootDeployer started============");
-        dr = dep.deploy(new RebootStructure(), "test", new Version("0.0.0"));
+        dr = dep.deploy(new RebootStructure(), "test", "0.0.0");
         assertEquals(dr, NEED_REBOOT);
         assertEquals(OkDeployer.getCount(), 0);
         assertEquals(FailedDeployer.getCount(), 1);
@@ -318,7 +316,6 @@ public class DeployerEngineTest {
     @Test
     public void testUndeploy() {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        de.listProducts();
         DeploymentResult dr = de.deploy(untillArtifactId, "124.5");
         assertEquals(dr, OK);
         assertEquals(OkDeployer.getCount(), 4);

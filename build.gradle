@@ -55,7 +55,6 @@ dependencies {
     compile 'org.apache.commons:commons-lang3:3.5'
     compile 'org.yaml:snakeyaml:1.18'
     compile 'commons-cli:commons-cli:1.4'
-    compileOnly 'org.projectlombok:lombok:1.16.18'
     compile 'org.apache.maven.resolver:maven-resolver-api:1.1.0'
     compile 'org.apache.maven.resolver:maven-resolver-util:1.1.0'
     compile 'org.apache.maven.resolver:maven-resolver-spi:1.1.0'
@@ -64,6 +63,8 @@ dependencies {
     compile 'org.apache.maven.resolver:maven-resolver-transport-file:1.1.0'
     compile 'org.apache.maven.resolver:maven-resolver-transport-http:1.1.0'
     compile 'org.apache.maven:maven-resolver-provider:3.5.0'
+
+    compileOnly 'org.projectlombok:lombok:1.16.18'
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-all:1.9.5'

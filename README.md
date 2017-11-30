@@ -34,10 +34,10 @@ Scenarious are represeneted by methods of `DeployerEngine`
 - `DeployerEngine`: Constructor does NOT do any network operation
 - `listProducts`: gets data from offline cache of `product list`
 - `refreshProducts`: refreshes cache for `listProducts`
-- `listProductVersions`: gets data from offline cache (products-versions.yml). Note: product MUST BE listed first
+- `listProductVersions`: gets data from offline cache (products-versions.yml)
 - `refreshProductVersions`: refreshes offline cache
 - `download`: downloads given product
-- `deploy`: deploys given product. Note: product and version MUST BE listed first
+- `deploy`: deploys given product
 - `listDeployedProducts`: lists all deployed product from `deployed-products.yml`
 
 # Deployment
@@ -51,16 +51,16 @@ Steps
 
 - API compatibility is checked
 - Previously `deployed product` (`DP`) version is queried (deployed-products.yml), if not found ILegacyProduct.`queryLegacyDeployedProduct` is used to get `DP`
+- Install dependencies (If product has `dependency products`)
+  - all `dependency products` are installed recursively
+  - if one of `dependency products` installation fails - `DP` installation fails
+  - if `dependency product` installation returns `NEED_REBOOT` - `DP` returns `NEED_REBOOT`
 - If `DP`.version equals to `RP`.version then `ALREADY_INSTALLED` is returned
 - If `DP`.version grater then `RP`.version then `NEWER_VERSION_EXISTS` is returned
 - Stop `DP`
   - `DP` deployers and components are downloaded
   - All `DP` components are stopped in reverse order
   - If `stop` fails all `DP`-components are `disabled`,`NEED_REBOOT` is returned and all already deployed components undeploy
-- Install dependencies (If product has `dependency products`)
-  - all `dependency products` are installed recursively
-  - if one of `dependency products` installation fails - `DP` installation fails
-  - if `dependency product` installation returns `NEED_REBOOT` - `DP` returns `NEED_REBOOT`
 - Deployment
   - Components which does not exist anymore are undeployed, updated components redeployed (stop/undeploy/deploy), new components deployed
 - Start

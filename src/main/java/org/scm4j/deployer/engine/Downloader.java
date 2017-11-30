@@ -68,6 +68,11 @@ class Downloader {
         this.system = Utils.newRepositorySystem();
     }
 
+    File get(String coords) throws EIncompatibleApiVersion {
+        Artifact art = new DefaultArtifact(coords);
+        return get(art.getGroupId(), art.getArtifactId(), art.getVersion(), art.getExtension());
+    }
+
     File get(String groupId, String artifactId, String version, String extension) throws EIncompatibleApiVersion {
         if (productList.getRepos() == null || productList.getProducts() == null) {
             throw new EProductListEntryNotFound("Product list doesn't loaded");

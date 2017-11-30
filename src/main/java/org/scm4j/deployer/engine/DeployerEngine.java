@@ -11,8 +11,6 @@ import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 import java.io.File;
 import java.util.*;
 
-import static org.scm4j.deployer.engine.Deployer.Command.*;
-
 @Data
 public class DeployerEngine implements IProductDeployer {
 
@@ -39,7 +37,7 @@ public class DeployerEngine implements IProductDeployer {
         listProducts();
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
         try {
-            return deployer.doCommand(artifact, DEPLOY);
+            return deployer.deploy(artifact);
         } catch (EIncompatibleApiVersion e) {
             return DeploymentResult.INCOMPATIBLE_API_VERSION;
         }
@@ -52,28 +50,6 @@ public class DeployerEngine implements IProductDeployer {
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
         return downloader.get(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
                 artifact.getExtension());
-    }
-
-    @Override
-    public DeploymentResult undeploy(String artifactId, String version) {
-        listProducts();
-        Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
-        try {
-            return deployer.doCommand(artifact, UNDEPLOY);
-        } catch (EIncompatibleApiVersion e) {
-            return DeploymentResult.INCOMPATIBLE_API_VERSION;
-        }
-    }
-
-    @Override
-    public DeploymentResult upgrade(String artifactId, String version) {
-        listProducts();
-        Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
-        try {
-            return deployer.doCommand(artifact, UPGRADE);
-        } catch (EIncompatibleApiVersion e) {
-            return DeploymentResult.INCOMPATIBLE_API_VERSION;
-        }
     }
 
     @Override

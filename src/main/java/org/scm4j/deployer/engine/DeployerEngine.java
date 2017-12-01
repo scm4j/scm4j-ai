@@ -43,13 +43,12 @@ public class DeployerEngine implements IProductDeployer {
         }
     }
 
-    @Override
     @SneakyThrows
+    @Override
     public File download(String artifactId, String version) {
         listProducts();
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
-        return downloader.get(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
-                artifact.getExtension());
+        return downloader.getProductFile(artifact.toString());
     }
 
     @Override

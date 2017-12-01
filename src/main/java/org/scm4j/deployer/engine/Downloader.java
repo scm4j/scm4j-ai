@@ -21,9 +21,7 @@ import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
-import org.scm4j.deployer.api.DeploymentContext;
-import org.scm4j.deployer.api.IComponent;
-import org.scm4j.deployer.api.IProduct;
+import org.scm4j.deployer.api.*;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
@@ -38,12 +36,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Data
-class Downloader {
+class Downloader implements IDownloader {
 
     private static final String REPOSITORY_FOLDER_NAME = "repository";
     private static final File TMP_REPOSITORY = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp");
     private static final String API_NAME = "scm4j-deployer-api";
-    private final Map<String, DeploymentContext> depCtx = new HashMap<>();
+    private final Map<String, IDeploymentContext> depCtx;
     private final ProductList productList;
     private final File workingRepository;
     private final File portableRepository;
@@ -66,14 +64,16 @@ class Downloader {
         ArtifactoryReader productListReader = ArtifactoryReader.getByUrl(productListArtifactoryUrl);
         this.productList = new ProductList(portableRepository, productListReader);
         this.system = Utils.newRepositorySystem();
+        this.depCtx = new HashMap<>();
     }
 
-    File get(String coords) throws EIncompatibleApiVersion {
+    @Override
+    public File getProductFile(String coords) throws EIncompatibleApiVersion {
         Artifact art = new DefaultArtifact(coords);
-        return get(art.getGroupId(), art.getArtifactId(), art.getVersion(), art.getExtension());
+        return getProductFile(art.getGroupId(), art.getArtifactId(), art.getVersion(), art.getExtension());
     }
 
-    File get(String groupId, String artifactId, String version, String extension) throws EIncompatibleApiVersion {
+    private File getProductFile(String groupId, String artifactId, String version, String extension) throws EIncompatibleApiVersion {
         if (productList.getRepos() == null || productList.getProducts() == null) {
             throw new EProductListEntryNotFound("Product list doesn't loaded");
         }
@@ -244,5 +244,11 @@ class Downloader {
         } else {
             throw new EIncompatibleApiVersion("Can't load " + productFile.getName() + " class to classpath");
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends IDeploymentContext> T getContextByArtifactId(String artifactId) {
+        return (T) depCtx.get(artifactId);
     }
 }

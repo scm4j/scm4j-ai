@@ -6,7 +6,7 @@ import lombok.Data;
 public class ProductDescription {
 
     private long deploymentTime;
-    private String deploymentUrlToString;
+    private String deploymentPath;
     private String productVersion;
 
 }

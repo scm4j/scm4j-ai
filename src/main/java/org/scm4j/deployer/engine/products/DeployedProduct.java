@@ -4,12 +4,10 @@ import lombok.Data;
 import org.scm4j.deployer.api.IDeployedProduct;
 import org.scm4j.deployer.api.IProductStructure;
 
-import java.net.URL;
-
 @Data
 public class DeployedProduct implements IDeployedProduct {
 
-    private URL deploymentUrl;
+    private String deploymentPath;
     private String productVersion;
     private IProductStructure productStructure;
 

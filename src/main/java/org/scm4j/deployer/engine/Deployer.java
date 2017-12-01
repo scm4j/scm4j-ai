@@ -9,12 +9,10 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.scm4j.deployer.api.*;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
-import org.scm4j.deployer.engine.exceptions.EInvalidProduct;
 import org.scm4j.deployer.engine.products.DeployedProduct;
 import org.scm4j.deployer.engine.products.ProductDescription;
 
 import java.io.File;
-import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,22 +23,21 @@ import static org.scm4j.deployer.engine.Deployer.Command.*;
 @Data
 class Deployer {
 
-    Deployer(File portableFolder, File workingFolder, Downloader downloader) {
+    private final IDownloader downloader;
+
+    private static final String DEPLOYED_PRODUCTS = "deployed-products.yml";
+
+    private final File workingFolder;
+    private final File portableFolder;
+    private final File deployedProductsFile;
+    private String deploymentPath;
+
+    Deployer(File portableFolder, File workingFolder, IDownloader downloader) {
         this.workingFolder = workingFolder;
         this.portableFolder = portableFolder;
         this.downloader = downloader;
         deployedProductsFile = new File(workingFolder, DEPLOYED_PRODUCTS);
-        deployedProducts = new HashMap<>();
     }
-
-    private static final String DEPLOYED_PRODUCTS = "deployed-products.yml";
-
-    private Map<String, ProductDescription> deployedProducts;
-    private final File workingFolder;
-    private final File portableFolder;
-    private final File deployedProductsFile;
-    private final Downloader downloader;
-    private URL deploymentUrl;
 
     @SneakyThrows
     @SuppressWarnings("unchecked")
@@ -50,14 +47,14 @@ class Deployer {
         String artifactId = art.getArtifactId();
         String version = art.getVersion();
         String productName = artifactId + "-" + version;
-        deployedProducts = Utils.readYml(deployedProductsFile);
+        Map<String, ProductDescription> deployedProducts = Utils.readYml(deployedProductsFile);
         DeployedProduct deployedProduct;
         IProduct requiredProduct;
         ProductDescription productDescription;
         if (version.equals("")) {
             requiredProduct = ProductStructure::createEmptyStructure;
         } else {
-            downloader.get(art.getGroupId(), artifactId, version, art.getExtension());
+            downloader.getProductFile(art.toString());
             requiredProduct = downloader.getProduct();
         }
         if (deployedProducts.get(coords) != null) {
@@ -71,8 +68,8 @@ class Deployer {
             }
             deployedProduct = new DeployedProduct();
             deployedProduct.setProductVersion(deployedVersion);
-            deployedProduct.setDeploymentUrl(new URL(productDescription.getDeploymentUrlToString()));
-            downloader.get(coords + ":" + productDescription.getProductVersion());
+            deployedProduct.setDeploymentPath(productDescription.getDeploymentPath());
+            downloader.getProductFile(coords + ":" + productDescription.getProductVersion());
             IProductStructure ps = downloader.getProduct().getProductStructure();
             deployedProduct.setProductStructure(ps);
         } else if (version.equals("")) {
@@ -107,14 +104,12 @@ class Deployer {
             return res;
         ProductDescription newProduct = new ProductDescription();
         newProduct.setProductVersion(version);
-        newProduct.setDeploymentUrlToString(deploymentUrl.toString());
+        newProduct.setDeploymentPath(deploymentPath);
         newProduct.setDeploymentTime(System.currentTimeMillis());
         deployedProducts.put(coords, newProduct);
         Utils.writeYaml(deployedProducts, deployedProductsFile);
         return res;
     }
-
-    //TODO deployedProducts.setProduct()
 
     @SneakyThrows
     @SuppressWarnings("unchecked")
@@ -126,13 +121,12 @@ class Deployer {
             if (res == OK || res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS)
                 return res;
         }
-        deployedProducts = Utils.readYml(deployedProductsFile);
         Map<Command, List<IComponent>> changedComponents;
         if (deployedProduct != null) {
             List<IComponent> deployedComponents = deployedProduct.getProductStructure().getComponents();
             changedComponents = compareProductStructures(requiredProduct.getProductStructure(),
                     deployedProduct.getProductStructure());
-            deploymentUrl = deployedProduct.getDeploymentUrl();
+            deploymentPath = deployedProduct.getDeploymentPath();
             deployedComponents = Lists.reverse(deployedComponents);
             res = doCommands(deployedComponents, STOP);
             if (res != OK)
@@ -142,13 +136,11 @@ class Deployer {
                 return res;
         } else {
             changedComponents = compareProductStructures(requiredProduct.getProductStructure(), ProductStructure.createEmptyStructure());
-            deploymentUrl = requiredProduct.getProductStructure().getDefaultDeploymentURL();
+            deploymentPath = requiredProduct.getProductStructure().getDefaultDeploymentPath();
         }
         List<IComponent> componentForDeploy;
-        if (changedComponents.get(DEPLOY) != null) {
+        if (!changedComponents.get(DEPLOY).isEmpty()) {
             componentForDeploy = changedComponents.get(DEPLOY);
-            if (componentForDeploy.isEmpty())
-                throw new EInvalidProduct("In different versions of product MUST be different components for deploy");
             res = deployComponents(componentForDeploy);
             if (res != OK)
                 return res;
@@ -164,7 +156,6 @@ class Deployer {
         }
     }
 
-    //TODO change URL to Path(String)
     private DeploymentResult doCommands(List<IComponent> components, Command cmd) {
         DeploymentResult res = OK;
         for (IComponent component : components) {
@@ -175,18 +166,8 @@ class Deployer {
         return res;
     }
 
-    //TODO empty structures
     Map<Command, List<IComponent>> compareProductStructures(IProductStructure requiredPS, IProductStructure deployedPS) {
         Map<Command, List<IComponent>> comparedComponents = new HashMap<>();
-        if (deployedPS.getComponents() == null) {
-            comparedComponents.put(DEPLOY, requiredPS.getComponents());
-            return comparedComponents;
-        }
-        if (requiredPS.getComponents() == null) {
-            comparedComponents.put(UNDEPLOY, deployedPS.getComponents());
-            return comparedComponents;
-        }
-        //TODO equals hashcode
         List<IComponent> requiredArts = requiredPS.getComponents();
         List<IComponent> deployedArts = deployedPS.getComponents();
         List<IComponent> artsForUndeploy = new ArrayList<>(deployedArts);
@@ -239,8 +220,8 @@ class Deployer {
         DeploymentResult res;
         List<IComponentDeployer> successfulDeployers = new ArrayList<>();
         for (IComponentDeployer deployer : deployers) {
-            DeploymentContext context = downloader.getDepCtx().get(component.getArtifactCoords().getArtifactId());
-            context.setDeploymentURL(deploymentUrl);
+            DeploymentContext context = downloader.getContextByArtifactId(component.getArtifactCoords().getArtifactId());
+            context.setDeploymentPath(deploymentPath);
             deployer.init(context);
             switch (command) {
                 case DEPLOY:

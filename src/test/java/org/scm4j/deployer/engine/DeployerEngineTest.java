@@ -3,11 +3,15 @@ package org.scm4j.deployer.engine;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
-import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.DeploymentResult;
+import org.scm4j.deployer.api.IDeploymentContext;
+import org.scm4j.deployer.api.IProduct;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
 import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
+import org.scm4j.deployer.engine.products.DeployedProduct;
+import org.scm4j.deployer.engine.products.EmptyProduct;
+import org.scm4j.deployer.engine.products.OkProduct;
 import org.scm4j.deployer.engine.products.ProductDescription;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -265,7 +269,7 @@ public class DeployerEngineTest {
     public void testCollectDeploymentContext() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         de.download(untillArtifactId, "123.4");
-        DeploymentContext ctx = de.getDownloader().getDepCtx().get("UBL");
+        IDeploymentContext ctx = (IDeploymentContext) de.getDownloader().getDepCtx().get("UBL");
         assertEquals(ctx.getMainArtifact(), "UBL");
         assertTrue(ctx.getArtifacts().containsKey("UBL"));
         assertTrue(ctx.getArtifacts().containsKey("axis"));
@@ -282,6 +286,7 @@ public class DeployerEngineTest {
     @Test
     public void testDeploy() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
+        Deployer dep = de.getDeployer();
         DeploymentResult dr = de.deploy(untillArtifactId, "124.5");
         assertEquals(dr.getProductCoords(), untillCoords);
         assertEquals(dr, OK);
@@ -289,21 +294,19 @@ public class DeployerEngineTest {
         assertEquals(dr, ALREADY_INSTALLED);
         Map<String, Object> yaml = de.listDeployedProducts();
         ProductDescription prod = (ProductDescription) yaml.get(untillCoords);
-        assertEquals(prod.getDeploymentUrlToString(), de.getDownloader().getProduct().getProductStructure().getDefaultDeploymentURL().toString());
+        assertEquals(prod.getDeploymentPath(), de.getDownloader().getProduct().getProductStructure().getDefaultDeploymentPath());
         assertEquals(prod.getProductVersion(), "124.5");
-//        System.out.println("============OkDeployer started============");
-//        dr = dep.deploy(new OkStructure(), "test", "0.0.0");
-//        assertEquals(dr, OK);
-//        OkDeployer.setCount(0);
-//        System.out.println("============FailedDeployer started============");
-//        dr = dep.deploy(new FailStructure(), "test", "0.0.0");
-//        assertEquals(dr, FAILED);
-//        System.out.println("============RebootDeployer started============");
-//        dr = dep.deploy(new RebootStructure(), "test", "0.0.0");
-//        assertEquals(dr, NEED_REBOOT);
-//        assertEquals(OkDeployer.getCount(), 0);
-//        assertEquals(FailedDeployer.getCount(), 1);
-//        assertEquals(RebootDeployer.getCount(), 1);
+        //test deployer
+        IProduct okProduct = new OkProduct();
+        IProduct emptyProduct = new EmptyProduct();
+        dr = dep.deploy(okProduct, null, untillArtifactId, "1.0");
+        assertEquals(OK, dr);
+        DeployedProduct depPr = new DeployedProduct();
+        depPr.setDeploymentPath(okProduct.getProductStructure().getDefaultDeploymentPath());
+        depPr.setProductVersion("1.0");
+        depPr.setProductStructure(okProduct.getProductStructure());
+        dr = dep.deploy(emptyProduct, depPr, untillArtifactId, "1.0");
+        assertEquals(OK, dr);
     }
 
     @Test

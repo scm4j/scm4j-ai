@@ -39,6 +39,10 @@ public class DeployerEngineTest {
     private static final String TEST_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
             .getPath();
 
+    public static String getTestDir() {
+        return TEST_DIR;
+    }
+
     private static AITestEnvironment env = new AITestEnvironment();
 
     private static String ublArtifactId = "UBL";

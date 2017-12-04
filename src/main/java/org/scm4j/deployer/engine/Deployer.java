@@ -118,7 +118,7 @@ class Deployer {
         String productName = artifactId + "-" + version;
         if (!requiredProduct.getDependentProducts().isEmpty()) {
             res = deployDependent(requiredProduct);
-            if (res == OK || res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS)
+            if (res == FAILED || res == NEED_REBOOT || res == INCOMPATIBLE_API_VERSION)
                 return res;
         }
         Map<Command, List<IComponent>> changedComponents;

@@ -1,6 +1,7 @@
 package org.scm4j.deployer.engine;
 
 import org.apache.commons.io.FileUtils;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -95,7 +96,7 @@ public class DeployerTest {
         return downloader;
     }
 
-    private DeployedProduct createDeployedProduct() {
+    public static DeployedProduct createDeployedProduct() {
         DeployedProduct prod = new DeployedProduct();
         prod.setDeploymentPath("C:/");
         prod.setProductVersion("1.0");
@@ -117,5 +118,23 @@ public class DeployerTest {
         res = dep.deploy(new EmptyProduct(), prod, "ok", "1.0");
         assertEquals(OK, res);
         assertEquals(3, OkDeployer.getCount());
+    }
+
+    @Test
+    public void testLegacyProduct() throws Exception {
+        IDownloader downloader = mockDeploymentContext();
+        when(downloader.getProductFile(anyString())).thenReturn(new File("C:/"));
+        when(downloader.getProduct()).thenReturn(new LegacyProduct());
+        Deployer dep = new Deployer(null, new File(DeployerEngineTest.getTestDir()), downloader);
+        DeploymentResult dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:1.0"));
+        assertEquals(ALREADY_INSTALLED, dr);
+        afterClass();
+        beforeClass();
+        dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:123.4"));
+        assertEquals(OK, dr);
+        afterClass();
+        beforeClass();
+        dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:0.4"));
+        assertEquals(NEWER_VERSION_EXISTS, dr);
     }
 }

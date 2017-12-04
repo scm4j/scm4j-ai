@@ -1,6 +1,7 @@
 package org.scm4j.deployer.engine;
 
 import lombok.Cleanup;
+import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
@@ -15,6 +16,7 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 
+@Data
 class ArtifactoryReader {
 
     static final String METADATA_FILE_NAME = "maven-metadata.xml";

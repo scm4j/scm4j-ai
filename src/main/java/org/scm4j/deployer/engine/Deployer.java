@@ -9,8 +9,6 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.scm4j.deployer.api.*;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
-import org.scm4j.deployer.engine.products.DeployedProduct;
-import org.scm4j.deployer.engine.products.ProductDescription;
 
 import java.io.File;
 import java.util.*;
@@ -66,12 +64,7 @@ class Deployer {
                 res.setProductCoords(coords);
                 return res;
             }
-            deployedProduct = new DeployedProduct();
-            deployedProduct.setProductVersion(deployedVersion);
-            deployedProduct.setDeploymentPath(productDescription.getDeploymentPath());
-            downloader.getProductFile(coords + ":" + productDescription.getProductVersion());
-            IProductStructure ps = downloader.getProduct().getProductStructure();
-            deployedProduct.setProductStructure(ps);
+            deployedProduct = createDeployedProduct(coords, deployedVersion, productDescription);
         } else if (version.equals("")) {
             log.info(productName + " isn't installed!");
             res = OK;
@@ -80,40 +73,61 @@ class Deployer {
         } else if (requiredProduct instanceof ILegacyProduct) {
             deployedProduct = ((ILegacyProduct) requiredProduct).queryLegacyDeployedProduct();
             if (deployedProduct != null) {
-                DefaultArtifactVersion vers = new DefaultArtifactVersion(version);
-                DefaultArtifactVersion legacyVers = new DefaultArtifactVersion(deployedProduct.getProductVersion());
-                if (vers.compareTo(legacyVers) == 0) {
-                    log.info(productName + " already installed!");
-                    res = ALREADY_INSTALLED;
-                    res.setProductCoords(coords);
+                res = compareVersionWithLegacyVersion(version, deployedProduct.getProductVersion(), productName, coords);
+                if (res != OK)
                     return res;
-                }
-                if (vers.compareTo(legacyVers) < 0) {
-                    log.info(productName + " newer version exist");
-                    res = NEWER_VERSION_EXISTS;
-                    res.setProductCoords(coords);
-                    return res;
-                }
             }
         } else {
             deployedProduct = null;
         }
-        res = deploy(requiredProduct, deployedProduct, artifactId, version);
+        res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version);
         res.setProductCoords(coords);
         if (res != OK)
             return res;
-        ProductDescription newProduct = new ProductDescription();
-        newProduct.setProductVersion(version);
-        newProduct.setDeploymentPath(deploymentPath);
-        newProduct.setDeploymentTime(System.currentTimeMillis());
+        ProductDescription newProduct = createProductDescription(version);
         deployedProducts.put(coords, newProduct);
         Utils.writeYaml(deployedProducts, deployedProductsFile);
         return res;
     }
 
+    private ProductDescription createProductDescription(String version) {
+        ProductDescription newProduct = new ProductDescription();
+        newProduct.setProductVersion(version);
+        newProduct.setDeploymentPath(deploymentPath);
+        newProduct.setDeploymentTime(System.currentTimeMillis());
+        return newProduct;
+    }
+
+    private DeploymentResult compareVersionWithLegacyVersion(String version, String legacyVersion, String productName, String coords) {
+        DeploymentResult res = OK;
+        DefaultArtifactVersion vers = new DefaultArtifactVersion(version);
+        DefaultArtifactVersion legacyVers = new DefaultArtifactVersion(legacyVersion);
+        if (vers.compareTo(legacyVers) == 0) {
+            log.info(productName + " already installed!");
+            res = ALREADY_INSTALLED;
+        }
+        if (vers.compareTo(legacyVers) < 0) {
+            log.info(productName + " newer version exist");
+            res = NEWER_VERSION_EXISTS;
+        }
+        res.setProductCoords(coords);
+        return res;
+    }
+
+    @SneakyThrows
+    private DeployedProduct createDeployedProduct(String coords, String deployedVersion, ProductDescription productDescription) throws EIncompatibleApiVersion {
+        DeployedProduct deployedProduct = new DeployedProduct();
+        deployedProduct.setProductVersion(deployedVersion);
+        deployedProduct.setDeploymentPath(productDescription.getDeploymentPath());
+        downloader.getProductFile(coords + ":" + productDescription.getProductVersion());
+        IProductStructure ps = downloader.getProduct().getProductStructure();
+        deployedProduct.setProductStructure(ps);
+        return deployedProduct;
+    }
+
     @SneakyThrows
     @SuppressWarnings("unchecked")
-    DeploymentResult deploy(IProduct requiredProduct, IDeployedProduct deployedProduct, String artifactId, String version) throws EIncompatibleApiVersion {
+    DeploymentResult compareAndDeployProducts(IProduct requiredProduct, IDeployedProduct deployedProduct, String artifactId, String version) throws EIncompatibleApiVersion {
         DeploymentResult res;
         String productName = artifactId + "-" + version;
         if (!requiredProduct.getDependentProducts().isEmpty()) {
@@ -220,7 +234,11 @@ class Deployer {
         DeploymentResult res;
         List<IComponentDeployer> successfulDeployers = new ArrayList<>();
         for (IComponentDeployer deployer : deployers) {
-            DeploymentContext context = downloader.getContextByArtifactId(component.getArtifactCoords().getArtifactId());
+            DeploymentContext context;
+            if (component.getArtifactCoords().getArtifactId().equals("legacyComponent"))
+                context = new DeploymentContext("legacyProduct");
+            else
+                context = downloader.getContextByArtifactId(component.getArtifactCoords().getArtifactId());
             context.setDeploymentPath(deploymentPath);
             deployer.init(context);
             switch (command) {

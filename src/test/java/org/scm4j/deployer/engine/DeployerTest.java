@@ -70,15 +70,15 @@ public class DeployerTest {
         DeployedProduct prod = createDeployedProduct();
         IProduct failProduct = new FailProduct();
         IProduct rebootProduct = new RebootProduct();
-        DeploymentResult dr = dep.deploy(okProduct, null, "ok", "1.0");
+        DeploymentResult dr = dep.compareAndDeployProducts(okProduct, null, "ok", "1.0");
         assertEquals(OK, dr);
-        dr = dep.deploy(new EmptyProduct(), prod, "ok", "1.0");
+        dr = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0");
         assertEquals(OK, dr);
-        dr = dep.deploy(failProduct, prod, "ok", "1.0");
+        dr = dep.compareAndDeployProducts(failProduct, prod, "ok", "1.0");
         assertEquals(FAILED, dr);
         assertEquals(1, FailedDeployer.getCount());
         assertEquals(0, OkDeployer.getCount());
-        dr = dep.deploy(rebootProduct, prod, "ok", "1.0");
+        dr = dep.compareAndDeployProducts(rebootProduct, prod, "ok", "1.0");
         assertEquals(NEED_REBOOT, dr);
         assertEquals(1, RebootDeployer.getCount());
         assertEquals(0, OkDeployer.getCount());
@@ -112,10 +112,10 @@ public class DeployerTest {
         DeployedProduct prod = createDeployedProduct();
         DependentProduct depProd = new DependentProduct();
         Deployer dep = new Deployer(null, new File(DeployerEngineTest.getTestDir()), downloader);
-        DeploymentResult res = dep.deploy(depProd, null, "ok", "1.0");
+        DeploymentResult res = dep.compareAndDeployProducts(depProd, null, "ok", "1.0");
         assertEquals(OK, res);
         assertEquals(6, OkDeployer.getCount());
-        res = dep.deploy(new EmptyProduct(), prod, "ok", "1.0");
+        res = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0");
         assertEquals(OK, res);
         assertEquals(3, OkDeployer.getCount());
     }

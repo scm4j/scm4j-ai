@@ -96,7 +96,7 @@ public class DeployerTest {
         return downloader;
     }
 
-    public static DeployedProduct createDeployedProduct() {
+    private static DeployedProduct createDeployedProduct() {
         DeployedProduct prod = new DeployedProduct();
         prod.setDeploymentPath("C:/");
         prod.setProductVersion("1.0");

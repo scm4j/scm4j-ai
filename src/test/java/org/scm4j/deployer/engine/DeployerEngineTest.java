@@ -26,7 +26,6 @@ import static org.junit.Assert.*;
 import static org.scm4j.deployer.api.DeploymentResult.ALREADY_INSTALLED;
 import static org.scm4j.deployer.api.DeploymentResult.OK;
 
-
 public class DeployerEngineTest {
 
     private static final String TEST_UBL_22_2_CONTENT = "ubl 22.2 artifact content";
@@ -327,7 +326,7 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testFails() {
+    public void testProductListFails() {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory2Url());
         try {
             de.listProducts();
@@ -339,4 +338,13 @@ public class DeployerEngineTest {
         } catch (Exception e) {
         }
     }
+
+    @Test
+    public void testLombok() {
+        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
+        assertEquals(env.getEnvFolder(), de.getWorkingFolder());
+        assertEquals(de.getPortableFolder(), de.getWorkingFolder());
+        assertEquals(env.getArtifactory1Url(), de.getProductListArtifactoryUrl());
+    }
+
 }

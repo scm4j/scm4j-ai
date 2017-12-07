@@ -26,13 +26,11 @@ class Deployer {
     private static final String DEPLOYED_PRODUCTS = "deployed-products.yml";
 
     private final File workingFolder;
-    private final File portableFolder;
     private final File deployedProductsFile;
     private String deploymentPath;
 
-    Deployer(File portableFolder, File workingFolder, IDownloader downloader) {
+    Deployer(File workingFolder, IDownloader downloader) {
         this.workingFolder = workingFolder;
-        this.portableFolder = portableFolder;
         this.downloader = downloader;
         deployedProductsFile = new File(workingFolder, DEPLOYED_PRODUCTS);
     }

@@ -19,7 +19,6 @@ public class DeployerEngine implements IProductDeployer {
     private final String productListArtifactoryUrl;
     private final Downloader downloader;
     private final Deployer deployer;
-    private final ProductList list;
 
     public DeployerEngine(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
         if (portableFolder == null)
@@ -28,8 +27,7 @@ public class DeployerEngine implements IProductDeployer {
         this.portableFolder = portableFolder;
         this.productListArtifactoryUrl = productListArtifactoryUrl;
         this.downloader = new Downloader(portableFolder, workingFolder, productListArtifactoryUrl);
-        this.deployer = new Deployer(portableFolder, workingFolder, downloader);
-        this.list = downloader.getProductList();
+        this.deployer = new Deployer(workingFolder, downloader);
     }
 
     @Override
@@ -55,21 +53,21 @@ public class DeployerEngine implements IProductDeployer {
     @SneakyThrows
     @SuppressWarnings("unchecked")
     public List<String> listProducts() {
-        Map<String, Map<String, String>> entry = list.readFromProductList();
+        Map<String, Map<String, String>> entry = downloader.getProductList().readFromProductList();
         return new ArrayList<>(entry.get(ProductList.PRODUCTS).values());
     }
 
     @Override
     @SneakyThrows
     public List<String> refreshProducts() {
-        list.downloadProductList();
+        downloader.getProductList().downloadProductList();
         return listProducts();
     }
 
     @Override
     public Map<String, Boolean> listProductVersions(String artifactId) {
         Optional<Set<String>> versions = Optional.ofNullable
-                (list.readProductVersions(artifactId).get(artifactId));
+                (downloader.getProductList().readProductVersions(artifactId).get(artifactId));
         Map<String, Boolean> downloadedVersions = new LinkedHashMap<>();
         versions.ifPresent(strings -> strings.forEach
                 (version -> downloadedVersions.put(version, versionExists(artifactId, version))));
@@ -85,7 +83,7 @@ public class DeployerEngine implements IProductDeployer {
     @Override
     public Map<String, Boolean> refreshProductVersions(String artifactId) {
         try {
-            list.refreshProductVersions(Utils.getGroupId(downloader, artifactId), artifactId);
+            downloader.getProductList().refreshProductVersions(Utils.getGroupId(downloader, artifactId), artifactId);
         } catch (ENoMetadata e) {
             throw new RuntimeException();
         }

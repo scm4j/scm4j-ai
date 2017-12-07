@@ -43,7 +43,8 @@ public class DeployerTest {
     @Test
     public void testCompareProductStructures() {
         Downloader downloader = mock(Downloader.class);
-        Deployer dep = new Deployer(null, new File("C:/"), downloader);
+        Deployer dep = new Deployer(new File("C:/"), downloader);
+        assertEquals(new File("C:/"), dep.getWorkingFolder());
         IProductStructure okStructure = new OkProduct().getProductStructure();
         IProductStructure failStructure = new FailProduct().getProductStructure();
         IProductStructure rebootStructure = new RebootProduct().getProductStructure();
@@ -66,12 +67,13 @@ public class DeployerTest {
     @Test
     public void testDeploy() throws Exception {
         IDownloader downloader = mockDeploymentContext();
-        Deployer dep = new Deployer(null, new File("C:/"), downloader);
+        Deployer dep = new Deployer(new File("C:/"), downloader);
         IProduct okProduct = new OkProduct();
         DeployedProduct prod = createDeployedProduct();
         IProduct failProduct = new FailProduct();
         IProduct rebootProduct = new RebootProduct();
         DeploymentResult dr = dep.compareAndDeployProducts(okProduct, null, "ok", "1.0");
+        assertEquals("file://C:/unTill", dep.getDeploymentPath());
         assertEquals(OK, dr);
         dr = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0");
         assertEquals(OK, dr);
@@ -112,7 +114,7 @@ public class DeployerTest {
         when(downloader.getProduct()).thenReturn(new OkProduct());
         DeployedProduct prod = createDeployedProduct();
         DependentProduct depProd = new DependentProduct();
-        Deployer dep = new Deployer(null, new File(DeployerEngineTest.getTestDir()), downloader);
+        Deployer dep = new Deployer(new File(DeployerEngineTest.getTestDir()), downloader);
         DeploymentResult res = dep.compareAndDeployProducts(depProd, null, "ok", "1.0");
         assertEquals(OK, res);
         assertEquals(6, OkDeployer.getCount());
@@ -126,7 +128,7 @@ public class DeployerTest {
         IDownloader downloader = mockDeploymentContext();
         when(downloader.getProductFile(anyString())).thenReturn(new File("C:/"));
         when(downloader.getProduct()).thenReturn(new LegacyProduct());
-        Deployer dep = new Deployer(null, new File(DeployerEngineTest.getTestDir()), downloader);
+        Deployer dep = new Deployer(new File(DeployerEngineTest.getTestDir()), downloader);
         DeploymentResult dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:1.0"));
         assertEquals(ALREADY_INSTALLED, dr);
         afterClass();

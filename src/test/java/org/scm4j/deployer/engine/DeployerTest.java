@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -136,5 +137,19 @@ public class DeployerTest {
         beforeClass();
         dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:0.4"));
         assertEquals(NEWER_VERSION_EXISTS, dr);
+    }
+
+    @Test
+    public void testProductDescription() throws Exception {
+        ProductDescription pd = new ProductDescription();
+        pd.setProductVersion("1.0");
+        pd.setDeploymentPath("C:/");
+        pd.setDeploymentTime(System.currentTimeMillis());
+        Thread.sleep(1);
+        ProductDescription pd1 = new ProductDescription();
+        pd1.setProductVersion("1.0");
+        pd1.setDeploymentPath("C:/");
+        pd1.setDeploymentTime(System.currentTimeMillis());
+        assertTrue(pd.equals(pd1));
     }
 }

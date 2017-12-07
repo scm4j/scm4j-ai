@@ -345,6 +345,11 @@ public class DeployerEngineTest {
         assertEquals(env.getEnvFolder(), de.getWorkingFolder());
         assertEquals(de.getPortableFolder(), de.getWorkingFolder());
         assertEquals(env.getArtifactory1Url(), de.getProductListArtifactoryUrl());
+        try {
+            Utils.getExportedClassName(env.getEnvFolder());
+            fail();
+        } catch (Exception e) {
+        }
     }
 
 }

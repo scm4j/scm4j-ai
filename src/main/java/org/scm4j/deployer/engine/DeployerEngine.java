@@ -48,7 +48,7 @@ public class DeployerEngine implements IProductDeployer {
     public File download(String artifactId, String version) {
         listProducts();
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
-        return downloader.getProductFile(artifact.toString());
+        return downloader.getProductWithDependency(artifact.toString());
     }
 
     @Override

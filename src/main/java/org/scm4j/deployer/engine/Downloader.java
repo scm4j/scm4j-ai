@@ -73,6 +73,26 @@ class Downloader implements IDownloader {
         return getProductFile(art.getGroupId(), art.getArtifactId(), art.getVersion(), art.getExtension());
     }
 
+    @Override
+    public File getProductWithDependency(String coords) throws EIncompatibleApiVersion {
+        Artifact art = new DefaultArtifact(coords);
+        File product = getProductFile(coords);
+        String fileRelativePath = Utils.coordsToRelativeFilePath(art.getGroupId(), art.getArtifactId(),
+                art.getVersion(), art.getExtension());
+        if (product.equals(new File(portableRepository, fileRelativePath)))
+            loadProductDependency(portableRepository);
+        else
+            loadProductDependency(workingRepository);
+        return product;
+    }
+
+    @Override
+    public void loadProductDependency(File repository) {
+        List<Artifact> artifacts = componentsToArtifacts();
+        artifacts = resolveDependencies(artifacts);
+        saveComponents(artifacts, repository);
+    }
+
     private File getProductFile(String groupId, String artifactId, String version, String extension) throws EIncompatibleApiVersion {
         if (productList.getRepos() == null || productList.getProducts() == null) {
             throw new EProductListEntryNotFound("Product list doesn't loaded");
@@ -85,13 +105,14 @@ class Downloader implements IDownloader {
             saveProduct(artifacts, workingRepository, res);
             res = new File(workingRepository, fileRelativePath);
         } else {
-            res = download(groupId, artifactId, version, extension, res);
+            res = downloadProduct(groupId, artifactId, version, extension, res);
             if (res == null) {
                 throw new EProductNotFound(Utils.coordsToString(groupId, artifactId, version, extension)
                         + " is not found in all known repositories");
             }
         }
         try {
+            product.getProductStructure();
             loader.close();
             FileUtils.deleteDirectory(TMP_REPOSITORY);
         } catch (Exception e) {
@@ -104,12 +125,9 @@ class Downloader implements IDownloader {
         artifacts = saveComponents(artifacts, repository);
         instantiateClassLoader(artifacts);
         loadProduct(productFile);
-        artifacts = componentsToArtifacts();
-        artifacts = resolveDependencies(artifacts);
-        saveComponents(artifacts, repository);
     }
 
-    private File download(String groupId, String artifactId, String version, String extension, File productFile) throws EIncompatibleApiVersion {
+    private File downloadProduct(String groupId, String artifactId, String version, String extension, File productFile) throws EIncompatibleApiVersion {
         for (ArtifactoryReader repo : productList.getRepos()) {
             try {
                 if (!productList.getProducts().keySet().contains(Utils.coordsToString(groupId, artifactId))
@@ -122,9 +140,6 @@ class Downloader implements IDownloader {
             List<Artifact> artifacts = resolveDependencies(
                     Collections.singletonList(new DefaultArtifact(groupId, artifactId, extension, version)));
             saveProduct(artifacts, portableRepository, productFile);
-            File localMetadataFolder = new File(portableRepository, Utils.coordsToFolderStructure(groupId, artifactId));
-            File localMetadata = new File(localMetadataFolder, ArtifactoryReader.LOCAL_METADATA_FILE_NAME);
-            localMetadata.renameTo(new File(localMetadataFolder, ArtifactoryReader.METADATA_FILE_NAME));
             return productFile;
         }
         return null;

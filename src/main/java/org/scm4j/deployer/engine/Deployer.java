@@ -74,20 +74,31 @@ class Deployer {
             deployedProduct = ((ILegacyProduct) requiredProduct).queryLegacyDeployedProduct();
             if (deployedProduct != null) {
                 res = compareVersionWithLegacyVersion(version, deployedProduct.getProductVersion(), productName, coords);
+                if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
+                    deploymentPath = deployedProduct.getDeploymentPath();
+                    writeProductDescriptionInDeployedProductsYaml(coords, version);
+                }
                 if (res != OK)
                     return res;
             }
         } else {
             deployedProduct = null;
         }
+        downloader.loadProductDependency(new File(workingFolder, "repository"));
         res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version);
         res.setProductCoords(coords);
         if (res != OK)
             return res;
-        ProductDescription newProduct = createProductDescription(version);
-        deployedProducts.put(coords, newProduct);
-        Utils.writeYaml(deployedProducts, deployedProductsFile);
+        writeProductDescriptionInDeployedProductsYaml(coords, version);
         return res;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void writeProductDescriptionInDeployedProductsYaml(String coords, String version) {
+        ProductDescription productDescription = createProductDescription(version);
+        Map<String, ProductDescription> deployedProducts = Utils.readYml(deployedProductsFile);
+        deployedProducts.put(coords, productDescription);
+        Utils.writeYaml(deployedProducts, deployedProductsFile);
     }
 
     private ProductDescription createProductDescription(String version) {

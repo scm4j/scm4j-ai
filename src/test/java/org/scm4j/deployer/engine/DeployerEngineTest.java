@@ -326,4 +326,17 @@ public class DeployerEngineTest {
         assertEquals(OkDeployer.getCount(), 0);
     }
 
+    @Test
+    public void testFails() {
+        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory2Url());
+        try {
+            de.listProducts();
+            fail();
+        } catch (Exception e) {
+        }
+        try {
+            de.refreshProducts();
+        } catch (Exception e) {
+        }
+    }
 }

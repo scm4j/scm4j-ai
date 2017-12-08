@@ -144,8 +144,8 @@ class ArtifactoryWriter {
 
         Map products = getProductListContent(remoteProductListFileLocation);
 
-        if (!((Map) products.get(ProductList.PRODUCTS)).keySet().contains(Utils.coordsToString(groupId, artifactId))) {
-            ((Map) products.get(ProductList.PRODUCTS)).put(Utils.coordsToString(groupId, artifactId), artifactId);
+        if (!((Map) products.get(ProductList.PRODUCTS)).keySet().contains(groupId + ":" + artifactId)) {
+            ((Map) products.get(ProductList.PRODUCTS)).put(groupId + ":" + artifactId, artifactId);
             remoteProductListFileLocation.delete();
             remoteProductListFileLocation.createNewFile();
             writeProductListContent(products, remoteProductListFileLocation);

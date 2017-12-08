@@ -18,7 +18,6 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -152,14 +151,8 @@ public class DeployerEngineTest {
                 new File("/guava/20.0/guava-20.0.jar").getPath());
         assertEquals(Utils.coordsToRelativeFilePath("com.google.guava", "guava", "20.0", "jar"),
                 new File("com/google/guava/guava/20.0/guava-20.0.jar").getPath());
-
-        ArtifactoryReader repo = new ArtifactoryReader(env.getArtifactory1Url(), null, null);
-        URL url = new URL(env.getArtifactory1Folder().toURI().toURL(), "com/google/guava/guava/20.0/guava-20.0.jar");
-        URL expectedURL = repo.getProductUrl("com.google.guava", "guava", "20.0", "jar");
-        assertEquals(expectedURL, url);
     }
 
-    //TODO refactor
     @Test
     public void testLoadRepos() throws Exception {
         Downloader loader = new Downloader(null, env.getEnvFolder(), env.getArtifactory1Url());

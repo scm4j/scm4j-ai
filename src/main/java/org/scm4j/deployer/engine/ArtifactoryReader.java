@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Data
-class ArtifactoryReader {
+public class ArtifactoryReader {
 
     static final String METADATA_FILE_NAME = "maven-metadata.xml";
     static final String LOCAL_METADATA_FILE_NAME = "maven-metadata-local.xml";
@@ -27,7 +27,7 @@ class ArtifactoryReader {
     private final String userName;
 
     @SneakyThrows
-    ArtifactoryReader(String url, String userName, String password) {
+    private ArtifactoryReader(String url, String userName, String password) {
         this.userName = userName;
         this.password = password;
         this.url = new URL(StringUtils.appendIfMissing(url, "/"));
@@ -50,11 +50,11 @@ class ArtifactoryReader {
     @SneakyThrows
     List<String> getProductVersions(String groupId, String artifactId) {
         MetadataXpp3Reader reader = new MetadataXpp3Reader();
-        URL url = getProductMetaDataURL(groupId, artifactId);
+        URL url = getProductMetaDataURL(groupId, artifactId, METADATA_FILE_NAME);
         try {
             return readVersions(url, reader);
         } catch (FileNotFoundException e) {
-            url = getProductLocalMetaDataURL(groupId, artifactId);
+            url = getProductMetaDataURL(groupId, artifactId, LOCAL_METADATA_FILE_NAME);
             try {
                 return readVersions(url, reader);
             } catch (FileNotFoundException e1) {
@@ -76,7 +76,7 @@ class ArtifactoryReader {
     String getProductListReleaseVersion() {
         @Cleanup
         InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID,
-                ProductList.PRODUCT_LIST_ARTIFACT_ID));
+                ProductList.PRODUCT_LIST_ARTIFACT_ID, METADATA_FILE_NAME));
         MetadataXpp3Reader reader = new MetadataXpp3Reader();
         Metadata meta = reader.read(is);
         Versioning vers = meta.getVersioning();
@@ -99,19 +99,8 @@ class ArtifactoryReader {
     }
 
     @SneakyThrows
-    private URL getProductMetaDataURL(String groupId, String artifactId) {
-        return new URL(new URL(url, Utils.coordsToUrlStructure(groupId, artifactId) + "/"), METADATA_FILE_NAME);
-    }
-
-    @SneakyThrows
-    private URL getProductLocalMetaDataURL(String groupId, String artifactId) {
-        return new URL(new URL(url, Utils.coordsToUrlStructure(groupId, artifactId) + "/"), LOCAL_METADATA_FILE_NAME);
-    }
-
-    @SneakyThrows
-    URL getProductUrl(String groupId, String artifactId, String version, String extension) {
-        return new URL(this.url, Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension)
-                .replace("\\", "/"));
+    private URL getProductMetaDataURL(String groupId, String artifactId, String metadataName) {
+        return new URL(new URL(this.url, (groupId + "/" + artifactId).replace('.', '/') + "/"), metadataName);
     }
 
     @Override

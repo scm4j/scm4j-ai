@@ -107,7 +107,7 @@ class Downloader implements IDownloader {
         } else {
             res = downloadProduct(groupId, artifactId, version, extension, res);
             if (res == null) {
-                throw new EProductNotFound(Utils.coordsToString(groupId, artifactId, version, extension)
+                throw new EProductNotFound(Utils.coordsToFileName(groupId, artifactId, version)
                         + " is not found in all known repositories");
             }
         }
@@ -130,7 +130,7 @@ class Downloader implements IDownloader {
     private File downloadProduct(String groupId, String artifactId, String version, String extension, File productFile) throws EIncompatibleApiVersion {
         for (ArtifactoryReader repo : productList.getRepos()) {
             try {
-                if (!productList.getProducts().keySet().contains(Utils.coordsToString(groupId, artifactId))
+                if (!productList.getProducts().keySet().contains(groupId + ":" + artifactId)
                         || !repo.getProductVersions(groupId, artifactId).contains(version)) {
                     continue;
                 }

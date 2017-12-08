@@ -25,15 +25,12 @@ class ProductList {
     public static final String PRODUCT_LIST_ARTIFACT_ID = "product-list";
     public static final String REPOSITORIES = "Repositories";
     public static final String PRODUCTS = "Products";
-    public static final String VERSIONS = "Versions";
     public static final String VERSIONS_ARTIFACT_ID = "products-versions.yml";
-    public static final String DOWNLOADED_PRODUCTS = "downloaded products";
     private final ArtifactoryReader productListReader;
     private final File localRepo;
     private List<ArtifactoryReader> repos;
     private Map<String, String> products;
     private Set<String> versions;
-    private List<String> downloadedProducts;
     private File localProductList;
     private File versionsYml;
     private Map productListEntry;
@@ -61,10 +58,10 @@ class ProductList {
 
     void downloadProductList() throws Exception {
         String productListReleaseVersion = productListReader.getProductListReleaseVersion();
-        URL remoteProductListUrl = productListReader.getProductUrl(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
+        String productListPath = Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
                 productListReleaseVersion, ".yml");
-        localProductList = new File(localRepo, Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
-                productListReleaseVersion, ".yml"));
+        URL remoteProductListUrl = new URL(productListReader.getUrl(), productListPath.replace("\\", File.separator));
+        localProductList = new File(localRepo, productListPath);
         if (!localProductList.exists()) {
             localProductList.getParentFile().mkdirs();
             localProductList.createNewFile();
@@ -129,7 +126,7 @@ class ProductList {
     }
 
     @SneakyThrows
-    String getLocalProductListReleaseVersion() {
+    private String getLocalProductListReleaseVersion() {
         File metadataFolder = new File(localRepo, Utils.coordsToFolderStructure(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID));
         File metadataFile = new File(metadataFolder, ArtifactoryReader.METADATA_FILE_NAME);
         if (metadataFile.exists()) {

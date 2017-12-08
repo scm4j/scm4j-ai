@@ -36,14 +36,6 @@ import java.util.stream.Collectors;
 
 public class Utils {
 
-    public static String coordsToString(String groupId, String artifactId, String version, String extension) {
-        return coordsToString(groupId, artifactId) + ":" + version + ":" + StringUtils.prependIfMissing(extension, ".");
-    }
-
-    public static String coordsToString(String groupId, String artifactId) {
-        return groupId + ":" + artifactId;
-    }
-
     public static String coordsToFileName(String artifactId, String version, String extension) {
         return artifactId + "-" + version + StringUtils.prependIfMissing(extension, ".");
     }
@@ -59,10 +51,6 @@ public class Utils {
     public static String coordsToRelativeFilePath(String groupId, String artifactId, String version, String extension) {
         return new File(coordsToFolderStructure(groupId, artifactId, version),
                 coordsToFileName(artifactId, version, StringUtils.prependIfMissing(extension, "."))).getPath();
-    }
-
-    public static String coordsToUrlStructure(String groupId, String artifactId) {
-        return coordsToString(groupId, artifactId).replace(".", "/").replace(":", "/");
     }
 
     public static RepositorySystem newRepositorySystem() {

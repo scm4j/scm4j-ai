@@ -3,6 +3,7 @@ package org.scm4j.deployer.engine;
 import lombok.Cleanup;
 import lombok.Data;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -36,6 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Data
+@Slf4j
 class Downloader implements IDownloader {
 
     private static final String REPOSITORY_FOLDER_NAME = "repository";
@@ -242,6 +244,10 @@ class Downloader implements IDownloader {
                 .filter(dep -> dep.getArtifactId().equals(API_NAME))
                 .findFirst();
         String apiVersion = apiDep.map(org.apache.maven.model.Dependency::getVersion).orElse("");
+        if (log.isDebugEnabled()) {
+            log.debug("Product API version is " + apiVersion);
+            log.debug("Deployer API version is " + IProduct.class.getPackage().getSpecificationVersion());
+        }
         if (apiVersion.endsWith("SNAPSHOT") || apiVersion.isEmpty() ||
                 IProduct.class.getPackage().isCompatibleWith(apiVersion)) {
             String mainClassName = Utils.getExportedClassName(productFile);

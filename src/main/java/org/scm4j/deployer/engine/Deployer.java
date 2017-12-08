@@ -74,7 +74,7 @@ class Deployer {
                 res = compareVersionWithLegacyVersion(version, deployedProduct.getProductVersion(), productName, coords);
                 if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
                     deploymentPath = deployedProduct.getDeploymentPath();
-                    writeProductDescriptionInDeployedProductsYaml(coords, version);
+                    writeProductDescriptionInDeployedProductsYaml(coords, deployedProduct.getProductVersion());
                 }
                 if (res != OK)
                     return res;

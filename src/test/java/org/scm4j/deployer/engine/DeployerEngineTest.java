@@ -3,15 +3,11 @@ package org.scm4j.deployer.engine;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
-import org.scm4j.deployer.api.DeployedProduct;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IDeploymentContext;
-import org.scm4j.deployer.api.IProduct;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
 import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
-import org.scm4j.deployer.engine.products.EmptyProduct;
-import org.scm4j.deployer.engine.products.OkProduct;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -292,17 +288,6 @@ public class DeployerEngineTest {
         ProductDescription prod = (ProductDescription) yaml.get(untillCoords);
         assertEquals(prod.getDeploymentPath(), de.getDownloader().getProduct().getProductStructure().getDefaultDeploymentPath());
         assertEquals(prod.getProductVersion(), "124.5");
-        //test deployer
-        IProduct okProduct = new OkProduct();
-        IProduct emptyProduct = new EmptyProduct();
-        dr = dep.compareAndDeployProducts(okProduct, null, untillArtifactId, "1.0");
-        assertEquals(OK, dr);
-        DeployedProduct depPr = new DeployedProduct();
-        depPr.setDeploymentPath(okProduct.getProductStructure().getDefaultDeploymentPath());
-        depPr.setProductVersion("1.0");
-        depPr.setProductStructure(okProduct.getProductStructure());
-        dr = dep.compareAndDeployProducts(emptyProduct, depPr, untillArtifactId, "1.0");
-        assertEquals(OK, dr);
     }
 
     @Test

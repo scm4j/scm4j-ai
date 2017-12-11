@@ -30,6 +30,7 @@ public class DeployerEngine implements IProductDeployer {
         this.deployer = new Deployer(workingFolder, downloader);
     }
 
+    @SneakyThrows
     @Override
     public DeploymentResult deploy(String artifactId, String version) {
         listProducts();
@@ -41,12 +42,15 @@ public class DeployerEngine implements IProductDeployer {
         }
     }
 
-    @SneakyThrows
     @Override
     public File download(String artifactId, String version) {
         listProducts();
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
-        return downloader.getProductWithDependency(artifact.toString());
+        try {
+            return downloader.getProductWithDependency(artifact.toString());
+        } catch (EIncompatibleApiVersion e) {
+            throw new EIncompatibleApiVersion("Api versions are incompatible");
+        }
     }
 
     @Override

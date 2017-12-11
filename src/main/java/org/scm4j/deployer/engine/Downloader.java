@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 class Downloader implements IDownloader {
 
     private static final String REPOSITORY_FOLDER_NAME = "repository";
-    private static final File TMP_REPOSITORY = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp");
+    static final File TMP_REPOSITORY = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp");
     private static final String API_NAME = "scm4j-deployer-api";
     private final Map<String, IDeploymentContext> depCtx;
     private final ProductList productList;
@@ -229,6 +229,7 @@ class Downloader implements IDownloader {
         return product.getProductStructure().getComponents();
     }
 
+    @SneakyThrows
     private void loadProduct(File productFile) throws EIncompatibleApiVersion {
         MavenXpp3Reader mavenreader = new MavenXpp3Reader();
         File pomfile = new File(productFile.getParent(), productFile.getName().replace("jar", "pom"));
@@ -263,6 +264,10 @@ class Downloader implements IDownloader {
                 throw new RuntimeException();
             }
         } else {
+            if (loader != null)
+                loader.close();
+            if (TMP_REPOSITORY.exists())
+                FileUtils.forceDelete(Downloader.TMP_REPOSITORY);
             throw new EIncompatibleApiVersion("Can't load " + productFile.getName() + " class to classpath");
         }
     }

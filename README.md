@@ -56,7 +56,7 @@ Steps
   - if one of `dependency products` installation fails - `DP` installation fails
   - if `dependency product` installation returns `NEED_REBOOT` - `DP` returns `NEED_REBOOT`
 - If `DP`.version equals to `RP`.version then `ALREADY_INSTALLED` is returned
-- If `DP`.version grater then `RP`.version then `NEWER_VERSION_EXISTS` is returned
+- If `DP`.version greater then `RP`.version then `NEWER_VERSION_EXISTS` is returned
 - Stop `DP`
   - `DP` deployers and components are downloaded
   - All `DP` components are stopped in reverse order
@@ -73,7 +73,7 @@ If error occurs during component deployment previously deployed components are s
 
 # Self-upgrade
 
-org.scm4j.deployer.engine.Deployer
+Each version of `scm4j-deployer-engine` will be a new product to prevent  compatibility failures 
 
 # Related Components
 

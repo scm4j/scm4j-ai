@@ -27,12 +27,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import java.util.stream.Collectors;
 
 public class Utils {
 
@@ -102,13 +100,13 @@ public class Utils {
     }
 
     public static String getGroupId(Downloader downloader, String artifactId) {
-        List<String> groupAndArtifactID = downloader.getProductList().getProducts().keySet().stream()
+        String groupId = downloader.getProductList().getProducts().keySet().stream()
                 .filter(s -> s.contains(artifactId))
                 .limit(1)
-                .collect(Collectors.toList());
-        if (groupAndArtifactID.isEmpty())
+                .findFirst().orElse("").replace(":" + artifactId, "");
+        if (groupId.isEmpty())
             throw new EProductNotFound("Can't find product in product list");
-        return StringUtils.substringBefore(groupAndArtifactID.get(0), ":");
+        return groupId;
     }
 
     public static Artifact initializeArtifact(Downloader downloader, String artifactId, String version) {

@@ -130,10 +130,12 @@ class Downloader implements IDownloader {
     }
 
     private File downloadProduct(String groupId, String artifactId, String version, String extension, File productFile) throws EIncompatibleApiVersion {
+        Set<String> products = productList.getProducts().keySet();
+        if (!products.contains(groupId + ":" + artifactId))
+            throw new EProductNotFound("Product not found in product list");
         for (ArtifactoryReader repo : productList.getRepos()) {
             try {
-                if (!productList.getProducts().keySet().contains(groupId + ":" + artifactId)
-                        || !repo.getProductVersions(groupId, artifactId).contains(version)) {
+                if (!repo.getProductVersions(groupId, artifactId).contains(version)) {
                     continue;
                 }
             } catch (Exception e) {

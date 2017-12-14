@@ -100,8 +100,7 @@ class ProductList {
         } catch (NullPointerException e) {
             throw new EProductListEntryNotFound("Can't find product list");
         }
-        if (productsVersions == null)
-            productsVersions = new HashMap<>();
+        if (productsVersions == null) productsVersions = new HashMap<>();
         versions = new TreeSet<>();
         versions.addAll(productsVersions.getOrDefault(artifactId, new TreeSet<>()));
         return productsVersions;
@@ -146,9 +145,8 @@ class ProductList {
         File productListMetadataFolder = new File(localRepo,
                 Utils.coordsToFolderStructure(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID));
         File productListMetadataFile = new File(productListMetadataFolder, "maven-metadata.xml");
-        if (productListMetadataFile.exists()) {
+        if (productListMetadataFile.exists())
             productListMetadataFile.delete();
-        }
         productListMetadataFile.createNewFile();
         Metadata metadata = new Metadata();
         Versioning vers = new Versioning();

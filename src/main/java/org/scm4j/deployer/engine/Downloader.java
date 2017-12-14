@@ -108,10 +108,8 @@ class Downloader implements IDownloader {
             res = new File(workingRepository, fileRelativePath);
         } else {
             res = downloadProduct(groupId, artifactId, version, extension, res);
-            if (res == null) {
-                throw new EProductNotFound(Utils.coordsToFileName(groupId, artifactId, version)
-                        + " is not found in all known repositories");
-            }
+            if (res == null)
+                throw new EProductNotFound(Utils.coordsToFileName(groupId, artifactId, version) + " is not found in all known repositories");
         }
         try {
             product.getProductStructure();
@@ -131,13 +129,10 @@ class Downloader implements IDownloader {
 
     private File downloadProduct(String groupId, String artifactId, String version, String extension, File productFile) throws EIncompatibleApiVersion {
         Set<String> products = productList.getProducts().keySet();
-        if (!products.contains(groupId + ":" + artifactId))
-            return null;
+        if (!products.contains(groupId + ":" + artifactId)) return null;
         for (ArtifactoryReader repo : productList.getRepos()) {
             try {
-                if (!repo.getProductVersions(groupId, artifactId).contains(version)) {
-                    continue;
-                }
+                if (!repo.getProductVersions(groupId, artifactId).contains(version)) continue;
             } catch (Exception e) {
                 continue;
             }
@@ -260,11 +255,10 @@ class Downloader implements IDownloader {
             } catch (Exception e) {
                 throw new RuntimeException();
             }
-            if (obj instanceof IProduct) {
+            if (obj instanceof IProduct)
                 product = (IProduct) obj;
-            } else {
+            else
                 throw new RuntimeException();
-            }
         } else {
             if (loader != null)
                 loader.close();

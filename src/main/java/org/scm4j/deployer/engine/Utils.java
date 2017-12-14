@@ -92,9 +92,7 @@ public class Utils {
         Attributes attrs = manifest.getMainAttributes();
         for (Object obj : attrs.keySet()) {
             Attributes.Name attrName = (Attributes.Name) obj;
-            if (attrName.equals(Attributes.Name.MAIN_CLASS)) {
-                return attrs.getValue(attrName);
-            }
+            if (attrName.equals(Attributes.Name.MAIN_CLASS)) return attrs.getValue(attrName);
         }
         throw new RuntimeException();
     }
@@ -104,8 +102,7 @@ public class Utils {
                 .filter(s -> s.contains(artifactId))
                 .limit(1)
                 .findFirst().orElse("").replace(":" + artifactId, "");
-        if (groupId.isEmpty())
-            throw new EProductNotFound("Can't find product in product list");
+        if (groupId.isEmpty()) throw new EProductNotFound("Can't find product in product list");
         return groupId;
     }
 

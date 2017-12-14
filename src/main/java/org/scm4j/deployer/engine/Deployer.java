@@ -76,8 +76,7 @@ class Deployer {
                     deploymentPath = deployedProduct.getDeploymentPath();
                     writeProductDescriptionInDeployedProductsYaml(coords, deployedProduct.getProductVersion());
                 }
-                if (res != OK)
-                    return res;
+                if (res != OK) return res;
             }
         } else {
             deployedProduct = null;
@@ -85,8 +84,7 @@ class Deployer {
         downloader.loadProductDependency(new File(workingFolder, "repository"));
         res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version);
         res.setProductCoords(coords);
-        if (res != OK)
-            return res;
+        if (res != OK) return res;
         writeProductDescriptionInDeployedProductsYaml(coords, version);
         return res;
     }
@@ -141,8 +139,7 @@ class Deployer {
         String productName = artifactId + "-" + version;
         if (!requiredProduct.getDependentProducts().isEmpty()) {
             res = deployDependent(requiredProduct);
-            if (res == FAILED || res == NEED_REBOOT || res == INCOMPATIBLE_API_VERSION)
-                return res;
+            if (res == FAILED || res == NEED_REBOOT || res == INCOMPATIBLE_API_VERSION) return res;
         }
         Map<Command, List<IComponent>> changedComponents;
         if (deployedProduct != null) {
@@ -152,11 +149,9 @@ class Deployer {
             deploymentPath = deployedProduct.getDeploymentPath();
             deployedComponents = Lists.reverse(deployedComponents);
             res = doCommands(deployedComponents, STOP);
-            if (res != OK)
-                return res;
+            if (res != OK) return res;
             res = doCommands(changedComponents.getOrDefault(UNDEPLOY, Collections.emptyList()), UNDEPLOY);
-            if (res != OK)
-                return res;
+            if (res != OK) return res;
         } else {
             changedComponents = compareProductStructures(requiredProduct.getProductStructure(), ProductStructure.createEmptyStructure());
             deploymentPath = requiredProduct.getProductStructure().getDefaultDeploymentPath();
@@ -165,11 +160,9 @@ class Deployer {
         if (!changedComponents.get(DEPLOY).isEmpty()) {
             componentForDeploy = changedComponents.get(DEPLOY);
             res = deployComponents(componentForDeploy);
-            if (res != OK)
-                return res;
+            if (res != OK) return res;
             res = doCommands(requiredProduct.getProductStructure().getComponents(), START);
-            if (res != OK)
-                return res;
+            if (res != OK) return res;
             log.info(productName + " successfully deployed");
             return res;
         } else {
@@ -183,8 +176,7 @@ class Deployer {
         DeploymentResult res = OK;
         for (IComponent component : components) {
             res = applyCommand(component, cmd);
-            if (res != OK)
-                return res;
+            if (res != OK) return res;
         }
         return res;
     }
@@ -207,8 +199,7 @@ class Deployer {
         for (IComponent component : components) {
             res = applyCommand(component, DEPLOY);
             if (res == FAILED || res == NEED_REBOOT) {
-                if (log.isDebugEnabled())
-                    log.debug(component.getArtifactCoords().getArtifactId() + " failed");
+                if (log.isDebugEnabled()) log.debug(component.getArtifactCoords().getArtifactId() + " failed");
                 deployedComponents = Lists.reverse(deployedComponents);
                 for (IComponent deployedComponent : deployedComponents) {
                     applyCommand(deployedComponent, UNDEPLOY);
@@ -231,8 +222,7 @@ class Deployer {
         DeploymentResult res = OK;
         for (Artifact dependent : dependents) {
             res = deploy(dependent);
-            if (res == FAILED || res == NEED_REBOOT)
-                return res;
+            if (res == FAILED || res == NEED_REBOOT) return res;
         }
         return res;
     }
@@ -267,8 +257,7 @@ class Deployer {
                     throw new IllegalArgumentException();
             }
             if (command == DEPLOY && (res == FAILED || res == NEED_REBOOT)) {
-                if (log.isDebugEnabled())
-                    log.debug(deployer.getClass().getSimpleName() + " failed");
+                if (log.isDebugEnabled()) log.debug(deployer.getClass().getSimpleName() + " failed");
                 successfulDeployers = Lists.reverse(successfulDeployers);
                 for (IComponentDeployer undeployer : successfulDeployers) {
                     undeployer.undeploy();
@@ -277,8 +266,7 @@ class Deployer {
                 }
                 return res;
             }
-            if (log.isDebugEnabled())
-                log.debug(deployer.getClass().getSimpleName() + " done");
+            if (log.isDebugEnabled()) log.debug(deployer.getClass().getSimpleName() + " done");
             successfulDeployers.add(deployer);
         }
         return OK;

@@ -40,9 +40,7 @@ public class ArtifactoryReader {
         if (userInfoStr != null) {
             String[] userInfo = userInfoStr.split(":");
             repoUrl = repoUrl.replace(userInfoStr + "@", "");
-            if (userInfo.length == 2) {
-                return new ArtifactoryReader(repoUrl, userInfo[0], userInfo[1]);
-            }
+            if (userInfo.length == 2) return new ArtifactoryReader(repoUrl, userInfo[0], userInfo[1]);
         }
         return new ArtifactoryReader(repoUrl, null, null);
     }

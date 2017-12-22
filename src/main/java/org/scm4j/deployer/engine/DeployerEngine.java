@@ -89,7 +89,7 @@ public class DeployerEngine implements IProductDeployer {
         try {
             downloader.getProductList().refreshProductVersions(Utils.getGroupId(downloader, artifactId), artifactId);
         } catch (ENoMetadata e) {
-            throw new RuntimeException();
+            throw new ENoMetadata("Can't find product metadata");
         }
         return listProductVersions(artifactId);
     }

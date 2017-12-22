@@ -108,7 +108,7 @@ class ProductList {
     }
 
     @SuppressWarnings("unchecked")
-    void refreshProductVersions(String groupId, String artifactId) throws ENoMetadata, IOException {
+    void refreshProductVersions(String groupId, String artifactId) throws IOException {
         productsVersions = Utils.readYml(versionsYml);
         if (productsVersions == null) {
             productsVersions = new HashMap<>();

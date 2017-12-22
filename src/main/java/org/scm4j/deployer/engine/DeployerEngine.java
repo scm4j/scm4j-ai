@@ -6,7 +6,6 @@ import org.eclipse.aether.artifact.Artifact;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IProductDeployer;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
-import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 
 import java.io.File;
 import java.io.IOException;
@@ -89,9 +88,7 @@ public class DeployerEngine implements IProductDeployer {
     public Map<String, Boolean> refreshProductVersions(String artifactId) {
         try {
             downloader.getProductList().refreshProductVersions(Utils.getGroupId(downloader, artifactId), artifactId);
-        } catch (ENoMetadata e) {
-            throw new ENoMetadata("Can't find product metadata");
-        } catch (IOException e1) {
+        } catch (IOException e) {
             throw new RuntimeException("Can't download product versions");
         }
         return listProductVersions(artifactId);

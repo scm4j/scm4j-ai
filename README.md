@@ -73,7 +73,16 @@ If error occurs during component deployment previously deployed components are s
 
 # Self-upgrade
 
-Each version of `scm4j-deployer-engine` will be a new product to prevent  compatibility failures 
+Self-upgrade of product which uses `scm4j-deployer-engine` is not possible. New product with new name must be relases instead 
+
+# Under the Hood
+
+How it works: interactions of core classes/modules
+
+# How to Test
+
+Idea of testing
+
 
 # Related Components
 

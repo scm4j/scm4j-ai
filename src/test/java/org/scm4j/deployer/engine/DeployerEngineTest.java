@@ -28,8 +28,8 @@ public class DeployerEngineTest {
     private static final String TEST_UNTILL_GROUP_ID = "eu.untill";
     private static final String TEST_JOOQ_GROUP_ID = "org.jooq";
     private static final String TEST_AXIS_GROUP_ID = "org.apache.axis";
-    private static final String untillArtifactId = "unTILL";
-    private static final String untillCoords = TEST_UNTILL_GROUP_ID + ":" + untillArtifactId + ":jar";
+    private static final String UNTILL_ARTIFACT_ID = "unTill";
+    private static final String UNTILL_COORDS = TEST_UNTILL_GROUP_ID + ":" + UNTILL_ARTIFACT_ID + ":jar";
     private static final String TEST_DIR = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-test")
             .getPath();
 
@@ -52,7 +52,7 @@ public class DeployerEngineTest {
         env.prepareEnvironment();
         ArtifactoryWriter aw = new ArtifactoryWriter(env.getArtifactory1Folder());
         aw.generateProductListArtifact();
-        aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "124.5", "jar",
+        aw.installArtifact(TEST_UNTILL_GROUP_ID, UNTILL_ARTIFACT_ID, "124.5", "jar",
                 "ProductStructureDataLoader", env.getArtifactory1Folder());
         aw.installArtifact(TEST_UNTILL_GROUP_ID, "scm4j-deployer-installers", "0.1.0", "jar",
                 "Executor", env.getArtifactory1Folder());
@@ -63,7 +63,7 @@ public class DeployerEngineTest {
         aw.installArtifact(TEST_JOOQ_GROUP_ID, "jooq", "3.1.0", "jar",
                 TEST_DEP_CONTENT, env.getArtifactory1Folder());
         aw = new ArtifactoryWriter(env.getArtifactory2Folder());
-        aw.installArtifact(TEST_UNTILL_GROUP_ID, untillArtifactId, "123.4", "jar",
+        aw.installArtifact(TEST_UNTILL_GROUP_ID, UNTILL_ARTIFACT_ID, "123.4", "jar",
                 "ProductStructureDataLoader", env.getArtifactory1Folder());
         aw.installArtifact(TEST_AXIS_GROUP_ID, "axis", "1.4", "jar",
                 TEST_DEP_CONTENT, env.getArtifactory2Folder());
@@ -85,7 +85,7 @@ public class DeployerEngineTest {
     public void testGetVersions() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         de.listProducts();
-        Set<String> versions = de.listProductVersions(untillArtifactId).keySet();
+        Set<String> versions = de.listProductVersions(UNTILL_ARTIFACT_ID).keySet();
         assertNotNull(versions);
         assertTrue(versions.containsAll(Arrays.asList(
                 "123.4", "124.5")));
@@ -106,7 +106,7 @@ public class DeployerEngineTest {
     public void listProductVersionsBeforeListProducts() {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         try {
-            de.listProductVersions(untillArtifactId);
+            de.listProductVersions(UNTILL_ARTIFACT_ID);
             fail();
         } catch (EProductListEntryNotFound e) {
         }
@@ -125,7 +125,7 @@ public class DeployerEngineTest {
     public void testUnknownVersion() {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         try {
-            de.download(untillArtifactId, "xyz");
+            de.download(UNTILL_ARTIFACT_ID, "xyz");
             fail();
         } catch (EProductNotFound e) {
         }
@@ -163,10 +163,10 @@ public class DeployerEngineTest {
     @Test
     public void testDownloadAndDeployProduct() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        File testFile = de.download(untillArtifactId, "123.4");
+        File testFile = de.download(UNTILL_ARTIFACT_ID, "123.4");
         assertTrue(FileUtils.contentEquals(testFile, new File(env.getArtifactory2Folder(),
                 Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
-                        untillArtifactId, "123.4", "jar"))));
+                        UNTILL_ARTIFACT_ID, "123.4", "jar"))));
         testFile = new File(de.getDownloader().getPortableRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
                 "22.2", ".war"));
         assertTrue(testFile.exists());
@@ -180,9 +180,9 @@ public class DeployerEngineTest {
     @Test
     public void testDownloadAndDeployProductFromLocalHost() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        File product = de.download(untillArtifactId, "123.4");
+        File product = de.download(UNTILL_ARTIFACT_ID, "123.4");
         de = new DeployerEngine(null, env.getBaseTestFolder(), de.getDownloader().getWorkingRepository().toURI().toURL().toString());
-        File product1 = de.download(untillArtifactId, "123.4");
+        File product1 = de.download(UNTILL_ARTIFACT_ID, "123.4");
         assertTrue(FileUtils.contentEquals(product, product1));
     }
 
@@ -190,7 +190,7 @@ public class DeployerEngineTest {
     @SuppressWarnings("unchecked")
     public void testDownloadAndRefreshProducts() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        assertEquals(de.listProducts(), Collections.singletonList("unTILL"));
+        assertEquals(de.listProducts(), Collections.singletonList(UNTILL_ARTIFACT_ID));
         //changing product list
         Map entry = new HashMap<>();
         Map<String, String> map = new HashMap<>();
@@ -201,7 +201,7 @@ public class DeployerEngineTest {
         List<String> list = de.listProducts();
         assertEquals(list, Collections.singletonList("stuff"));
         //reload product list
-        assertEquals(de.refreshProducts(), Collections.singletonList("unTILL"));
+        assertEquals(de.refreshProducts(), Collections.singletonList(UNTILL_ARTIFACT_ID));
     }
 
     @Test
@@ -211,10 +211,10 @@ public class DeployerEngineTest {
         Map<String, Boolean> testMap = new LinkedHashMap<>();
         testMap.put("123.4", false);
         testMap.put("124.5", false);
-        assertEquals(de.listProductVersions(untillArtifactId), testMap);
+        assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
         //changing product versions
         Map<String, Set<String>> entry = new HashMap<>();
-        entry.put(untillArtifactId, new HashSet<>(Collections.singletonList("777")));
+        entry.put(UNTILL_ARTIFACT_ID, new HashSet<>(Collections.singletonList("777")));
         entry.put("haha", new HashSet<>(Collections.singletonList("1234")));
         try (FileWriter writer = new FileWriter(new File(de.getDownloader().getProductList().getVersionsYml().toString()))) {
             DumperOptions options = new DumperOptions();
@@ -225,31 +225,31 @@ public class DeployerEngineTest {
         }
         testMap.clear();
         testMap.put("777", false);
-        assertEquals(de.listProductVersions(untillArtifactId), testMap);
+        assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
         //reload version of specific product
         testMap.clear();
         testMap.put("123.4", false);
         testMap.put("124.5", false);
-        assertEquals(de.refreshProductVersions(untillArtifactId), testMap);
+        assertEquals(de.refreshProductVersions(UNTILL_ARTIFACT_ID), testMap);
         de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         de.listProducts();
-        assertEquals(de.listProductVersions(untillArtifactId), testMap);
-        de.download(untillArtifactId, "123.4");
+        assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
+        de.download(UNTILL_ARTIFACT_ID, "123.4");
         testMap.replace("123.4", false, true);
-        assertEquals(de.listProductVersions(untillArtifactId), testMap);
+        assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
         FileUtils.forceDelete(de.getDownloader().getProductList().getVersionsYml());
         testMap.clear();
-        File metadataFolder1 = new File(env.getArtifactory1Folder(), Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, untillArtifactId));
-        File metadataFolder2 = new File(env.getArtifactory2Folder(), Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, untillArtifactId));
+        File metadataFolder1 = new File(env.getArtifactory1Folder(), Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, UNTILL_ARTIFACT_ID));
+        File metadataFolder2 = new File(env.getArtifactory2Folder(), Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, UNTILL_ARTIFACT_ID));
         FileUtils.moveFileToDirectory(new File(metadataFolder1, ArtifactoryReader.METADATA_FILE_NAME), env.getEnvFolder(), false);
         FileUtils.moveFileToDirectory(new File(metadataFolder2, ArtifactoryReader.METADATA_FILE_NAME),
                 env.getArtifactory1Folder(), true);
         FileUtils.deleteDirectory(new File(env.getEnvFolder(), "repository"));
         de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         de.listProducts();
-        assertEquals(de.listProductVersions(untillArtifactId), testMap);
+        assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
         try {
-            de.refreshProductVersions(untillArtifactId);
+            de.refreshProductVersions(UNTILL_ARTIFACT_ID);
             fail();
         } catch (RuntimeException e) {
         }
@@ -260,7 +260,7 @@ public class DeployerEngineTest {
     @Test
     public void testCollectDeploymentContext() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        de.download(untillArtifactId, "123.4");
+        de.download(UNTILL_ARTIFACT_ID, "123.4");
         IDeploymentContext ctx = (IDeploymentContext) de.getDownloader().getDepCtx().get("UBL");
         assertEquals(ctx.getMainArtifact(), "UBL");
         assertTrue(ctx.getArtifacts().containsKey("UBL"));
@@ -270,8 +270,8 @@ public class DeployerEngineTest {
     @Test
     public void testCopyElementsFromPortableToWorkingFolder() throws Exception {
         DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getBaseTestFolder(), env.getArtifactory1Url());
-        File untillFile = de.download(untillArtifactId, "123.4");
-        File localUntillFile = de.download(untillArtifactId, "123.4");
+        File untillFile = de.download(UNTILL_ARTIFACT_ID, "123.4");
+        File localUntillFile = de.download(UNTILL_ARTIFACT_ID, "123.4");
         FileUtils.contentEquals(untillFile, localUntillFile);
     }
 
@@ -279,13 +279,13 @@ public class DeployerEngineTest {
     public void testDeploy() throws Exception {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         Deployer dep = de.getDeployer();
-        DeploymentResult dr = de.deploy(untillArtifactId, "124.5");
-        assertEquals(dr.getProductCoords(), untillCoords);
+        DeploymentResult dr = de.deploy(UNTILL_ARTIFACT_ID, "124.5");
+        assertEquals(dr.getProductCoords(), UNTILL_COORDS);
         assertEquals(dr, OK);
-        dr = de.deploy(untillArtifactId, "124.5");
+        dr = de.deploy(UNTILL_ARTIFACT_ID, "124.5");
         assertEquals(dr, ALREADY_INSTALLED);
         Map<String, Object> yaml = de.listDeployedProducts();
-        ProductDescription prod = (ProductDescription) yaml.get(untillCoords);
+        ProductDescription prod = (ProductDescription) yaml.get(UNTILL_COORDS);
         assertEquals(prod.getDeploymentPath(), de.getDownloader().getProduct().getProductStructure().getDefaultDeploymentPath());
         assertEquals(prod.getProductVersion(), "124.5");
     }
@@ -293,12 +293,12 @@ public class DeployerEngineTest {
     @Test
     public void testUndeploy() {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        DeploymentResult dr = de.deploy(untillArtifactId, null);
+        DeploymentResult dr = de.deploy(UNTILL_ARTIFACT_ID, null);
         assertEquals(dr, OK);
-        dr = de.deploy(untillArtifactId, "124.5");
+        dr = de.deploy(UNTILL_ARTIFACT_ID, "124.5");
         assertEquals(dr, OK);
         assertEquals(OkDeployer.getCount(), 4);
-        dr = de.deploy(untillArtifactId, null);
+        dr = de.deploy(UNTILL_ARTIFACT_ID, null);
         assertEquals(dr, OK);
         assertEquals(OkDeployer.getCount(), 0);
     }

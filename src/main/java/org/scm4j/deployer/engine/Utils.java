@@ -99,9 +99,9 @@ public class Utils {
 
     public static String getGroupId(Downloader downloader, String artifactId) {
         String groupId = downloader.getProductList().getProducts().keySet().stream()
-                .filter(s -> s.contains(artifactId))
+                .filter(s -> s.toLowerCase().contains(artifactId.toLowerCase()))
                 .limit(1)
-                .findFirst().orElse("").replace(":" + artifactId, "");
+                .findFirst().orElse("").toLowerCase().replace(":" + artifactId.toLowerCase(), "");
         if (groupId.isEmpty()) throw new EProductNotFound("Can't find product in product list");
         return groupId;
     }

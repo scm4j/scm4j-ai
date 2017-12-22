@@ -8,8 +8,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -45,8 +47,7 @@ public class ArtifactoryReader {
         return new ArtifactoryReader(repoUrl, null, null);
     }
 
-    @SneakyThrows
-    List<String> getProductVersions(String groupId, String artifactId) {
+    List<String> getProductVersions(String groupId, String artifactId) throws IOException {
         MetadataXpp3Reader reader = new MetadataXpp3Reader();
         URL url = getProductMetaDataURL(groupId, artifactId, METADATA_FILE_NAME);
         try {
@@ -61,12 +62,15 @@ public class ArtifactoryReader {
         }
     }
 
-    @SneakyThrows
-    private List<String> readVersions(URL url, MetadataXpp3Reader reader) throws FileNotFoundException {
+    private List<String> readVersions(URL url, MetadataXpp3Reader reader) throws IOException {
         try (InputStream is = getContentStream(url)) {
-            Metadata meta = reader.read(is);
-            Versioning vers = meta.getVersioning();
-            return vers.getVersions();
+            try {
+                Metadata meta = reader.read(is);
+                Versioning vers = meta.getVersioning();
+                return vers.getVersions();
+            } catch (XmlPullParserException e) {
+                throw new RuntimeException("Wrong URL");
+            }
         }
     }
 

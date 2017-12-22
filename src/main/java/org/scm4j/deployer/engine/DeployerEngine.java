@@ -9,6 +9,7 @@ import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 @Data
@@ -90,6 +91,8 @@ public class DeployerEngine implements IProductDeployer {
             downloader.getProductList().refreshProductVersions(Utils.getGroupId(downloader, artifactId), artifactId);
         } catch (ENoMetadata e) {
             throw new ENoMetadata("Can't find product metadata");
+        } catch (IOException e1) {
+            throw new RuntimeException("Can't download product versions");
         }
         return listProductVersions(artifactId);
     }

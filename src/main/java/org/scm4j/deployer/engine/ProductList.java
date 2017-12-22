@@ -15,6 +15,7 @@ import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
@@ -79,7 +80,7 @@ class ProductList {
         products.putAll((Map<String, String>) productListEntry.get(PRODUCTS));
     }
 
-    private void downloadProductsVersions() {
+    private void downloadProductsVersions() throws IOException {
         versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
         productsVersions = new HashMap<>();
         for (String product : products.keySet()) {
@@ -107,7 +108,7 @@ class ProductList {
     }
 
     @SuppressWarnings("unchecked")
-    void refreshProductVersions(String groupId, String artifactId) throws ENoMetadata {
+    void refreshProductVersions(String groupId, String artifactId) throws ENoMetadata, IOException {
         productsVersions = Utils.readYml(versionsYml);
         if (productsVersions == null) {
             productsVersions = new HashMap<>();

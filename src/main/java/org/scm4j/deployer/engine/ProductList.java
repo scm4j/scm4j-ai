@@ -31,7 +31,6 @@ class ProductList {
     private final File localRepo;
     private List<ArtifactoryReader> repos;
     private Map<String, String> products;
-    private Set<String> versions;
     private File localProductList;
     private File versionsYml;
     private Map productListEntry;
@@ -102,8 +101,7 @@ class ProductList {
             throw new EProductListEntryNotFound("Can't find product list");
         }
         if (productsVersions == null) productsVersions = new HashMap<>();
-        versions = new TreeSet<>();
-        versions.addAll(productsVersions.getOrDefault(artifactId, new TreeSet<>()));
+        new TreeSet<>().addAll(productsVersions.getOrDefault(artifactId, new TreeSet<>()));
         return productsVersions;
     }
 

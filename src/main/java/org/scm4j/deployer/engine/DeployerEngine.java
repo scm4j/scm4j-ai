@@ -14,18 +14,12 @@ import java.util.*;
 @Data
 public class DeployerEngine implements IProductDeployer {
 
-    private final File workingFolder;
-    private final File portableFolder;
-    private final String productListArtifactoryUrl;
     private final Downloader downloader;
     private final Deployer deployer;
 
     public DeployerEngine(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
         if (portableFolder == null)
             portableFolder = workingFolder;
-        this.workingFolder = workingFolder;
-        this.portableFolder = portableFolder;
-        this.productListArtifactoryUrl = productListArtifactoryUrl;
         this.downloader = new Downloader(portableFolder, workingFolder, productListArtifactoryUrl);
         this.deployer = new Deployer(workingFolder, downloader);
     }
@@ -80,7 +74,8 @@ public class DeployerEngine implements IProductDeployer {
 
     private boolean versionExists(String artifactId, String version) {
         String groupId = Utils.getGroupId(downloader, artifactId);
-        File productVersionFolder = new File(downloader.getWorkingRepository(), Utils.coordsToFolderStructure(groupId, artifactId, version));
+        File productVersionFolder = new File(downloader.getWorkingRepository(), Utils.coordsToFolderStructure(groupId,
+                artifactId, version));
         return productVersionFolder.exists();
     }
 

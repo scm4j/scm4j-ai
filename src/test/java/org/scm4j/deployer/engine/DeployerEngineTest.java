@@ -82,7 +82,7 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testGetVersions() throws Exception {
+    public void testGetVersions() {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         de.listProducts();
         Set<String> versions = de.listProductVersions(UNTILL_ARTIFACT_ID).keySet();
@@ -93,7 +93,7 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void downloadUnknownProduct() throws Exception {
+    public void downloadUnknownProduct() {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         try {
             de.download("xyz", "1234");
@@ -142,7 +142,7 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testUrls() throws Exception {
+    public void testUrls() {
         assertEquals(Utils.coordsToRelativeFilePath("", "guava", "20.0", "jar"),
                 new File("/guava/20.0/guava-20.0.jar").getPath());
         assertEquals(Utils.coordsToRelativeFilePath("com.google.guava", "guava", "20.0", "jar"),
@@ -188,7 +188,7 @@ public class DeployerEngineTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testDownloadAndRefreshProducts() throws Exception {
+    public void testDownloadAndRefreshProducts() {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         assertEquals(de.listProducts(), Collections.singletonList(UNTILL_ARTIFACT_ID));
         //changing product list
@@ -258,7 +258,7 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testCollectDeploymentContext() throws Exception {
+    public void testCollectDeploymentContext() {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         de.download(UNTILL_ARTIFACT_ID, "123.4");
         IDeploymentContext ctx = (IDeploymentContext) de.getDownloader().getDepCtx().get("UBL");
@@ -276,7 +276,7 @@ public class DeployerEngineTest {
     }
 
     @Test
-    public void testDeploy() throws Exception {
+    public void testDeploy() {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
         Deployer dep = de.getDeployer();
         DeploymentResult dr = de.deploy(UNTILL_ARTIFACT_ID, "124.5");
@@ -319,10 +319,6 @@ public class DeployerEngineTest {
 
     @Test
     public void testLombok() {
-        DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        assertEquals(env.getEnvFolder(), de.getWorkingFolder());
-        assertEquals(de.getPortableFolder(), de.getWorkingFolder());
-        assertEquals(env.getArtifactory1Url(), de.getProductListArtifactoryUrl());
         try {
             Utils.getExportedClassName(env.getEnvFolder());
             fail();

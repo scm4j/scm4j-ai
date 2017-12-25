@@ -65,7 +65,7 @@ public class DeployerTest {
     }
 
     @Test
-    public void testDeploy() throws Exception {
+    public void testDeploy() {
         IDownloader downloader = mockDeploymentContext();
         Deployer dep = new Deployer(new File("C:/"), downloader);
         IProduct okProduct = new OkProduct();

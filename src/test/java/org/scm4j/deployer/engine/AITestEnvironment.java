@@ -82,10 +82,6 @@ public class AITestEnvironment {
         return envFolder;
     }
 
-    public File getArtifactoriesFolder() {
-        return artifactoriesFolder;
-    }
-
     public File getArtifactory1Folder() {
         return artifactory1Folder;
     }

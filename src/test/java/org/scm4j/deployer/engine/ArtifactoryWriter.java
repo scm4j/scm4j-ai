@@ -33,11 +33,8 @@ class ArtifactoryWriter {
 
     void generateProductListArtifact() {
         try {
-
             Metadata metaData = getProductListArtifactMetadata();
-
             writeProductListMetadata(metaData);
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -79,17 +76,12 @@ class ArtifactoryWriter {
     void installArtifact(String groupId, String artifactId, String version, String extension,
                          String content, File productListLocation) {
         try {
-
             File artifactRoot = new File(artifactoryFolder, Utils.coordsToFolderStructure(groupId, artifactId));
-
             writeArtifact(artifactId, version, extension, content, artifactRoot);
-
             appendMetadata(groupId, artifactId, version, artifactRoot);
-
             if (content.contains("Structure")) {
                 appendProductList(groupId, artifactId, productListLocation);
             }
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -99,20 +91,15 @@ class ArtifactoryWriter {
             throws Exception {
         File artifactVersionPath = new File(artifactRoot, version);
         artifactVersionPath.mkdirs();
-
         File artifactFile = new File(artifactVersionPath, Utils.coordsToFileName(artifactId, version, extension));
         artifactFile.createNewFile();
-
         File artifactPom = new File(artifactVersionPath, Utils.coordsToFileName(artifactId, version, ".pom"));
-
         if (content.contains("Structure") || content.contains("Executor"))
             createProductJar(content, artifactFile);
         else
             FileUtils.writeStringToFile(artifactFile, content, Charset.forName("UTF-8"));
-
         File resource = new File(getClass().getClassLoader().getResource(TEST_POMS +
-                Utils.coordsToFileName(artifactId, version, ".pom")).getPath());
-
+                Utils.coordsToFileName(artifactId, version, ".pom")).getFile());
         Files.copy(resource, artifactPom);
     }
 
@@ -137,13 +124,10 @@ class ArtifactoryWriter {
 
     @SuppressWarnings("unchecked")
     private void appendProductList(String groupId, String artifactId, File productListLocation) throws Exception {
-
         File remoteProductListFileLocation = new File(productListLocation,
                 Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
                         ProductList.PRODUCT_LIST_ARTIFACT_ID, PRODUCT_LIST_DEFAULT_VERSION, ".yml"));
-
         Map products = getProductListContent(remoteProductListFileLocation);
-
         if (!((Map) products.get(ProductList.PRODUCTS)).keySet().contains(groupId + ":" + artifactId)) {
             ((Map) products.get(ProductList.PRODUCTS)).put(groupId + ":" + artifactId, artifactId);
             remoteProductListFileLocation.delete();
@@ -182,16 +166,13 @@ class ArtifactoryWriter {
     private void appendMetadata(String groupId, String artifactId, String version, File artifactRoot)
             throws Exception {
         File mavenMetadataFile = new File(artifactRoot, ArtifactoryReader.METADATA_FILE_NAME);
-
         Metadata metaData;
         if (!mavenMetadataFile.exists()) {
             metaData = createArtifactMetadata(groupId, artifactId);
         } else {
             metaData = readArtifactMetadata(mavenMetadataFile);
         }
-
         metaData.getVersioning().getVersions().add(version);
-
         writeMetadata(metaData, mavenMetadataFile);
     }
 

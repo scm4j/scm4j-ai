@@ -278,7 +278,6 @@ public class DeployerEngineTest {
     @Test
     public void testDeploy() {
         DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-        Deployer dep = de.getDeployer();
         DeploymentResult dr = de.deploy(UNTILL_ARTIFACT_ID, "124.5");
         assertEquals(dr.getProductCoords(), UNTILL_COORDS);
         assertEquals(dr, OK);

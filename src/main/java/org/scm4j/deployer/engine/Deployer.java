@@ -133,7 +133,6 @@ class Deployer {
     }
 
     @SneakyThrows
-    @SuppressWarnings("unchecked")
     DeploymentResult compareAndDeployProducts(IProduct requiredProduct, IDeployedProduct deployedProduct, String artifactId, String version) throws EIncompatibleApiVersion {
         DeploymentResult res;
         String productName = artifactId + "-" + version;

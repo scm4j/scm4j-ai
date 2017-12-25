@@ -7,4 +7,4 @@ cache:
 after_success:
 - ./gradlew jacocoTestReport coveralls
 script:
- ./gradlew build
+ ./gradlew build --info

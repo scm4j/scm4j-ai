@@ -111,7 +111,7 @@ class ArtifactoryWriter {
             FileUtils.writeStringToFile(artifactFile, content, Charset.forName("UTF-8"));
 
         File resource = new File(getClass().getClassLoader().getResource(TEST_POMS +
-                Utils.coordsToFileName(artifactId, version, ".pom")).getFile());
+                Utils.coordsToFileName(artifactId, version, ".pom")).getPath());
 
         Files.copy(resource, artifactPom);
     }

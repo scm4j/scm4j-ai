@@ -69,7 +69,7 @@ public class ArtifactoryReader {
                 Versioning vers = meta.getVersioning();
                 return vers.getVersions();
             } catch (XmlPullParserException e) {
-                throw new RuntimeException("Wrong URL");
+                throw new RuntimeException(e);
             }
         }
     }

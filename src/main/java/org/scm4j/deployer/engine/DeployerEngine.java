@@ -84,7 +84,7 @@ public class DeployerEngine implements IProductDeployer {
         try {
             downloader.getProductList().refreshProductVersions(Utils.getGroupId(downloader, artifactId), artifactId);
         } catch (IOException e) {
-            throw new RuntimeException("Can't download product versions");
+            throw new RuntimeException(e);
         }
         return listProductVersions(artifactId);
     }

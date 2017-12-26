@@ -18,7 +18,6 @@ import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
-import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
@@ -33,7 +32,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Data
@@ -51,9 +49,6 @@ class Downloader implements IDownloader {
     private RepositorySystemSession session;
     private URLClassLoader loader;
     private IProduct product;
-
-    private Function<Artifact, String> fileSetter = art -> Utils.coordsToRelativeFilePath(art.getGroupId(),
-            art.getArtifactId(), art.getVersion(), art.getExtension());
 
     @SneakyThrows
     Downloader(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
@@ -171,24 +166,21 @@ class Downloader implements IDownloader {
             List<Artifact> deps = new ArrayList<>();
             collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
             DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
-            try {
-                List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
-                artifactResults.forEach(artifactResult -> {
-                    Artifact art = artifactResult.getArtifact();
-                    art = fileSetter(art, workingRepository, fileSetter);
-                    deps.add(art);
-                });
-                depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, deps));
-                components.addAll(deps);
-            } catch (DependencyResolutionException e) {
-                throw new RuntimeException();
-            }
+            List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
+            artifactResults.forEach(artifactResult -> {
+                Artifact art = artifactResult.getArtifact();
+                art = fileSetter(art, workingRepository);
+                deps.add(art);
+            });
+            depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, deps));
+            components.addAll(deps);
         }
         return components;
     }
 
-    private Artifact fileSetter(Artifact art, File repository, Function<Artifact, String> func) {
-        art = art.setFile(new File(repository, func.apply(art)));
+    private Artifact fileSetter(Artifact art, File repository) {
+        art = art.setFile(new File(repository, Utils.coordsToRelativeFilePath(art.getGroupId(),
+                art.getArtifactId(), art.getVersion(), art.getExtension())));
         return art;
     }
 
@@ -205,14 +197,14 @@ class Downloader implements IDownloader {
         session = Utils.newRepositorySystemSession(system, repository);
         InstallRequest installRequest = new InstallRequest();
         for (Artifact artifact : artifacts) {
-            artifact = fileSetter(artifact, TMP_REPOSITORY, fileSetter);
+            artifact = fileSetter(artifact, TMP_REPOSITORY);
             Artifact pomArtifact = new SubArtifact(artifact, "", "pom");
             pomArtifact = pomArtifact.setFile(new File(TMP_REPOSITORY, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
                     artifact.getArtifactId(), artifact.getVersion(), ".pom")));
             installRequest.addArtifact(artifact).addArtifact(pomArtifact);
         }
         system.install(session, installRequest);
-        artifacts = artifacts.stream().map(art -> fileSetter(art, repository, fileSetter)).collect(Collectors.toList());
+        artifacts = artifacts.stream().map(art -> fileSetter(art, repository)).collect(Collectors.toList());
         return artifacts;
     }
 
@@ -250,15 +242,11 @@ class Downloader implements IDownloader {
                 IProduct.class.getPackage().isCompatibleWith(apiVersion)) {
             String mainClassName = Utils.getExportedClassName(productFile);
             Object obj;
-            try {
-                obj = loader.loadClass(mainClassName).getConstructor().newInstance();
-            } catch (Exception e) {
-                throw new RuntimeException();
-            }
+            obj = loader.loadClass(mainClassName).getConstructor().newInstance();
             if (obj instanceof IProduct)
                 product = (IProduct) obj;
             else
-                throw new RuntimeException();
+                throw new RuntimeException("Current product doesn't implement IProduct");
         } else {
             if (loader != null)
                 loader.close();

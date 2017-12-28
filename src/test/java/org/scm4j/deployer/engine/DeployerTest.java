@@ -48,18 +48,18 @@ public class DeployerTest {
         IProductStructure okStructure = new OkProduct().getProductStructure();
         IProductStructure failStructure = new FailProduct().getProductStructure();
         IProductStructure rebootStructure = new RebootProduct().getProductStructure();
-        Map<Command, List<IComponent>> components = dep.compareProductStructures(okStructure, failStructure);
+        Map<Command, List<IComponent>> components = Deployer.compareProductStructures(okStructure, failStructure);
         List<IComponent> list = new ArrayList<>();
         list.add(failStructure.getComponents().get(1));
         assertEquals(Collections.emptyList(), components.get(DEPLOY));
         assertEquals(list, components.get(UNDEPLOY));
         failStructure = new FailProduct().getProductStructure();
-        components = dep.compareProductStructures(failStructure, rebootStructure);
+        components = Deployer.compareProductStructures(failStructure, rebootStructure);
         assertEquals(Collections.emptyList(), components.get(DEPLOY));
         assertEquals(Collections.emptyList(), components.get(UNDEPLOY));
         failStructure = new FailProduct().getProductStructure();
         okStructure = new OkProduct().getProductStructure();
-        components = dep.compareProductStructures(failStructure, okStructure);
+        components = Deployer.compareProductStructures(failStructure, okStructure);
         assertEquals(Collections.emptyList(), components.get(UNDEPLOY));
         assertEquals(list, components.get(DEPLOY));
     }

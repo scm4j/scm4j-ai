@@ -105,7 +105,7 @@ class Deployer {
         return newProduct;
     }
 
-    private DeploymentResult compareVersionWithLegacyVersion(String version, String legacyVersion, String productName, String coords) {
+    private static DeploymentResult compareVersionWithLegacyVersion(String version, String legacyVersion, String productName, String coords) {
         DeploymentResult res = OK;
         DefaultArtifactVersion vers = new DefaultArtifactVersion(version);
         DefaultArtifactVersion legacyVers = new DefaultArtifactVersion(legacyVersion);
@@ -180,7 +180,7 @@ class Deployer {
         return res;
     }
 
-    Map<Command, List<IComponent>> compareProductStructures(IProductStructure requiredPS, IProductStructure deployedPS) {
+    static Map<Command, List<IComponent>> compareProductStructures(IProductStructure requiredPS, IProductStructure deployedPS) {
         Map<Command, List<IComponent>> comparedComponents = new HashMap<>();
         List<IComponent> requiredArts = requiredPS.getComponents();
         List<IComponent> deployedArts = deployedPS.getComponents();

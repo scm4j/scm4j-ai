@@ -17,7 +17,6 @@ public class AITestEnvironment {
 
     private File baseTestFolder;
     private File envFolder;
-    private File artifactoriesFolder;
     private File artifactory1Folder;
     private File artifactory2Folder;
     private String artifactory1Url;
@@ -33,7 +32,7 @@ public class AITestEnvironment {
     }
 
     private void createArtifactories() throws IOException {
-        artifactoriesFolder = Files
+        File artifactoriesFolder = Files
                 .createDirectory(new File(baseTestFolder, "art").toPath())
                 .toFile();
         artifactory1Folder = Files

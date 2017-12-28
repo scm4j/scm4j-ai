@@ -32,7 +32,10 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
-public class Utils {
+public final class Utils {
+
+    private Utils() {
+    }
 
     public static String coordsToFileName(String artifactId, String version, String extension) {
         return artifactId + "-" + version + StringUtils.prependIfMissing(extension, ".");

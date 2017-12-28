@@ -45,7 +45,7 @@ class Downloader implements IDownloader {
     private final ProductList productList;
     private final File workingRepository;
     private final File portableRepository;
-    private RepositorySystem system;
+    private final RepositorySystem system;
     private RepositorySystemSession session;
     private URLClassLoader loader;
     private IProduct product;
@@ -90,30 +90,10 @@ class Downloader implements IDownloader {
         saveComponents(artifacts, repository);
     }
 
-    private File getProductFile(String groupId, String artifactId, String version, String extension) throws EIncompatibleApiVersion {
-        if (productList.getRepos() == null || productList.getProducts() == null) {
-            throw new EProductListEntryNotFound("Product list doesn't loaded");
-        }
-        String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
-        File res = new File(portableRepository, fileRelativePath);
-        if (res.exists()) {
-            List<Artifact> artifacts = resolveDependencies(
-                    Collections.singletonList(new DefaultArtifact(groupId, artifactId, extension, version)));
-            saveProduct(artifacts, workingRepository, res);
-            res = new File(workingRepository, fileRelativePath);
-        } else {
-            res = downloadProduct(groupId, artifactId, version, extension, res);
-            if (res == null)
-                throw new EProductNotFound(Utils.coordsToFileName(groupId, artifactId, version) + " is not found in all known repositories");
-        }
-        try {
-            product.getProductStructure();
-            loader.close();
-            FileUtils.deleteDirectory(TMP_REPOSITORY);
-        } catch (Exception e) {
-            throw new RuntimeException();
-        }
-        return res;
+    private static Artifact fileSetter(Artifact art, File repository) {
+        art = art.setFile(new File(repository, Utils.coordsToRelativeFilePath(art.getGroupId(),
+                art.getArtifactId(), art.getVersion(), art.getExtension())));
+        return art;
     }
 
     private void saveProduct(List<Artifact> artifacts, File repository, File productFile) throws EIncompatibleApiVersion {
@@ -178,18 +158,38 @@ class Downloader implements IDownloader {
         return components;
     }
 
-    private Artifact fileSetter(Artifact art, File repository) {
-        art = art.setFile(new File(repository, Utils.coordsToRelativeFilePath(art.getGroupId(),
-                art.getArtifactId(), art.getVersion(), art.getExtension())));
-        return art;
-    }
-
     @SneakyThrows
-    private DeploymentContext getDeploymentContext(Artifact artifact, List<Artifact> deps) {
+    private static DeploymentContext getDeploymentContext(Artifact artifact, List<Artifact> deps) {
         DeploymentContext context = new DeploymentContext(artifact.getArtifactId());
         Map<String, File> arts = deps.stream().collect(Collectors.toMap(Artifact::getArtifactId, Artifact::getFile));
         context.setArtifacts(arts);
         return context;
+    }
+
+    private File getProductFile(String groupId, String artifactId, String version, String extension) throws EIncompatibleApiVersion {
+        if (productList.getRepos() == null || productList.getProducts() == null) {
+            throw new EProductListEntryNotFound("Product list doesn't loaded");
+        }
+        String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
+        File res = new File(portableRepository, fileRelativePath);
+        if (res.exists()) {
+            List<Artifact> artifacts = resolveDependencies(
+                    Collections.singletonList(new DefaultArtifact(groupId, artifactId, extension, version)));
+            saveProduct(artifacts, workingRepository, res);
+            res = new File(workingRepository, fileRelativePath);
+        } else {
+            res = downloadProduct(groupId, artifactId, version, extension, res);
+            if (res == null)
+                throw new EProductNotFound(Utils.coordsToFileName(groupId, artifactId, version) + " is not found in all known repositories");
+        }
+        try {
+            product.getProductStructure();
+            loader.close();
+            FileUtils.deleteDirectory(TMP_REPOSITORY);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return res;
     }
 
     @SneakyThrows
@@ -218,8 +218,7 @@ class Downloader implements IDownloader {
         return product.getProductStructure().getComponents();
     }
 
-    @SneakyThrows
-    private void loadProduct(File productFile) throws EIncompatibleApiVersion {
+    private String readProductApiVersion(File productFile) {
         MavenXpp3Reader mavenreader = new MavenXpp3Reader();
         File pomfile = new File(productFile.getParent(), productFile.getName().replace("jar", "pom"));
         Model model;
@@ -238,6 +237,12 @@ class Downloader implements IDownloader {
             log.debug("Product API version is " + apiVersion);
             log.debug("Deployer API version is " + IProduct.class.getPackage().getSpecificationVersion());
         }
+        return apiVersion;
+    }
+
+    @SneakyThrows
+    private void loadProduct(File productFile) throws EIncompatibleApiVersion {
+        String apiVersion = readProductApiVersion(productFile);
         if (apiVersion.endsWith("SNAPSHOT") || apiVersion.isEmpty() ||
                 IProduct.class.getPackage().isCompatibleWith(apiVersion)) {
             String mainClassName = Utils.getExportedClassName(productFile);

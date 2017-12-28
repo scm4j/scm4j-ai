@@ -40,7 +40,8 @@ class Downloader implements IDownloader {
 
     private static final String REPOSITORY_FOLDER_NAME = "repository";
     private static final String API_NAME = "scm4j-deployer-api";
-    static final File TMP_REPOSITORY = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp");
+    static final File TMP_REPOSITORY = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp" +
+            UUID.randomUUID());
     private final Map<String, IDeploymentContext> depCtx;
     private final ProductList productList;
     private final File workingRepository;

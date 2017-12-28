@@ -6,6 +6,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.repository.metadata.Metadata;
+import org.apache.maven.artifact.repository.metadata.SnapshotVersion;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
@@ -17,6 +18,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 public class ArtifactoryReader {
@@ -67,7 +69,11 @@ public class ArtifactoryReader {
             try {
                 Metadata meta = reader.read(is);
                 Versioning vers = meta.getVersioning();
-                return vers.getVersions();
+                List<String> versions = vers.getVersions();
+                versions.addAll(vers.getSnapshotVersions().stream()
+                        .map(SnapshotVersion::getVersion)
+                        .collect(Collectors.toList()));
+                return versions;
             } catch (XmlPullParserException e) {
                 throw new RuntimeException(e);
             }

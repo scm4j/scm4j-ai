@@ -16,4 +16,5 @@ public class ArtifactoryReaderTest {
         assertEquals("2", reader.getPassword());
         assertEquals(new URL("http://google.com/"), reader.getUrl());
     }
+
 }

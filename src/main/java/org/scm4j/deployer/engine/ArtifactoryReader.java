@@ -11,6 +11,7 @@ import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -108,7 +109,8 @@ public class ArtifactoryReader {
 
     @SneakyThrows
     private URL getProductMetaDataURL(String groupId, String artifactId, String metadataName) {
-        return new URL(new URL(this.url, (groupId + "/" + artifactId).replace('.', '/') + "/"), metadataName);
+        return new URL(new URL(this.url, groupId.replace('.', File.separatorChar) + "/" + artifactId + "/"),
+                metadataName);
     }
 
     @Override

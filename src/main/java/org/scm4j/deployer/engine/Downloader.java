@@ -18,6 +18,7 @@ import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
+import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
@@ -141,20 +142,27 @@ class Downloader implements IDownloader {
         CollectRequest collectRequest = new CollectRequest();
         List<String> urls = productList.getRepos().stream().map(ArtifactoryReader::toString).collect(Collectors.toList());
         urls.add(0, portableRepository.toURI().toURL().toString());
-        urls.forEach(url -> collectRequest.addRepository(new RemoteRepository.Builder("", "default", url).build()));
+        List<RemoteRepository> remoteRepos = new ArrayList<>();
+        urls.forEach(url -> remoteRepos.add(new RemoteRepository.Builder(url, "default", url).build()));
         DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
         for (Artifact artifact : artifacts) {
             List<Artifact> deps = new ArrayList<>();
             collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
+            collectRequest.setRepositories(remoteRepos);
             DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
-            List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
-            artifactResults.forEach(artifactResult -> {
-                Artifact art = artifactResult.getArtifact();
-                art = fileSetter(art, workingRepository);
-                deps.add(art);
-            });
-            depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, deps));
-            components.addAll(deps);
+            try {
+                List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
+                artifactResults.forEach(artifactResult -> {
+                    Artifact art = artifactResult.getArtifact();
+                    art = fileSetter(art, workingRepository);
+                    deps.add(art);
+                });
+                depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, deps));
+                components.addAll(deps);
+            } catch (DependencyResolutionException e) {
+                FileUtils.forceDelete(TMP_REPOSITORY);
+                throw new RuntimeException(e);
+            }
         }
         return components;
     }

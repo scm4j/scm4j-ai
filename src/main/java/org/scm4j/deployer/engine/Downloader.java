@@ -67,13 +67,13 @@ class Downloader implements IDownloader {
     }
 
     @Override
-    public File getProductFile(String coords) throws EIncompatibleApiVersion {
+    public File getProductFile(String coords) {
         Artifact art = new DefaultArtifact(coords);
         return getProductFile(art.getGroupId(), art.getArtifactId(), art.getVersion(), art.getExtension());
     }
 
     @Override
-    public File getProductWithDependency(String coords) throws EIncompatibleApiVersion {
+    public File getProductWithDependency(String coords) {
         Artifact art = new DefaultArtifact(coords);
         File product = getProductFile(coords);
         String fileRelativePath = Utils.coordsToRelativeFilePath(art.getGroupId(), art.getArtifactId(),
@@ -98,13 +98,13 @@ class Downloader implements IDownloader {
         return art;
     }
 
-    private void saveProduct(List<Artifact> artifacts, File repository, File productFile) throws EIncompatibleApiVersion {
+    private void saveProduct(List<Artifact> artifacts, File repository, File productFile) {
         artifacts = saveComponents(artifacts, repository);
         instantiateClassLoader(artifacts);
         loadProduct(productFile);
     }
 
-    private File downloadProduct(String groupId, String artifactId, String version, String extension, File productFile) throws EIncompatibleApiVersion {
+    private File downloadProduct(String groupId, String artifactId, String version, String extension, File productFile) {
         Set<String> products = productList.getProducts().keySet();
         if (!products.contains(groupId + ":" + artifactId)) return null;
         for (ArtifactoryReader repo : productList.getRepos()) {
@@ -250,7 +250,7 @@ class Downloader implements IDownloader {
     }
 
     @SneakyThrows
-    private void loadProduct(File productFile) throws EIncompatibleApiVersion {
+    private void loadProduct(File productFile) {
         String apiVersion = readProductApiVersion(productFile);
         if (apiVersion.endsWith("SNAPSHOT") || apiVersion.isEmpty() ||
                 IProduct.class.getPackage().isCompatibleWith(apiVersion)) {

@@ -8,7 +8,6 @@ import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.scm4j.deployer.api.*;
-import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 
 import java.io.File;
 import java.util.*;
@@ -35,9 +34,42 @@ class Deployer {
         deployedProductsFile = new File(workingFolder, DEPLOYED_PRODUCTS);
     }
 
+    private static DeploymentResult compareVersionWithLegacyVersion(String version, String legacyVersion,
+                                                                    String productName, String coords) {
+        DeploymentResult res = OK;
+        DefaultArtifactVersion vers = new DefaultArtifactVersion(version);
+        DefaultArtifactVersion legacyVers = new DefaultArtifactVersion(legacyVersion);
+        if (vers.compareTo(legacyVers) == 0) {
+            log.info(productName + " already installed!");
+            res = ALREADY_INSTALLED;
+        }
+        if (vers.compareTo(legacyVers) < 0) {
+            log.info(productName + " newer version exist");
+            res = NEWER_VERSION_EXISTS;
+        }
+        res.setProductCoords(coords);
+        return res;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void writeProductDescriptionInDeployedProductsYaml(String coords, String version) {
+        ProductDescription productDescription = createProductDescription(version);
+        Map<String, ProductDescription> deployedProducts = Utils.readYml(deployedProductsFile);
+        deployedProducts.put(coords, productDescription);
+        Utils.writeYaml(deployedProducts, deployedProductsFile);
+    }
+
+    private ProductDescription createProductDescription(String version) {
+        ProductDescription newProduct = new ProductDescription();
+        newProduct.setProductVersion(version);
+        newProduct.setDeploymentPath(deploymentPath);
+        newProduct.setDeploymentTime(System.currentTimeMillis());
+        return newProduct;
+    }
+
     @SneakyThrows
     @SuppressWarnings("unchecked")
-    DeploymentResult deploy(Artifact art) throws EIncompatibleApiVersion {
+    DeploymentResult deploy(Artifact art) {
         DeploymentResult res;
         String coords = String.format("%s:%s:%s", art.getGroupId(), art.getArtifactId(), art.getExtension());
         String artifactId = art.getArtifactId();
@@ -89,40 +121,9 @@ class Deployer {
         return res;
     }
 
-    @SuppressWarnings("unchecked")
-    private void writeProductDescriptionInDeployedProductsYaml(String coords, String version) {
-        ProductDescription productDescription = createProductDescription(version);
-        Map<String, ProductDescription> deployedProducts = Utils.readYml(deployedProductsFile);
-        deployedProducts.put(coords, productDescription);
-        Utils.writeYaml(deployedProducts, deployedProductsFile);
-    }
-
-    private ProductDescription createProductDescription(String version) {
-        ProductDescription newProduct = new ProductDescription();
-        newProduct.setProductVersion(version);
-        newProduct.setDeploymentPath(deploymentPath);
-        newProduct.setDeploymentTime(System.currentTimeMillis());
-        return newProduct;
-    }
-
-    private static DeploymentResult compareVersionWithLegacyVersion(String version, String legacyVersion, String productName, String coords) {
-        DeploymentResult res = OK;
-        DefaultArtifactVersion vers = new DefaultArtifactVersion(version);
-        DefaultArtifactVersion legacyVers = new DefaultArtifactVersion(legacyVersion);
-        if (vers.compareTo(legacyVers) == 0) {
-            log.info(productName + " already installed!");
-            res = ALREADY_INSTALLED;
-        }
-        if (vers.compareTo(legacyVers) < 0) {
-            log.info(productName + " newer version exist");
-            res = NEWER_VERSION_EXISTS;
-        }
-        res.setProductCoords(coords);
-        return res;
-    }
-
     @SneakyThrows
-    private DeployedProduct createDeployedProduct(String coords, String deployedVersion, ProductDescription productDescription) throws EIncompatibleApiVersion {
+    private DeployedProduct createDeployedProduct(String coords, String deployedVersion,
+                                                  ProductDescription productDescription) {
         DeployedProduct deployedProduct = new DeployedProduct();
         deployedProduct.setProductVersion(deployedVersion);
         deployedProduct.setDeploymentPath(productDescription.getDeploymentPath());
@@ -133,7 +134,8 @@ class Deployer {
     }
 
     @SneakyThrows
-    DeploymentResult compareAndDeployProducts(IProduct requiredProduct, IDeployedProduct deployedProduct, String artifactId, String version) throws EIncompatibleApiVersion {
+    DeploymentResult compareAndDeployProducts(IProduct requiredProduct, IDeployedProduct deployedProduct,
+                                              String artifactId, String version) {
         DeploymentResult res;
         String productName = artifactId + "-" + version;
         if (!requiredProduct.getDependentProducts().isEmpty()) {
@@ -214,7 +216,7 @@ class Deployer {
         return res;
     }
 
-    private DeploymentResult deployDependent(IProduct product) throws EIncompatibleApiVersion {
+    private DeploymentResult deployDependent(IProduct product) {
         List<Artifact> dependents = product.getDependentProducts().stream()
                 .map(DefaultArtifact::new)
                 .collect(Collectors.toList());

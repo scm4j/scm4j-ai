@@ -5,7 +5,6 @@ import lombok.SneakyThrows;
 import org.eclipse.aether.artifact.Artifact;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IProductDeployer;
-import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,27 +23,18 @@ public class DeployerEngine implements IProductDeployer {
         this.deployer = new Deployer(workingFolder, downloader);
     }
 
-    @SneakyThrows
     @Override
     public DeploymentResult deploy(String artifactId, String version) {
         listProducts();
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
-        try {
-            return deployer.deploy(artifact);
-        } catch (EIncompatibleApiVersion e) {
-            return DeploymentResult.INCOMPATIBLE_API_VERSION;
-        }
+        return deployer.deploy(artifact);
     }
 
     @Override
     public File download(String artifactId, String version) {
         listProducts();
         Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
-        try {
-            return downloader.getProductWithDependency(artifact.toString());
-        } catch (EIncompatibleApiVersion e) {
-            throw new EIncompatibleApiVersion("Api versions are incompatible");
-        }
+        return downloader.getProductWithDependency(artifact.toString());
     }
 
     @Override

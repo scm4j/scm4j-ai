@@ -86,10 +86,12 @@ class Downloader implements IDownloader {
     }
 
     @Override
+    @SneakyThrows
     public void loadProductDependency(File repository) {
         List<Artifact> artifacts = componentsToArtifacts();
         artifacts = resolveDependencies(artifacts);
         saveComponents(artifacts, repository);
+        FileUtils.deleteDirectory(TMP_REPOSITORY);
     }
 
     private static Artifact fileSetter(Artifact art, File repository) {
@@ -175,7 +177,8 @@ class Downloader implements IDownloader {
         return context;
     }
 
-    private File getProductFile(String groupId, String artifactId, String version, String extension) throws EIncompatibleApiVersion {
+    @SneakyThrows
+    private File getProductFile(String groupId, String artifactId, String version, String extension) {
         if (productList.getRepos() == null || productList.getProducts() == null) {
             throw new EProductListEntryNotFound("Product list doesn't loaded");
         }
@@ -191,13 +194,9 @@ class Downloader implements IDownloader {
             if (res == null)
                 throw new EProductNotFound(Utils.coordsToFileName(groupId, artifactId, version) + " is not found in all known repositories");
         }
-        try {
-            product.getProductStructure();
-            loader.close();
-            FileUtils.deleteDirectory(TMP_REPOSITORY);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        product.getProductStructure();
+        loader.close();
+        FileUtils.deleteDirectory(TMP_REPOSITORY);
         return res;
     }
 

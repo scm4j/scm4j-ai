@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.eclipse.aether.RepositorySystem;
@@ -48,12 +49,14 @@ class Downloader implements IDownloader {
     private final File workingRepository;
     private final File portableRepository;
     private final RepositorySystem system;
+    private final String deployerApiVersion;
     private RepositorySystemSession session;
     private URLClassLoader loader;
     private IProduct product;
 
     @SneakyThrows
-    Downloader(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
+    Downloader(File portableFolder, File workingFolder, String productListArtifactoryUrl, String deployerApiVersion) {
+        this.deployerApiVersion = deployerApiVersion;
         this.workingRepository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
         this.portableRepository = new File(portableFolder, REPOSITORY_FOLDER_NAME);
         if (!portableRepository.exists())
@@ -226,6 +229,12 @@ class Downloader implements IDownloader {
         return product.getProductStructure().getComponents();
     }
 
+    private static boolean compareApiVersions(String deployerApiVersion, String productApiVersion) {
+        DefaultArtifactVersion deployerApi = new DefaultArtifactVersion(deployerApiVersion);
+        DefaultArtifactVersion productApi = new DefaultArtifactVersion(productApiVersion);
+        return deployerApi.compareTo(productApi) >= 0;
+    }
+
     private String readProductApiVersion(File productFile) {
         MavenXpp3Reader mavenreader = new MavenXpp3Reader();
         File pomfile = new File(productFile.getParent(), productFile.getName().replace("jar", "pom"));
@@ -240,19 +249,19 @@ class Downloader implements IDownloader {
         Optional<org.apache.maven.model.Dependency> apiDep = model.getDependencies().stream()
                 .filter(dep -> dep.getArtifactId().equals(API_NAME))
                 .findFirst();
-        String apiVersion = apiDep.map(org.apache.maven.model.Dependency::getVersion).orElse("");
+        String productApiVersion = apiDep.map(org.apache.maven.model.Dependency::getVersion).orElse("");
         if (log.isDebugEnabled()) {
-            log.debug("Product API version is " + apiVersion);
-            log.debug("Deployer API version is " + IProduct.class.getPackage().getSpecificationVersion());
+            log.debug("Product API version is " + productApiVersion);
+            log.debug("Deployer API version is " + deployerApiVersion);
         }
-        return apiVersion;
+        return productApiVersion;
     }
 
     @SneakyThrows
     private void loadProduct(File productFile) {
-        String apiVersion = readProductApiVersion(productFile);
-        if (apiVersion.endsWith("SNAPSHOT") || apiVersion.isEmpty() ||
-                IProduct.class.getPackage().isCompatibleWith(apiVersion)) {
+        String productApiVersion = readProductApiVersion(productFile);
+        if (productApiVersion.endsWith("SNAPSHOT") || productApiVersion.isEmpty() ||
+                compareApiVersions(deployerApiVersion, productApiVersion)) {
             String mainClassName = Utils.getExportedClassName(productFile);
             Object obj;
             obj = loader.loadClass(mainClassName).getConstructor().newInstance();

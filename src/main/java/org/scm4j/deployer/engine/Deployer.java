@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -68,6 +69,27 @@ class Deployer {
     }
 
     @SneakyThrows
+    private static void writeLatestFileForImmutableProduct(IProduct product, String version) {
+        File latest = new File(product.getProductStructure().getDefaultDeploymentPath(), version);
+        latest = new File(latest.getParent(), "latest");
+        if (latest.exists()) {
+            changeLatest(latest, version);
+        } else {
+            FileUtils.writeStringToFile(latest, version, "UTF-8");
+        }
+    }
+
+    @SneakyThrows
+    private static void changeLatest(File latest, String version) {
+        String deployedVersion = FileUtils.readFileToString(latest, "UTF-8");
+        DefaultArtifactVersion depVersion = new DefaultArtifactVersion(deployedVersion);
+        DefaultArtifactVersion requiredVersion = new DefaultArtifactVersion(version);
+        if (depVersion.compareTo(requiredVersion) < 0) {
+            FileUtils.writeStringToFile(latest, version, "UTF-8");
+        }
+    }
+
+    @SneakyThrows
     @SuppressWarnings("unchecked")
     DeploymentResult deploy(Artifact art) {
         DeploymentResult res;
@@ -118,6 +140,8 @@ class Deployer {
         res.setProductCoords(coords);
         if (res != OK) return res;
         writeProductDescriptionInDeployedProductsYaml(coords, version);
+        if (requiredProduct instanceof IImmutable)
+            writeLatestFileForImmutableProduct(requiredProduct, version);
         return res;
     }
 

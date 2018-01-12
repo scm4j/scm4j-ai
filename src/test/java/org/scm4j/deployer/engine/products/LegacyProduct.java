@@ -5,11 +5,13 @@ import org.scm4j.deployer.engine.deployers.OkDeployer;
 
 public class LegacyProduct implements IProduct, ILegacyProduct {
 
+    public static final String LEGACY_VERSION = "1.0";
+
     @Override
     @SuppressWarnings("unchecked")
     public <T extends IDeployedProduct> T queryLegacyDeployedProduct() {
         DeployedProduct prod = new DeployedProduct();
-        prod.setProductVersion("1.0");
+        prod.setProductVersion(LEGACY_VERSION);
         prod.setDeploymentPath("C:/");
         prod.setProductStructure(ProductStructure.create("")
                 .addComponent("x:legacyComponent:1.0")

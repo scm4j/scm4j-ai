@@ -2,8 +2,8 @@ package org.scm4j.deployer.engine;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.scm4j.deployer.api.*;
 import org.scm4j.deployer.engine.Deployer.Command;
@@ -29,14 +29,14 @@ import static org.scm4j.deployer.engine.Deployer.Command.UNDEPLOY;
 
 public class DeployerTest {
 
-    @AfterClass
-    public static void afterClass() throws Exception {
-        FileUtils.forceDelete(new File(DeployerEngineTest.getTestDir()));
+    @After
+    public void after() throws Exception {
+        FileUtils.forceDelete(new File(DeployerEngineTest.TEST_DIR));
     }
 
-    @BeforeClass
-    public static void beforeClass() {
-        File testDir = new File(DeployerEngineTest.getTestDir());
+    @Before
+    public void before() {
+        File testDir = new File(DeployerEngineTest.TEST_DIR);
         testDir.mkdirs();
     }
 
@@ -128,21 +128,36 @@ public class DeployerTest {
         IDownloader downloader = mockDeploymentContext();
         when(downloader.getProductFile(anyString())).thenReturn(new File("C:/"));
         when(downloader.getProduct()).thenReturn(new LegacyProduct());
-        Deployer dep = new Deployer(new File(DeployerEngineTest.getTestDir()), downloader);
-        DeploymentResult dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:1.0"));
+        Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
+        DeploymentResult dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + LegacyProduct.LEGACY_VERSION));
         assertEquals(ALREADY_INSTALLED, dr);
-        afterClass();
-        beforeClass();
-        dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:123.4"));
+        after();
+        before();
+        dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" +
+                (Float.valueOf(LegacyProduct.LEGACY_VERSION) + 1)));
         assertEquals(OK, dr);
-        afterClass();
-        beforeClass();
-        dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:0.4"));
+        after();
+        before();
+        dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" +
+                (Float.valueOf(LegacyProduct.LEGACY_VERSION) - 1)));
         assertEquals(NEWER_VERSION_EXISTS, dr);
     }
 
     @Test
-    public void testProductDescription() throws Exception {
+    public void testImmutableProduct() throws Exception {
+        String immutableVersion = "123.0";
+        IDownloader downloader = mockDeploymentContext();
+        when(downloader.getProductFile(anyString())).thenReturn(new File("C:/"));
+        when(downloader.getProduct()).thenReturn(new ImmutableProduct());
+        Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
+        File latest = new File(DeployerEngineTest.TEST_DIR, "latest");
+        DeploymentResult dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + immutableVersion));
+        assertEquals(OK, dr);
+        assertEquals(immutableVersion, FileUtils.readFileToString(latest, "UTF-8"));
+    }
+
+    @Test
+    public void testProductDescriptionEquals() throws Exception {
         ProductDescription pd = new ProductDescription();
         pd.setProductVersion("1.0");
         pd.setDeploymentPath("C:/");

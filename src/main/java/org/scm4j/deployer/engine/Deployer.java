@@ -71,7 +71,7 @@ class Deployer {
     @SneakyThrows
     private static void writeLatestFileForImmutableProduct(IProduct product, String version) {
         File latest = new File(product.getProductStructure().getDefaultDeploymentPath(), version);
-        latest = new File(latest.getParent(), "latest");
+        latest = new File(latest.getParentFile().getParent(), "latest");
         if (latest.exists()) {
             changeLatest(latest, version);
         } else {
@@ -181,6 +181,8 @@ class Deployer {
             changedComponents = compareProductStructures(requiredProduct.getProductStructure(), ProductStructure.createEmptyStructure());
             deploymentPath = requiredProduct.getProductStructure().getDefaultDeploymentPath();
         }
+        if (requiredProduct instanceof IImmutable)
+            deploymentPath = requiredProduct.getProductStructure().getDefaultDeploymentPath() + "/" + version;
         List<IComponent> componentForDeploy;
         if (!changedComponents.get(DEPLOY).isEmpty()) {
             componentForDeploy = changedComponents.get(DEPLOY);

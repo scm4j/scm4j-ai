@@ -10,7 +10,7 @@ import org.scm4j.deployer.engine.deployers.OkDeployer;
 public class ImmutableProduct implements IProduct, IImmutable {
 
     public IProductStructure getProductStructure() {
-        return ProductStructure.create(DeployerEngineTest.TEST_DIR)
+        return ProductStructure.create(DeployerEngineTest.TEST_DIR + "/latest-test")
                 .addComponent("eu.untill:UBL:war:22.2")
                 .addComponentDeployer(new OkDeployer())
                 .parent()

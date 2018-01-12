@@ -71,7 +71,7 @@ class Deployer {
     @SneakyThrows
     private static void writeLatestFileForImmutableProduct(IProduct product, String version) {
         File latest = new File(product.getProductStructure().getDefaultDeploymentPath(), version);
-        latest = new File(latest.getParentFile().getParent(), "latest");
+        latest = new File(latest.getParent(), "latest");
         if (latest.exists()) {
             changeLatest(latest, version);
         } else {

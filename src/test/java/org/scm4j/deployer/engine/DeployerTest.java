@@ -154,6 +154,11 @@ public class DeployerTest {
         DeploymentResult dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + immutableVersion));
         assertEquals(OK, dr);
         assertEquals(immutableVersion, FileUtils.readFileToString(latest, "UTF-8"));
+
+        String higherVersion = String.valueOf(Float.valueOf(immutableVersion) + 1.0);
+        dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + higherVersion));
+        assertEquals(OK, dr);
+        assertEquals(higherVersion, FileUtils.readFileToString(latest, "UTF-8"));
     }
 
     @Test

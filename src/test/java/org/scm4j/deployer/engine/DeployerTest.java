@@ -159,6 +159,16 @@ public class DeployerTest {
         dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + higherVersion));
         assertEquals(OK, dr);
         assertEquals(higherVersion, FileUtils.readFileToString(latest, "UTF-8"));
+
+        String snapshot = "-SNAPSHOT";
+        dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + higherVersion + snapshot));
+        assertEquals(OK, dr);
+        assertEquals(higherVersion, FileUtils.readFileToString(latest, "UTF-8"));
+
+        higherVersion = String.valueOf(Float.valueOf(higherVersion) + 1.0);
+        dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + higherVersion + snapshot));
+        assertEquals(OK, dr);
+        assertEquals(higherVersion + snapshot, FileUtils.readFileToString(latest, "UTF-8"));
     }
 
     @Test

@@ -186,5 +186,10 @@ public class DeployerTest {
             fail();
         } catch (EIncompatibleApiVersion e) {
         }
+        try {
+            throw new EIncompatibleApiVersion("message");
+        } catch (EIncompatibleApiVersion e) {
+            assertEquals("message", e.getMessage());
+        }
     }
 }

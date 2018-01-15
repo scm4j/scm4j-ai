@@ -75,16 +75,16 @@ If error occurs during component deployment previously deployed components are s
 # Self-upgrade
 
 Product which uses `scm4j-deployer-engine` must implement `IImmutable`.
--Deployment
-  -new product deploys in `IProduct.getDefaultDeploymentPath` and creates child directory, which is called the same as the product version 
-  -file `latest` with latest product version writes in `IProduct.getDefaultDeploymentPath` directory
+- Deployment
+  - new product deploys in `IProduct.getDefaultDeploymentPath` and creates child directory, which is called the same as the product version 
+  - file `latest` with latest product version writes in `IProduct.getDefaultDeploymentPath` directory
 
 # Under the Hood
 
 `scm4j-deployer-engine` works with `scm4j-deployer-api` and `scm4j-deployer-installers`. `installers` is a project with few classes who knows how to run specific deployer(for example `Copy`, `Unzip`, `Exec`).
 Main class in `scm4j-deployer-engine` is `DeployerEngine` who describes in # Scenarious Overview. He invokes methods from
--`Downloader` - checks API compatibility and downloads products and their deps
--`Deployer` - deploys product and returns deployment result
+- `Downloader` - checks API compatibility and downloads products and their deps
+- `Deployer` - deploys product and returns deployment result
 
 # How to Test
 

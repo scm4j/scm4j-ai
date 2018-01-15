@@ -74,10 +74,9 @@ If error occurs during component deployment previously deployed components are s
 
 # Self-upgrade
 
-Product which uses `scm4j-deployer-engine` must implement `IImmutable`.
-- Deployment
-  - new product deploys in `IProduct.getDefaultDeploymentPath` and creates child directory, which is called the same as the product version 
-  - file `latest` with latest product version writes in `IProduct.getDefaultDeploymentPath` directory
+- product which uses `scm4j-deployer-engine` must implement `IImmutable`
+- new product deploys in `IProduct.getDefaultDeploymentPath` and creates child directory, which is called the same as the product version 
+- file `latest` with latest product version writes in `IProduct.getDefaultDeploymentPath` directory
 
 # Under the Hood
 

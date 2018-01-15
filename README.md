@@ -87,7 +87,7 @@ Main class in `scm4j-deployer-engine` is `DeployerEngine` who describes in # Sce
 
 # How to Test
 
-We create a repository in temporary folder and write test artifacts there. After we download them and their deps from this repository and check equality. To test deployment procedure we use test products (from directory org.scm4j.deployer.engine.products) and test deployers(from directory org.scm4j.deployer.engine.deployers) and mocked `IDownloader`.
+We create a repository in temporary folder and write test artifacts there. After we download them and their deps from this repository and check equality. To test deployment procedure we use test products (from directory `org.scm4j.deployer.engine.products`) and test deployers(from directory `org.scm4j.deployer.engine.deployers`) and mocked `IDownloader`.
 
 
 # Related Components

@@ -24,6 +24,9 @@ targetCompatibility = JavaVersion.VERSION_1_8
 group = 'org.scm4j'
 version = file('version').text.trim()
 
+ext.generatedResourcesDir = new File(buildDir, 'generated/resources')
+ext.apiVersionFile = new File(generatedResourcesDir, 'org/scm4j/deployer/engine/scm4j-deployer-api-version')
+
 jacocoTestReport {
 	reports {
 		xml.enabled = true // coveralls plugin depends on xml format report
@@ -72,6 +75,11 @@ dependencies {
 }
 
 jar {
+	doFirst {
+		apiVersionFile.parentFile.mkdirs()
+		apiVersionFile.write(configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.find { it.moduleName == 'scm4j-deployer-api' }.moduleVersion)
+	}
+	from generatedResourcesDir
 	manifest.attributes(
 			'Specification-Title': project.name,
 			'Specification-Version': version.replaceAll(/-SNAPSHOT$/, ''),

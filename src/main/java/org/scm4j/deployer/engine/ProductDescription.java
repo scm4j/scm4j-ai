@@ -7,8 +7,8 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(exclude = "deploymentTime")
 public class ProductDescription {
 
-    private long deploymentTime;
-    private String deploymentPath;
-    private String productVersion;
+	private long deploymentTime;
+	private String deploymentPath;
+	private String productVersion;
 
 }

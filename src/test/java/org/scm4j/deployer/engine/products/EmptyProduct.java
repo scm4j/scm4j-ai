@@ -6,8 +6,8 @@ import org.scm4j.deployer.api.ProductStructure;
 
 public class EmptyProduct implements IProduct {
 
-    @Override
-    public IProductStructure getProductStructure() {
-        return ProductStructure.createEmptyStructure();
-    }
+	@Override
+	public IProductStructure getProductStructure() {
+		return ProductStructure.createEmptyStructure();
+	}
 }

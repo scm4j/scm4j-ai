@@ -13,74 +13,74 @@ import java.util.*;
 @Data
 public class DeployerEngine implements IProductDeployer {
 
-    private final Downloader downloader;
-    private final Deployer deployer;
+	private final Downloader downloader;
+	private final Deployer deployer;
 
-    public DeployerEngine(File portableFolder, File workingFolder, String productListArtifactoryUrl, String deployerApiVersion) {
-        if (portableFolder == null)
-            portableFolder = workingFolder;
-        this.downloader = new Downloader(portableFolder, workingFolder, productListArtifactoryUrl, deployerApiVersion);
-        this.deployer = new Deployer(workingFolder, downloader);
-    }
+	public DeployerEngine(File portableFolder, File workingFolder, String productListArtifactoryUrl, String deployerApiVersion) {
+		if (portableFolder == null)
+			portableFolder = workingFolder;
+		this.downloader = new Downloader(portableFolder, workingFolder, productListArtifactoryUrl, deployerApiVersion);
+		this.deployer = new Deployer(workingFolder, downloader);
+	}
 
-    @Override
-    public DeploymentResult deploy(String artifactId, String version) {
-        listProducts();
-        Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
-        return deployer.deploy(artifact);
-    }
+	@Override
+	public DeploymentResult deploy(String artifactId, String version) {
+		listProducts();
+		Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
+		return deployer.deploy(artifact);
+	}
 
-    @Override
-    public File download(String artifactId, String version) {
-        listProducts();
-        Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
-        return downloader.getProductWithDependency(artifact.toString());
-    }
+	@Override
+	public File download(String artifactId, String version) {
+		listProducts();
+		Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
+		return downloader.getProductWithDependency(artifact.toString());
+	}
 
-    @Override
-    @SneakyThrows
-    @SuppressWarnings("unchecked")
-    public List<String> listProducts() {
-        Map<String, Map<String, String>> entry = downloader.getProductList().readFromProductList();
-        return new ArrayList<>(entry.get(ProductList.PRODUCTS).values());
-    }
+	@Override
+	@SneakyThrows
+	@SuppressWarnings("unchecked")
+	public List<String> listProducts() {
+		Map<String, Map<String, String>> entry = downloader.getProductList().readFromProductList();
+		return new ArrayList<>(entry.get(ProductList.PRODUCTS).values());
+	}
 
-    @Override
-    @SneakyThrows
-    public List<String> refreshProducts() {
-        downloader.getProductList().downloadProductList();
-        return listProducts();
-    }
+	@Override
+	@SneakyThrows
+	public List<String> refreshProducts() {
+		downloader.getProductList().downloadProductList();
+		return listProducts();
+	}
 
-    @Override
-    public Map<String, Boolean> listProductVersions(String artifactId) {
-        Optional<Set<String>> versions = Optional.ofNullable
-                (downloader.getProductList().readProductVersions(artifactId).get(artifactId));
-        Map<String, Boolean> downloadedVersions = new LinkedHashMap<>();
-        versions.ifPresent(strings -> strings.forEach
-                (version -> downloadedVersions.put(version, versionExists(artifactId, version))));
-        return downloadedVersions;
-    }
+	@Override
+	public Map<String, Boolean> listProductVersions(String artifactId) {
+		Optional<Set<String>> versions = Optional.ofNullable
+				(downloader.getProductList().readProductVersions(artifactId).get(artifactId));
+		Map<String, Boolean> downloadedVersions = new LinkedHashMap<>();
+		versions.ifPresent(strings -> strings.forEach
+				(version -> downloadedVersions.put(version, versionExists(artifactId, version))));
+		return downloadedVersions;
+	}
 
-    private boolean versionExists(String artifactId, String version) {
-        String groupId = Utils.getGroupId(downloader, artifactId);
-        File productVersionFolder = new File(downloader.getWorkingRepository(), Utils.coordsToFolderStructure(groupId,
-                artifactId, version));
-        return productVersionFolder.exists();
-    }
+	private boolean versionExists(String artifactId, String version) {
+		String groupId = Utils.getGroupId(downloader, artifactId);
+		File productVersionFolder = new File(downloader.getWorkingRepository(), Utils.coordsToFolderStructure(groupId,
+				artifactId, version));
+		return productVersionFolder.exists();
+	}
 
-    @Override
-    public Map<String, Boolean> refreshProductVersions(String artifactId) {
-        try {
-            downloader.getProductList().refreshProductVersions(Utils.getGroupId(downloader, artifactId), artifactId);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return listProductVersions(artifactId);
-    }
+	@Override
+	public Map<String, Boolean> refreshProductVersions(String artifactId) {
+		try {
+			downloader.getProductList().refreshProductVersions(Utils.getGroupId(downloader, artifactId), artifactId);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return listProductVersions(artifactId);
+	}
 
-    @Override
-    public Map<String, Object> listDeployedProducts() {
-        return deployer.listDeployedProducts();
-    }
+	@Override
+	public Map<String, Object> listDeployedProducts() {
+		return deployer.listDeployedProducts();
+	}
 }

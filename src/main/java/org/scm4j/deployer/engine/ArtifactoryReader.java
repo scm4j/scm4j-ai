@@ -24,97 +24,97 @@ import java.util.stream.Collectors;
 @Data
 public class ArtifactoryReader {
 
-    static final String METADATA_FILE_NAME = "maven-metadata.xml";
-    static final String LOCAL_METADATA_FILE_NAME = "maven-metadata-local.xml";
+	static final String METADATA_FILE_NAME = "maven-metadata.xml";
+	static final String LOCAL_METADATA_FILE_NAME = "maven-metadata-local.xml";
 
-    private final URL url;
-    private final String password;
-    private final String userName;
+	private final URL url;
+	private final String password;
+	private final String userName;
 
-    @SneakyThrows
-    private ArtifactoryReader(String url, String userName, String password) {
-        this.userName = userName;
-        this.password = password;
-        this.url = new URL(StringUtils.appendIfMissing(url, "/"));
-    }
+	@SneakyThrows
+	private ArtifactoryReader(String url, String userName, String password) {
+		this.userName = userName;
+		this.password = password;
+		this.url = new URL(StringUtils.appendIfMissing(url, "/"));
+	}
 
-    @SneakyThrows
-    static ArtifactoryReader getByUrl(String repoUrl) {
-        URL url = new URL(repoUrl);
-        String userInfoStr = url.getUserInfo();
-        if (userInfoStr != null) {
-            String[] userInfo = userInfoStr.split(":");
-            repoUrl = repoUrl.replace(userInfoStr + "@", "");
-            if (userInfo.length == 2) return new ArtifactoryReader(repoUrl, userInfo[0], userInfo[1]);
-        }
-        return new ArtifactoryReader(repoUrl, null, null);
-    }
+	@SneakyThrows
+	static ArtifactoryReader getByUrl(String repoUrl) {
+		URL url = new URL(repoUrl);
+		String userInfoStr = url.getUserInfo();
+		if (userInfoStr != null) {
+			String[] userInfo = userInfoStr.split(":");
+			repoUrl = repoUrl.replace(userInfoStr + "@", "");
+			if (userInfo.length == 2) return new ArtifactoryReader(repoUrl, userInfo[0], userInfo[1]);
+		}
+		return new ArtifactoryReader(repoUrl, null, null);
+	}
 
-    List<String> getProductVersions(String groupId, String artifactId) throws IOException {
-        MetadataXpp3Reader reader = new MetadataXpp3Reader();
-        URL url = getProductMetaDataURL(groupId, artifactId, METADATA_FILE_NAME);
-        try {
-            return readVersions(url, reader);
-        } catch (FileNotFoundException e) {
-            url = getProductMetaDataURL(groupId, artifactId, LOCAL_METADATA_FILE_NAME);
-            try {
-                return readVersions(url, reader);
-            } catch (FileNotFoundException e1) {
-                return Collections.emptyList();
-            }
-        }
-    }
+	List<String> getProductVersions(String groupId, String artifactId) throws IOException {
+		MetadataXpp3Reader reader = new MetadataXpp3Reader();
+		URL url = getProductMetaDataURL(groupId, artifactId, METADATA_FILE_NAME);
+		try {
+			return readVersions(url, reader);
+		} catch (FileNotFoundException e) {
+			url = getProductMetaDataURL(groupId, artifactId, LOCAL_METADATA_FILE_NAME);
+			try {
+				return readVersions(url, reader);
+			} catch (FileNotFoundException e1) {
+				return Collections.emptyList();
+			}
+		}
+	}
 
-    private List<String> readVersions(URL url, MetadataXpp3Reader reader) throws IOException {
-        try (InputStream is = getContentStream(url)) {
-            try {
-                Metadata meta = reader.read(is);
-                Versioning vers = meta.getVersioning();
-                List<String> versions = vers.getVersions();
-                versions.addAll(vers.getSnapshotVersions().stream()
-                        .map(SnapshotVersion::getVersion)
-                        .collect(Collectors.toList()));
-                return versions;
-            } catch (XmlPullParserException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
+	private List<String> readVersions(URL url, MetadataXpp3Reader reader) throws IOException {
+		try (InputStream is = getContentStream(url)) {
+			try {
+				Metadata meta = reader.read(is);
+				Versioning vers = meta.getVersioning();
+				List<String> versions = vers.getVersions();
+				versions.addAll(vers.getSnapshotVersions().stream()
+						.map(SnapshotVersion::getVersion)
+						.collect(Collectors.toList()));
+				return versions;
+			} catch (XmlPullParserException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
 
-    @SneakyThrows
-    String getProductListReleaseVersion() {
-        @Cleanup
-        InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID,
-                ProductList.PRODUCT_LIST_ARTIFACT_ID, METADATA_FILE_NAME));
-        MetadataXpp3Reader reader = new MetadataXpp3Reader();
-        Metadata meta = reader.read(is);
-        Versioning vers = meta.getVersioning();
-        return vers.getRelease();
-    }
+	@SneakyThrows
+	String getProductListReleaseVersion() {
+		@Cleanup
+		InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID,
+				ProductList.PRODUCT_LIST_ARTIFACT_ID, METADATA_FILE_NAME));
+		MetadataXpp3Reader reader = new MetadataXpp3Reader();
+		Metadata meta = reader.read(is);
+		Versioning vers = meta.getVersioning();
+		return vers.getRelease();
+	}
 
-    @SneakyThrows
-    private InputStream getContentStream(URL url) {
-        if (url.getProtocol().equals("file")) {
-            return url.openStream();
-        } else {
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setDoOutput(true);
-            con.setRequestMethod("GET");
-            if (userName != null && password != null)
-                con.setRequestProperty("Authorization", "Basic "
-                        + Base64.encodeBase64String((userName + ":" + password).getBytes()));
-            return con.getInputStream();
-        }
-    }
+	@SneakyThrows
+	private InputStream getContentStream(URL url) {
+		if (url.getProtocol().equals("file")) {
+			return url.openStream();
+		} else {
+			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setDoOutput(true);
+			con.setRequestMethod("GET");
+			if (userName != null && password != null)
+				con.setRequestProperty("Authorization", "Basic "
+						+ Base64.encodeBase64String((userName + ":" + password).getBytes()));
+			return con.getInputStream();
+		}
+	}
 
-    @SneakyThrows
-    private URL getProductMetaDataURL(String groupId, String artifactId, String metadataName) {
-        return new URL(new URL(this.url, groupId.replace('.', File.separatorChar) + "/" + artifactId + "/"),
-                metadataName);
-    }
+	@SneakyThrows
+	private URL getProductMetaDataURL(String groupId, String artifactId, String metadataName) {
+		return new URL(new URL(this.url, groupId.replace('.', File.separatorChar) + "/" + artifactId + "/"),
+				metadataName);
+	}
 
-    @Override
-    public String toString() {
-        return url.toString();
-    }
+	@Override
+	public String toString() {
+		return url.toString();
+	}
 }

@@ -148,9 +148,11 @@ public class DeployerEngineTest {
 
 	@Test
 	public void testUrls() {
-		assertEquals(Utils.coordsToRelativeFilePath("", "guava", "20.0", "jar"),
+		assertEquals(Utils.coordsToRelativeFilePath("", "guava", "20.0", "jar",
+				null),
 				new File("/guava/20.0/guava-20.0.jar").getPath());
-		assertEquals(Utils.coordsToRelativeFilePath("com.google.guava", "guava", "20.0", "jar"),
+		assertEquals(Utils.coordsToRelativeFilePath("com.google.guava", "guava", "20.0",
+				"jar", null),
 				new File("com/google/guava/guava/20.0/guava-20.0.jar").getPath());
 	}
 
@@ -173,13 +175,13 @@ public class DeployerEngineTest {
 		File testFile = de.download(UNTILL_ARTIFACT_ID, "123.4");
 		assertTrue(FileUtils.contentEquals(testFile, new File(env.getArtifactory2Folder(),
 				Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
-						UNTILL_ARTIFACT_ID, "123.4", "jar"))));
+						UNTILL_ARTIFACT_ID, "123.4", "jar", null))));
 		testFile = new File(de.getDownloader().getPortableRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
-				"22.2", ".war"));
+				"22.2", ".war", null));
 		assertTrue(testFile.exists());
 		assertEquals(FileUtils.readFileToString(testFile, Charset.forName("UTF-8")), TEST_UBL_22_2_CONTENT);
 		testFile = new File(de.getDownloader().getPortableRepository(), Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,
-				axisJaxrpcArtifact, "1.4", "jar"));
+				axisJaxrpcArtifact, "1.4", "jar", null));
 		assertTrue(testFile.exists());
 		assertEquals(FileUtils.readFileToString(testFile, Charset.forName("UTF-8")), TEST_DEP_CONTENT);
 	}

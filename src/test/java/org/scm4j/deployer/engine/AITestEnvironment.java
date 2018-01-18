@@ -52,7 +52,7 @@ public class AITestEnvironment {
 	@SuppressWarnings("unchecked")
 	private void writeReposInProductList(String version) throws IOException {
 		File productListFile = new File(artifactory1Folder, Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
-				ProductList.PRODUCT_LIST_ARTIFACT_ID, version, ".yml"));
+				ProductList.PRODUCT_LIST_ARTIFACT_ID, version, ".yml", null));
 		if (!productListFile.exists()) {
 			productListFile.getParentFile().mkdirs();
 			productListFile.createNewFile();

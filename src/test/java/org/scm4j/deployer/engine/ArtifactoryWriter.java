@@ -126,7 +126,7 @@ class ArtifactoryWriter {
 	private void appendProductList(String groupId, String artifactId, File productListLocation) throws Exception {
 		File remoteProductListFileLocation = new File(productListLocation,
 				Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
-						ProductList.PRODUCT_LIST_ARTIFACT_ID, PRODUCT_LIST_DEFAULT_VERSION, ".yml"));
+						ProductList.PRODUCT_LIST_ARTIFACT_ID, PRODUCT_LIST_DEFAULT_VERSION, ".yml", null));
 		Map products = getProductListContent(remoteProductListFileLocation);
 		if (!((Map) products.get(ProductList.PRODUCTS)).keySet().contains(groupId + ":" + artifactId)) {
 			((Map) products.get(ProductList.PRODUCTS)).put(groupId + ":" + artifactId, artifactId);

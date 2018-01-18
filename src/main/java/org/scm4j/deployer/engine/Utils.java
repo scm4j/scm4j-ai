@@ -49,9 +49,15 @@ public final class Utils {
 		return new File(coordsToFolderStructure(groupId, artifactId), version).getPath();
 	}
 
-	public static String coordsToRelativeFilePath(String groupId, String artifactId, String version, String extension) {
+	public static String coordsToRelativeFilePath(String groupId, String artifactId, String version, String extension,
+												  String classifier) {
+		if (classifier != null && !classifier.equals(""))
+			classifier = "-" + classifier;
+		else
+			classifier = "";
 		return new File(coordsToFolderStructure(groupId, artifactId, version),
-				coordsToFileName(artifactId, version, StringUtils.prependIfMissing(extension, "."))).getPath();
+				coordsToFileName(artifactId, version + classifier,
+						StringUtils.prependIfMissing(extension, "."))).getPath();
 	}
 
 	public static RepositorySystem newRepositorySystem() {

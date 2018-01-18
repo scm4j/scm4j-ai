@@ -16,6 +16,7 @@ import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.installation.InstallRequest;
+import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
@@ -71,7 +72,7 @@ class Downloader implements IDownloader {
 
 	private static Artifact fileSetter(Artifact art, File repository) {
 		art = art.setFile(new File(repository, Utils.coordsToRelativeFilePath(art.getGroupId(),
-				art.getArtifactId(), art.getVersion(), art.getExtension())));
+				art.getArtifactId(), art.getVersion(), art.getExtension(), art.getClassifier())));
 		return art;
 	}
 
@@ -92,7 +93,8 @@ class Downloader implements IDownloader {
 	@Override
 	public File getProductFile(String coords) {
 		Artifact art = new DefaultArtifact(coords);
-		return getProductFile(art.getGroupId(), art.getArtifactId(), art.getVersion(), art.getExtension());
+		return getProductFile(art.getGroupId(), art.getArtifactId(), art.getVersion(), art.getExtension(),
+				art.getClassifier());
 	}
 
 	@Override
@@ -100,7 +102,7 @@ class Downloader implements IDownloader {
 		Artifact art = new DefaultArtifact(coords);
 		File product = getProductFile(coords);
 		String fileRelativePath = Utils.coordsToRelativeFilePath(art.getGroupId(), art.getArtifactId(),
-				art.getVersion(), art.getExtension());
+				art.getVersion(), art.getExtension(), art.getClassifier());
 		if (product.equals(new File(portableRepository, fileRelativePath)))
 			loadProductDependency(portableRepository);
 		else
@@ -123,7 +125,7 @@ class Downloader implements IDownloader {
 		loadProduct(productFile);
 	}
 
-	private File downloadProduct(String groupId, String artifactId, String version, String extension, File productFile) {
+	private File downloadProduct(String groupId, String artifactId, String version, String extension, String classifier, File productFile) {
 		Set<String> products = productList.getProducts().keySet();
 		if (!products.contains(groupId + ":" + artifactId)) return null;
 		for (ArtifactoryReader repo : productList.getRepos()) {
@@ -133,7 +135,7 @@ class Downloader implements IDownloader {
 				continue;
 			}
 			List<Artifact> artifacts = resolveDependencies(
-					Collections.singletonList(new DefaultArtifact(groupId, artifactId, extension, version)));
+					Collections.singletonList(new DefaultArtifact(groupId, artifactId, classifier, extension, version)));
 			saveProduct(artifacts, portableRepository, productFile);
 			return productFile;
 		}
@@ -179,7 +181,7 @@ class Downloader implements IDownloader {
 				depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, deps));
 				components.addAll(deps);
 			} catch (DependencyResolutionException e) {
-				FileUtils.forceDelete(TMP_REPOSITORY);
+				FileUtils.deleteQuietly(TMP_REPOSITORY);
 				throw new RuntimeException(e);
 			}
 		}
@@ -187,19 +189,19 @@ class Downloader implements IDownloader {
 	}
 
 	@SneakyThrows
-	private File getProductFile(String groupId, String artifactId, String version, String extension) {
+	private File getProductFile(String groupId, String artifactId, String version, String extension, String classifier) {
 		if (productList.getRepos() == null || productList.getProducts() == null) {
 			throw new EProductListEntryNotFound("Product list doesn't loaded");
 		}
-		String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension);
+		String fileRelativePath = Utils.coordsToRelativeFilePath(groupId, artifactId, version, extension, classifier);
 		File res = new File(portableRepository, fileRelativePath);
 		if (res.exists()) {
 			List<Artifact> artifacts = resolveDependencies(
-					Collections.singletonList(new DefaultArtifact(groupId, artifactId, extension, version)));
+					Collections.singletonList(new DefaultArtifact(groupId, artifactId, classifier, extension, version)));
 			saveProduct(artifacts, workingRepository, res);
 			res = new File(workingRepository, fileRelativePath);
 		} else {
-			res = downloadProduct(groupId, artifactId, version, extension, res);
+			res = downloadProduct(groupId, artifactId, version, extension, classifier, res);
 			if (res == null)
 				throw new EProductNotFound(Utils.coordsToFileName(groupId, artifactId, version) + " is not found in all known repositories");
 		}
@@ -209,18 +211,22 @@ class Downloader implements IDownloader {
 		return res;
 	}
 
-	@SneakyThrows
 	private List<Artifact> saveComponents(List<Artifact> artifacts, File repository) {
-		session = Utils.newRepositorySystemSession(system, repository);
-		InstallRequest installRequest = new InstallRequest();
-		for (Artifact artifact : artifacts) {
-			artifact = fileSetter(artifact, TMP_REPOSITORY);
-			Artifact pomArtifact = new SubArtifact(artifact, "", "pom");
-			pomArtifact = pomArtifact.setFile(new File(TMP_REPOSITORY, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
-					artifact.getArtifactId(), artifact.getVersion(), ".pom")));
-			installRequest.addArtifact(artifact).addArtifact(pomArtifact);
+		try {
+			session = Utils.newRepositorySystemSession(system, repository);
+			InstallRequest installRequest = new InstallRequest();
+			for (Artifact artifact : artifacts) {
+				artifact = fileSetter(artifact, TMP_REPOSITORY);
+				Artifact pomArtifact = new SubArtifact(artifact, "", "pom");
+				pomArtifact = pomArtifact.setFile(new File(TMP_REPOSITORY, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
+						artifact.getArtifactId(), artifact.getVersion(), ".pom", "")));
+				installRequest.addArtifact(artifact).addArtifact(pomArtifact);
+			}
+			system.install(session, installRequest);
+		} catch (InstallationException e) {
+			FileUtils.deleteQuietly(TMP_REPOSITORY);
+			throw new RuntimeException(e);
 		}
-		system.install(session, installRequest);
 		artifacts = artifacts.stream().map(art -> fileSetter(art, repository)).collect(Collectors.toList());
 		return artifacts;
 	}
@@ -272,8 +278,7 @@ class Downloader implements IDownloader {
 		} else {
 			if (loader != null)
 				loader.close();
-			if (TMP_REPOSITORY.exists())
-				FileUtils.forceDelete(Downloader.TMP_REPOSITORY);
+			FileUtils.deleteQuietly(TMP_REPOSITORY);
 			throw new EIncompatibleApiVersion("Can't load " + productFile.getName() + " class to classpath");
 		}
 	}

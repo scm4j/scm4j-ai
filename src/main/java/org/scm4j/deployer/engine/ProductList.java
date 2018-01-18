@@ -49,7 +49,7 @@ class ProductList {
 			downloadProductsVersions();
 		} else {
 			localProductList = new File(localRepo, Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
-					productListReleaseVersion, ".yml"));
+					productListReleaseVersion, ".yml", null));
 			versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
 			loadProductListEntry();
 		}
@@ -59,7 +59,7 @@ class ProductList {
 	void downloadProductList() throws Exception {
 		String productListReleaseVersion = productListReader.getProductListReleaseVersion();
 		String productListPath = Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
-				productListReleaseVersion, ".yml");
+				productListReleaseVersion, ".yml", null);
 		URL remoteProductListUrl = new URL(productListReader.getUrl(), productListPath.replace("\\", File.separator));
 		localProductList = new File(localRepo, productListPath);
 		if (!localProductList.exists()) {

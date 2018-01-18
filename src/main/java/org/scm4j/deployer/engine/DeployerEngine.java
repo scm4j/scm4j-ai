@@ -16,10 +16,10 @@ public class DeployerEngine implements IProductDeployer {
 	private final Downloader downloader;
 	private final Deployer deployer;
 
-	public DeployerEngine(File portableFolder, File workingFolder, String productListArtifactoryUrl, String deployerApiVersion) {
+	public DeployerEngine(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
 		if (portableFolder == null)
 			portableFolder = workingFolder;
-		this.downloader = new Downloader(portableFolder, workingFolder, productListArtifactoryUrl, deployerApiVersion);
+		this.downloader = new Downloader(portableFolder, workingFolder, productListArtifactoryUrl);
 		this.deployer = new Deployer(workingFolder, downloader);
 	}
 

@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -31,6 +32,7 @@ import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -50,14 +52,12 @@ class Downloader implements IDownloader {
 	private final File workingRepository;
 	private final File portableRepository;
 	private final RepositorySystem system;
-	private final String deployerApiVersion;
 	private RepositorySystemSession session;
 	private URLClassLoader loader;
 	private IProduct product;
 
 	@SneakyThrows
-	Downloader(File portableFolder, File workingFolder, String productListArtifactoryUrl, String deployerApiVersion) {
-		this.deployerApiVersion = deployerApiVersion;
+	Downloader(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
 		this.workingRepository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
 		this.portableRepository = new File(portableFolder, REPOSITORY_FOLDER_NAME);
 		if (!portableRepository.exists())
@@ -258,16 +258,30 @@ class Downloader implements IDownloader {
 		String productApiVersion = apiDep.map(org.apache.maven.model.Dependency::getVersion).orElse("");
 		if (log.isDebugEnabled()) {
 			log.debug("Product API version is " + productApiVersion);
-			log.debug("Deployer API version is " + deployerApiVersion);
+			log.debug("Deployer API version is " + readDeployerApiVersion());
 		}
 		return productApiVersion;
 	}
 
 	@SneakyThrows
+	private String readDeployerApiVersion() {
+		String resourceName = Downloader.class.getPackage().getName().replace('.', '/') + "/"
+				+ API_NAME + "-version";
+		@Cleanup
+		InputStream is = getClass().getClassLoader().getResourceAsStream(resourceName);
+		if (is == null)
+			return null;
+		else
+			return IOUtils.toString(is, "UTF-8");
+	}
+
+	@SneakyThrows
 	private void loadProduct(File productFile) {
 		String productApiVersion = readProductApiVersion(productFile);
-		if (productApiVersion.endsWith("SNAPSHOT") || productApiVersion.isEmpty() ||
-				compareApiVersions(deployerApiVersion, productApiVersion)) {
+		Optional<String> deployerApiVersion = Optional.ofNullable(readDeployerApiVersion());
+		if (productApiVersion.endsWith("SNAPSHOT") || !deployerApiVersion.isPresent() ||
+				deployerApiVersion.get().endsWith("SNAPSHOT") ||
+				compareApiVersions(deployerApiVersion.get(), productApiVersion)) {
 			String mainClassName = Utils.getExportedClassName(productFile);
 			Object obj;
 			obj = loader.loadClass(mainClassName).getConstructor().newInstance();

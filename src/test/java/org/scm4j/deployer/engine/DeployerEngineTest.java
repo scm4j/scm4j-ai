@@ -32,6 +32,8 @@ public class DeployerEngineTest {
 	private static final String TEST_AXIS_GROUP_ID = "org.apache.axis";
 	private static final String UNTILL_ARTIFACT_ID = "unTill";
 	private static final String UNTILL_COORDS = TEST_UNTILL_GROUP_ID + ":" + UNTILL_ARTIFACT_ID + ":jar";
+	private static final String RELATIVE_UNTILL_PATH = Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
+			UNTILL_ARTIFACT_ID, "123.4", "jar", null);
 	private static AITestEnvironment env = new AITestEnvironment();
 	private static String ublArtifactId = "UBL";
 	private static String axisJaxrpcArtifact = "axis-jaxrpc";
@@ -163,10 +165,12 @@ public class DeployerEngineTest {
 	@Test
 	public void testDownloadAndDeployProduct() throws Exception {
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-		File testFile = de.download(UNTILL_ARTIFACT_ID, "123.4");
-		assertTrue(FileUtils.contentEquals(testFile, new File(env.getArtifactory2Folder(),
-				Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
-						UNTILL_ARTIFACT_ID, "123.4", "jar", null))));
+		de.download(UNTILL_ARTIFACT_ID, "123.4");
+		String relativePath = Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
+				UNTILL_ARTIFACT_ID, "123.4", "jar", null);
+		File testFile = new File(de.getDownloader().getPortableRepository(), relativePath);
+		File coordsToFileinArtifactory = new File(env.getArtifactory2Folder(), relativePath);
+		assertTrue(FileUtils.contentEquals(testFile, coordsToFileinArtifactory));
 		testFile = new File(de.getDownloader().getPortableRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
 				"22.2", ".war", null));
 		assertTrue(testFile.exists());
@@ -180,10 +184,12 @@ public class DeployerEngineTest {
 	@Test
 	public void testDownloadAndDeployProductFromLocalHost() throws Exception {
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-		File product = de.download(UNTILL_ARTIFACT_ID, "123.4");
+		de.download(UNTILL_ARTIFACT_ID, "123.4");
+		File product = new File(de.getDownloader().getPortableRepository(), RELATIVE_UNTILL_PATH);
 		de = new DeployerEngine(null, env.getBaseTestFolder(),
 				de.getDownloader().getWorkingRepository().toURI().toURL().toString());
-		File product1 = de.download(UNTILL_ARTIFACT_ID, "123.4");
+		de.download(UNTILL_ARTIFACT_ID, "123.4");
+		File product1 = new File(de.getDownloader().getPortableRepository(), RELATIVE_UNTILL_PATH);
 		assertTrue(FileUtils.contentEquals(product, product1));
 	}
 
@@ -262,7 +268,7 @@ public class DeployerEngineTest {
 	public void testCollectDeploymentContext() {
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		de.download(UNTILL_ARTIFACT_ID, "123.4");
-		IDeploymentContext ctx = (IDeploymentContext) de.getDownloader().getDepCtx().get("UBL");
+		IDeploymentContext ctx = de.getDownloader().getDepCtx().get("UBL");
 		assertEquals(ctx.getMainArtifact(), "UBL");
 		assertTrue(ctx.getArtifacts().containsKey("UBL"));
 		assertTrue(ctx.getArtifacts().containsKey("axis"));
@@ -271,8 +277,10 @@ public class DeployerEngineTest {
 	@Test
 	public void testCopyElementsFromPortableToWorkingFolder() throws Exception {
 		DeployerEngine de = new DeployerEngine(env.getEnvFolder(), env.getBaseTestFolder(), env.getArtifactory1Url());
-		File untillFile = de.download(UNTILL_ARTIFACT_ID, "123.4");
-		File localUntillFile = de.download(UNTILL_ARTIFACT_ID, "123.4");
+		de.download(UNTILL_ARTIFACT_ID, "123.4");
+		File untillFile = new File(de.getDownloader().getPortableRepository(), RELATIVE_UNTILL_PATH);
+		de.download(UNTILL_ARTIFACT_ID, "123.4");
+		File localUntillFile = new File(de.getDownloader().getWorkingRepository(), RELATIVE_UNTILL_PATH);
 		FileUtils.contentEquals(untillFile, localUntillFile);
 	}
 

@@ -31,10 +31,10 @@ public class DeployerEngine implements IProductDeployer {
 	}
 
 	@Override
-	public File download(String artifactId, String version) {
+	public void download(String artifactId, String version) {
 		listProducts();
 		Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
-		return downloader.getProductWithDependency(artifact.toString());
+		downloader.getProductWithDependency(artifact.toString());
 	}
 
 	@Override

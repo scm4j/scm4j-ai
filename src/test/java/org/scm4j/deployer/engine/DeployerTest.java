@@ -21,8 +21,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.scm4j.deployer.api.DeploymentResult.*;
 import static org.scm4j.deployer.engine.Deployer.Command.DEPLOY;
 import static org.scm4j.deployer.engine.Deployer.Command.UNDEPLOY;
@@ -110,7 +109,6 @@ public class DeployerTest {
 	@Test
 	public void testDeployDependent() throws Exception {
 		IDownloader downloader = mockDeploymentContext();
-		when(downloader.getProductFile(anyString())).thenReturn(new File("C:/"));
 		when(downloader.getProduct()).thenReturn(new OkProduct());
 		DeployedProduct prod = createDeployedProduct();
 		DependentProduct depProd = new DependentProduct();
@@ -126,7 +124,6 @@ public class DeployerTest {
 	@Test
 	public void testLegacyProduct() throws Exception {
 		IDownloader downloader = mockDeploymentContext();
-		when(downloader.getProductFile(anyString())).thenReturn(new File("C:/"));
 		when(downloader.getProduct()).thenReturn(new LegacyProduct());
 		Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
 		DeploymentResult dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + LegacyProduct.LEGACY_VERSION));
@@ -147,7 +144,6 @@ public class DeployerTest {
 	public void testImmutableProduct() throws Exception {
 		String immutableVersion = "123.0";
 		IDownloader downloader = mockDeploymentContext();
-		when(downloader.getProductFile(anyString())).thenReturn(new File("C:/"));
 		when(downloader.getProduct()).thenReturn(new ImmutableProduct());
 		Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
 		File latest = new File(DeployerEngineTest.TEST_DIR, "latest");
@@ -187,9 +183,9 @@ public class DeployerTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void testIncompatibleApi() throws Exception {
+	public void testIncompatibleApi() {
 		IDownloader downloader = mock(IDownloader.class);
-		when(downloader.getProductFile(anyString())).thenThrow(EIncompatibleApiVersion.class);
+		doThrow((EIncompatibleApiVersion.class)).when(downloader).getProductFile(anyString());
 		Deployer dep = new Deployer(new File("C:/"), downloader);
 		try {
 			dep.deploy(new DefaultArtifact("x:y:z:1.0"));

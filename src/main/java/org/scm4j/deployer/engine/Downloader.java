@@ -56,7 +56,6 @@ class Downloader implements IDownloader {
 	private URLClassLoader loader;
 	private IProduct product;
 
-	@SneakyThrows
 	Downloader(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
 		this.workingRepository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
 		this.portableRepository = new File(portableFolder, REPOSITORY_FOLDER_NAME);
@@ -76,7 +75,6 @@ class Downloader implements IDownloader {
 		return art;
 	}
 
-	@SneakyThrows
 	private static DeploymentContext getDeploymentContext(Artifact artifact, List<Artifact> deps) {
 		DeploymentContext context = new DeploymentContext(artifact.getArtifactId());
 		Map<String, File> arts = deps.stream().collect(Collectors.toMap(Artifact::getArtifactId, Artifact::getFile));

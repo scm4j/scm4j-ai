@@ -107,7 +107,7 @@ public class DeployerTest {
 	}
 
 	@Test
-	public void testDeployDependent() throws Exception {
+	public void testDeployDependent() {
 		IDownloader downloader = mockDeploymentContext();
 		when(downloader.getProduct()).thenReturn(new OkProduct());
 		DeployedProduct prod = createDeployedProduct();

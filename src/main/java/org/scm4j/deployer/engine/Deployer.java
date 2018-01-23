@@ -99,7 +99,6 @@ class Deployer {
 		return newProduct;
 	}
 
-	@SneakyThrows
 	@SuppressWarnings("unchecked")
 	DeploymentResult deploy(Artifact art) {
 		DeploymentResult res;
@@ -155,7 +154,6 @@ class Deployer {
 		return res;
 	}
 
-	@SneakyThrows
 	private DeployedProduct createDeployedProduct(String coords, String deployedVersion,
 												  ProductDescription productDescription) {
 		DeployedProduct deployedProduct = new DeployedProduct();
@@ -167,7 +165,6 @@ class Deployer {
 		return deployedProduct;
 	}
 
-	@SneakyThrows
 	DeploymentResult compareAndDeployProducts(IProduct requiredProduct, IDeployedProduct deployedProduct,
 											  String artifactId, String version) {
 		DeploymentResult res;
@@ -252,7 +249,6 @@ class Deployer {
 		return res;
 	}
 
-	@SneakyThrows
 	private DeploymentResult applyCommand(IComponent component, Command command) {
 		List<IComponentDeployer> deployers = component.getDeploymentProcedure().getComponentDeployers();
 		DeploymentResult res;

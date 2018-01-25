@@ -201,7 +201,7 @@ class Downloader implements IDownloader {
 		} else {
 			res = downloadProduct(groupId, artifactId, version, extension, classifier, res);
 			if (res == null)
-				throw new EProductNotFound(Utils.coordsToFileName(groupId, artifactId, version) + " is not found in all known repositories");
+				throw new EProductNotFound(Utils.coordsToFileName(artifactId, version, extension) + " is not found in all known repositories");
 		}
 		product.getProductStructure();
 		loader.close();

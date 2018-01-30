@@ -42,7 +42,7 @@ public class DeployerEngine implements IProductDeployer {
 	@SuppressWarnings("unchecked")
 	public List<String> listProducts() {
 		Map<String, Map<String, String>> entry = downloader.getProductList().readFromProductList();
-		return new ArrayList<>(entry.get(ProductList.PRODUCTS).values());
+		return new ArrayList<>(entry.get(ProductList.PRODUCTS).keySet());
 	}
 
 	@Override

@@ -82,7 +82,7 @@ class ProductList {
 	private void downloadProductsVersions() throws IOException {
 		versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
 		productsVersions = new HashMap<>();
-		for (String product : products.keySet()) {
+		for (String product : products.values()) {
 			Set<String> vers = new HashSet<>();
 			String artifactId = StringUtils.substringAfter(product, ":");
 			for (ArtifactoryReader reader : repos) {

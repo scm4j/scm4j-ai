@@ -129,7 +129,7 @@ class ArtifactoryWriter {
 						ProductList.PRODUCT_LIST_ARTIFACT_ID, PRODUCT_LIST_DEFAULT_VERSION, ".yml", null));
 		Map products = getProductListContent(remoteProductListFileLocation);
 		if (!((Map) products.get(ProductList.PRODUCTS)).keySet().contains(groupId + ":" + artifactId)) {
-			((Map) products.get(ProductList.PRODUCTS)).put(groupId + ":" + artifactId, artifactId);
+			((Map) products.get(ProductList.PRODUCTS)).put(artifactId, groupId + ":" + artifactId);
 			remoteProductListFileLocation.delete();
 			remoteProductListFileLocation.createNewFile();
 			writeProductListContent(products, remoteProductListFileLocation);

@@ -30,7 +30,7 @@ public class DeployerEngineTest {
 	private static final String TEST_UNTILL_GROUP_ID = "eu.untill";
 	private static final String TEST_JOOQ_GROUP_ID = "org.jooq";
 	private static final String TEST_AXIS_GROUP_ID = "org.apache.axis";
-	private static final String UNTILL_ARTIFACT_ID = "unTill";
+	private static final String UNTILL_ARTIFACT_ID = "untill";
 	private static final String UNTILL_COORDS = TEST_UNTILL_GROUP_ID + ":" + UNTILL_ARTIFACT_ID + ":jar";
 	private static final String RELATIVE_UNTILL_PATH = Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
 			UNTILL_ARTIFACT_ID, "123.4", "jar", null);
@@ -132,16 +132,6 @@ public class DeployerEngineTest {
 	}
 
 	@Test
-	public void testUnknownProduct() {
-		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-		try {
-			de.download("xyz", "123.4");
-			fail();
-		} catch (EProductNotFound e) {
-		}
-	}
-
-	@Test
 	public void testUrls() {
 		assertEquals(Utils.coordsToRelativeFilePath("", "guava", "20.0", "jar",
 				null),
@@ -206,7 +196,7 @@ public class DeployerEngineTest {
 		entry.put(ProductList.REPOSITORIES, new ArrayList<>(Collections.singletonList("file://some repos")));
 		Utils.writeYaml(entry, new File(de.getDownloader().getProductList().getLocalProductList().toString()));
 		List<String> list = de.listProducts();
-		assertEquals(list, Collections.singletonList("stuff"));
+		assertEquals(list, Collections.singletonList("some"));
 		//reload product list
 		assertEquals(de.refreshProducts(), Collections.singletonList(UNTILL_ARTIFACT_ID));
 	}

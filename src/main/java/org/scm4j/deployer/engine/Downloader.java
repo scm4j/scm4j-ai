@@ -124,7 +124,7 @@ class Downloader implements IDownloader {
 	}
 
 	private File downloadProduct(String groupId, String artifactId, String version, String extension, String classifier, File productFile) {
-		Set<String> products = productList.getProducts().keySet();
+		Collection<String> products = productList.getProducts().values();
 		if (!products.contains(groupId + ":" + artifactId)) return null;
 		for (ArtifactoryReader repo : productList.getRepos()) {
 			try {
@@ -154,6 +154,7 @@ class Downloader implements IDownloader {
 		loader = URLClassLoader.newInstance(urls);
 	}
 
+	//TODO think about not download deps if artifact is't jar
 	@SneakyThrows
 	private List<Artifact> resolveDependencies(List<Artifact> artifacts) {
 		List<Artifact> components = new ArrayList<>();

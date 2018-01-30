@@ -30,7 +30,7 @@ public class DeployerEngineTest {
 	private static final String TEST_UNTILL_GROUP_ID = "eu.untill";
 	private static final String TEST_JOOQ_GROUP_ID = "org.jooq";
 	private static final String TEST_AXIS_GROUP_ID = "org.apache.axis";
-	private static final String UNTILL_ARTIFACT_ID = "untill";
+	private static final String UNTILL_ARTIFACT_ID = "unTill";
 	private static final String UNTILL_COORDS = TEST_UNTILL_GROUP_ID + ":" + UNTILL_ARTIFACT_ID + ":jar";
 	private static final String RELATIVE_UNTILL_PATH = Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
 			UNTILL_ARTIFACT_ID, "123.4", "jar", null);

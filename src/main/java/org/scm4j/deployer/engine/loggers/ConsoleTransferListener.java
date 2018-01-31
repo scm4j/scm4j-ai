@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConsoleTransferListener
 		extends AbstractTransferListener {
 	private static final int MB = 1048576;
-	private static final int KB = 1024;
+	private static final int KB = 102400;
 	private final Map<TransferResource, Long> downloads = new ConcurrentHashMap<>();
 	private int lastLength;
 	private String record;

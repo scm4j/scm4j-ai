@@ -58,11 +58,11 @@ public class ConsoleTransferListener
 		if (total >= MB) {
 			return toMB(complete) + "/" + toMB(total) + " MB ";
 		} else if (total >= KB) {
-			return toKB(complete) + "/" + toKB(total) + " KB ";
+			return toKB(complete) + "00/" + toKB(total) + "00 KB ";
 		} else if (complete >= MB) {
 			return toMB(complete) + " MB ";
 		} else {
-			return toKB(complete) + " KB ";
+			return toKB(complete) + "00 KB ";
 		}
 	}
 

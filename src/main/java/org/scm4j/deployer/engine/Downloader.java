@@ -98,14 +98,19 @@ class Downloader implements IDownloader {
 	@Override
 	public void getProductWithDependency(String coords) {
 		Artifact art = new DefaultArtifact(coords);
-		File product = getProductFile(art.getGroupId(), art.getArtifactId(), art.getVersion(), art.getExtension(),
+		File productFile = getProductFile(art.getGroupId(), art.getArtifactId(), art.getVersion(), art.getExtension(),
 				art.getClassifier());
 		String fileRelativePath = Utils.coordsToRelativeFilePath(art.getGroupId(), art.getArtifactId(),
 				art.getVersion(), art.getExtension(), art.getClassifier());
-		if (product.equals(new File(portableRepository, fileRelativePath)))
+		if (productFile.equals(new File(portableRepository, fileRelativePath)))
 			loadProductDependency(portableRepository);
 		else
 			loadProductDependency(workingRepository);
+		if (!product.getDependentProducts().isEmpty()) {
+			for (String dependentCoords : product.getDependentProducts()) {
+				getProductWithDependency(dependentCoords);
+			}
+		}
 	}
 
 	@Override

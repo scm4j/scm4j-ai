@@ -34,7 +34,7 @@ class Deployer {
 	}
 
 	private static DeploymentResult compareVersionWithLegacyVersion(String version, String legacyVersion,
-																	String productName, String coords) {
+	                                                                String productName, String coords) {
 		DeploymentResult res = OK;
 		DefaultArtifactVersion vers = new DefaultArtifactVersion(version);
 		DefaultArtifactVersion legacyVers = new DefaultArtifactVersion(legacyVersion);
@@ -155,7 +155,7 @@ class Deployer {
 	}
 
 	private DeployedProduct createDeployedProduct(String coords, String deployedVersion,
-												  ProductDescription productDescription) {
+	                                              ProductDescription productDescription) {
 		DeployedProduct deployedProduct = new DeployedProduct();
 		deployedProduct.setProductVersion(deployedVersion);
 		deployedProduct.setDeploymentPath(productDescription.getDeploymentPath());
@@ -166,7 +166,7 @@ class Deployer {
 	}
 
 	DeploymentResult compareAndDeployProducts(IProduct requiredProduct, IDeployedProduct deployedProduct,
-											  String artifactId, String version) {
+	                                          String artifactId, String version) {
 		DeploymentResult res;
 		String productName = artifactId + "-" + version;
 		if (!requiredProduct.getDependentProducts().isEmpty()) {
@@ -210,7 +210,8 @@ class Deployer {
 		DeploymentResult res = OK;
 		for (IComponent component : components) {
 			res = applyCommand(component, cmd);
-			if (res != OK) return res;
+			if (res != OK)
+				return res;
 		}
 		return res;
 	}
@@ -221,7 +222,8 @@ class Deployer {
 		for (IComponent component : components) {
 			res = applyCommand(component, DEPLOY);
 			if (res == FAILED || res == NEED_REBOOT) {
-				if (log.isDebugEnabled()) log.debug(component.getArtifactCoords().getArtifactId() + " failed");
+				if (log.isDebugEnabled())
+					log.debug(component.getArtifactCoords().getArtifactId() + " failed");
 				deployedComponents = Lists.reverse(deployedComponents);
 				for (IComponent deployedComponent : deployedComponents) {
 					applyCommand(deployedComponent, UNDEPLOY);
@@ -244,7 +246,8 @@ class Deployer {
 		DeploymentResult res = OK;
 		for (Artifact dependent : dependents) {
 			res = deploy(dependent);
-			if (res == FAILED || res == NEED_REBOOT) return res;
+			if (res == FAILED || res == NEED_REBOOT)
+				return res;
 		}
 		return res;
 	}
@@ -278,7 +281,8 @@ class Deployer {
 					throw new IllegalArgumentException();
 			}
 			if (command == DEPLOY && (res == FAILED || res == NEED_REBOOT)) {
-				if (log.isDebugEnabled()) log.debug(deployer.getClass().getSimpleName() + " failed");
+				if (log.isDebugEnabled())
+					log.debug(deployer.getClass().getSimpleName() + " failed");
 				successfulDeployers = Lists.reverse(successfulDeployers);
 				for (IComponentDeployer undeployer : successfulDeployers) {
 					undeployer.undeploy();
@@ -287,7 +291,8 @@ class Deployer {
 				}
 				return res;
 			}
-			if (log.isDebugEnabled()) log.debug(deployer.getClass().getSimpleName() + " done");
+			if (log.isDebugEnabled())
+				log.debug(deployer.getClass().getSimpleName() + " done");
 			successfulDeployers.add(deployer);
 		}
 		return OK;

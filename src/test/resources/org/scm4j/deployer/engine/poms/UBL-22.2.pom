@@ -6,7 +6,7 @@
     <groupId>eu.untill</groupId>
     <artifactId>UBL</artifactId>
     <version>22.2</version>
-    <packaging>jar</packaging>
+    <packaging>war</packaging>
     <dependencies>
         <dependency>
             <groupId>org.jooq</groupId>

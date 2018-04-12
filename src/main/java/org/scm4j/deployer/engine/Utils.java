@@ -101,7 +101,8 @@ public final class Utils {
 		Attributes attrs = manifest.getMainAttributes();
 		for (Object obj : attrs.keySet()) {
 			Attributes.Name attrName = (Attributes.Name) obj;
-			if (attrName.equals(Attributes.Name.MAIN_CLASS)) return attrs.getValue(attrName);
+			if (attrName.equals(Attributes.Name.MAIN_CLASS))
+				return attrs.getValue(attrName);
 		}
 		throw new RuntimeException();
 	}

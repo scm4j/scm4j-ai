@@ -162,13 +162,12 @@ public class DeployerEngineTest {
 		File coordsToFileinArtifactory = new File(env.getArtifactory2Folder(), relativePath);
 		assertTrue(FileUtils.contentEquals(testFile, coordsToFileinArtifactory));
 		testFile = new File(de.getDownloader().getPortableRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
-				"22.2", ".war", null));
+				"22.2", "war", null));
 		assertTrue(testFile.exists());
 		assertEquals(FileUtils.readFileToString(testFile, Charset.forName("UTF-8")), TEST_UBL_22_2_CONTENT);
 		testFile = new File(de.getDownloader().getPortableRepository(), Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,
 				axisJaxrpcArtifact, "1.4", "jar", null));
-		assertTrue(testFile.exists());
-		assertEquals(FileUtils.readFileToString(testFile, Charset.forName("UTF-8")), TEST_DEP_CONTENT);
+		assertFalse(testFile.exists());
 	}
 
 	@Test
@@ -261,7 +260,7 @@ public class DeployerEngineTest {
 		IDeploymentContext ctx = de.getDownloader().getDepCtx().get("UBL");
 		assertEquals(ctx.getMainArtifact(), "UBL");
 		assertTrue(ctx.getArtifacts().containsKey("UBL"));
-		assertTrue(ctx.getArtifacts().containsKey("axis"));
+		assertFalse(ctx.getArtifacts().containsKey("axis"));
 	}
 
 	@Test
@@ -295,7 +294,7 @@ public class DeployerEngineTest {
 		assertEquals(dr, OK);
 		dr = de.deploy(UNTILL_ARTIFACT_ID, "124.5");
 		assertEquals(dr, OK);
-		assertEquals(OkDeployer.getCount(), 4);
+		assertEquals(OkDeployer.getCount(), 1);
 		dr = de.deploy(UNTILL_ARTIFACT_ID, null);
 		assertEquals(dr, OK);
 		assertEquals(OkDeployer.getCount(), 0);

@@ -19,9 +19,7 @@ import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.resolution.DependencyRequest;
-import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.eclipse.aether.resolution.*;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
@@ -164,32 +162,53 @@ class Downloader implements IDownloader {
 	private List<Artifact> resolveDependencies(List<Artifact> artifacts) {
 		List<Artifact> components = new ArrayList<>();
 		session = Utils.newRepositorySystemSession(system, TMP_REPOSITORY);
-		CollectRequest collectRequest = new CollectRequest();
 		List<String> urls = productList.getRepos().stream().map(ArtifactoryReader::toString).collect(Collectors.toList());
 		urls.add(0, portableRepository.toURI().toURL().toString());
 		List<RemoteRepository> remoteRepos = new ArrayList<>();
 		urls.forEach(url -> remoteRepos.add(new RemoteRepository.Builder(url, "default", url).build()));
-		DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
 		for (Artifact artifact : artifacts) {
-			List<Artifact> deps = new ArrayList<>();
-			collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
-			collectRequest.setRepositories(remoteRepos);
-			DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
+			List<Artifact> deps;
 			try {
-				List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
-				artifactResults.forEach(artifactResult -> {
-					Artifact art = artifactResult.getArtifact();
-					art = fileSetter(art, workingRepository);
-					deps.add(art);
-				});
+				if (artifact.getExtension().equals("jar"))
+					deps = resolveJar(remoteRepos, artifact);
+				else
+					deps = resolveNotJar(remoteRepos, artifact);
 				depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, deps));
 				components.addAll(deps);
-			} catch (DependencyResolutionException e) {
+			} catch (DependencyResolutionException | ArtifactResolutionException e) {
 				FileUtils.deleteQuietly(TMP_REPOSITORY);
 				throw new RuntimeException(e);
 			}
 		}
 		return components;
+	}
+
+	private List<Artifact> resolveJar(List<RemoteRepository> repos, Artifact art) throws DependencyResolutionException {
+		DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
+		CollectRequest collectRequest = new CollectRequest();
+		collectRequest.setRoot(new Dependency(art, JavaScopes.COMPILE));
+		collectRequest.setRepositories(repos);
+		DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
+		List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
+		List<Artifact> deps = new ArrayList<>();
+		artifactResults.forEach(artifactResult -> {
+			Artifact artifact = artifactResult.getArtifact();
+			artifact = fileSetter(artifact, workingRepository);
+			deps.add(artifact);
+		});
+		return deps;
+	}
+
+	private List<Artifact> resolveNotJar(List<RemoteRepository> repos, Artifact art) throws ArtifactResolutionException {
+		ArtifactRequest req = new ArtifactRequest();
+		req.setRepositories(repos);
+		req.setArtifact(new SubArtifact(art, "", "pom"));
+		system.resolveArtifact(session, req);
+		req.setArtifact(art);
+		ArtifactResult res = system.resolveArtifact(session, req);
+		art = res.getArtifact();
+		art = fileSetter(art, workingRepository);
+		return Collections.singletonList(art);
 	}
 
 	@SneakyThrows

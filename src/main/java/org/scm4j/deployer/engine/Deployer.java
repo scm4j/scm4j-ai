@@ -8,14 +8,37 @@ import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.scm4j.deployer.api.*;
+import org.scm4j.deployer.api.DeployedProduct;
+import org.scm4j.deployer.api.DeploymentContext;
+import org.scm4j.deployer.api.DeploymentResult;
+import org.scm4j.deployer.api.IComponent;
+import org.scm4j.deployer.api.IComponentDeployer;
+import org.scm4j.deployer.api.IDeployedProduct;
+import org.scm4j.deployer.api.IDownloader;
+import org.scm4j.deployer.api.IImmutable;
+import org.scm4j.deployer.api.ILegacyProduct;
+import org.scm4j.deployer.api.IProduct;
+import org.scm4j.deployer.api.IProductStructure;
+import org.scm4j.deployer.api.ProductStructure;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.scm4j.deployer.api.DeploymentResult.*;
-import static org.scm4j.deployer.engine.Deployer.Command.*;
+import static org.scm4j.deployer.api.DeploymentResult.ALREADY_INSTALLED;
+import static org.scm4j.deployer.api.DeploymentResult.FAILED;
+import static org.scm4j.deployer.api.DeploymentResult.INCOMPATIBLE_API_VERSION;
+import static org.scm4j.deployer.api.DeploymentResult.NEED_REBOOT;
+import static org.scm4j.deployer.api.DeploymentResult.NEWER_VERSION_EXISTS;
+import static org.scm4j.deployer.api.DeploymentResult.OK;
+import static org.scm4j.deployer.engine.Deployer.Command.DEPLOY;
+import static org.scm4j.deployer.engine.Deployer.Command.START;
+import static org.scm4j.deployer.engine.Deployer.Command.STOP;
+import static org.scm4j.deployer.engine.Deployer.Command.UNDEPLOY;
 
 @Slf4j
 @Data
@@ -110,7 +133,7 @@ class Deployer {
 		DeployedProduct deployedProduct;
 		IProduct requiredProduct;
 		ProductDescription productDescription;
-		if (version.equals("")) {
+		if (version.isEmpty()) {
 			requiredProduct = ProductStructure::createEmptyStructure;
 		} else {
 			downloader.getProductFile(art.toString());
@@ -126,7 +149,7 @@ class Deployer {
 				return res;
 			}
 			deployedProduct = createDeployedProduct(coords, deployedVersion, productDescription);
-		} else if (version.equals("")) {
+		} else if (version.isEmpty()) {
 			log.info(productName + " isn't installed!");
 			res = OK;
 			res.setProductCoords(coords);

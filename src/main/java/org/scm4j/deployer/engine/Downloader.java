@@ -19,11 +19,20 @@ import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.*;
+import org.eclipse.aether.repository.RepositoryPolicy;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyRequest;
+import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
-import org.scm4j.deployer.api.*;
+import org.scm4j.deployer.api.DeploymentContext;
+import org.scm4j.deployer.api.IComponent;
+import org.scm4j.deployer.api.IDeploymentContext;
+import org.scm4j.deployer.api.IDownloader;
+import org.scm4j.deployer.api.IProduct;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
@@ -34,7 +43,14 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Data
@@ -165,7 +181,13 @@ class Downloader implements IDownloader {
 		List<String> urls = productList.getRepos().stream().map(ArtifactoryReader::toString).collect(Collectors.toList());
 		urls.add(0, portableRepository.toURI().toURL().toString());
 		List<RemoteRepository> remoteRepos = new ArrayList<>();
-		urls.forEach(url -> remoteRepos.add(new RemoteRepository.Builder(url, "default", url).build()));
+		urls.forEach(url -> {
+			RemoteRepository rep = new RemoteRepository.Builder(url, "default", url)
+					.setPolicy(new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_DAILY,
+							RepositoryPolicy.CHECKSUM_POLICY_IGNORE))
+					.build();
+			remoteRepos.add(rep);
+		});
 		for (Artifact artifact : artifacts) {
 			List<Artifact> deps;
 			try {

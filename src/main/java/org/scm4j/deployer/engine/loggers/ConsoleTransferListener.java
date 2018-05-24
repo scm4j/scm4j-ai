@@ -6,9 +6,6 @@ import org.eclipse.aether.transfer.MetadataNotFoundException;
 import org.eclipse.aether.transfer.TransferEvent;
 import org.eclipse.aether.transfer.TransferResource;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,14 +17,6 @@ public class ConsoleTransferListener
 	private final Map<TransferResource, Long> downloads = new ConcurrentHashMap<>();
 	private int lastLength;
 	private String record;
-
-	@Override
-	public void transferInitiated(TransferEvent event) {
-
-		String message = event.getRequestType() == TransferEvent.RequestType.PUT ? "Uploading" : "Downloading";
-
-		log.info(message + ": " + event.getResource().getRepositoryUrl() + event.getResource().getResourceName());
-	}
 
 	@Override
 	public void transferProgressed(TransferEvent event) {
@@ -48,7 +37,8 @@ public class ConsoleTransferListener
 		pad(buffer, pad);
 		buffer.append('\r');
 
-		if (record != null && !record.equals(buffer.toString()))
+		if (record != null && !record.equals(buffer.toString()) && !event.getResource().getResourceName()
+				.endsWith("pom") && toMB(Long.valueOf(record)) < 1)
 			log.info(buffer.toString());
 
 		record = buffer.toString();
@@ -76,46 +66,11 @@ public class ConsoleTransferListener
 	}
 
 	@Override
-	public void transferSucceeded(TransferEvent event) {
-		transferCompleted(event);
-
-		TransferResource resource = event.getResource();
-		long contentLength = event.getTransferredBytes();
-		if (contentLength >= 0) {
-			String type = (event.getRequestType() == TransferEvent.RequestType.PUT ? "Uploaded" : "Downloaded");
-			String len = contentLength >= MB ? toMB(contentLength) + " MB" : toKB(contentLength) + " KB";
-
-			String throughput = "";
-			long duration = System.currentTimeMillis() - resource.getTransferStartTime();
-			if (duration > 0) {
-				long bytes = contentLength - resource.getResumeOffset();
-				DecimalFormat format = new DecimalFormat("0.0", new DecimalFormatSymbols(Locale.ENGLISH));
-				double mbPerSec = (bytes / 1048576.0) / (duration / 1000.0);
-				throughput = " at " + format.format(mbPerSec) + " MB/sec";
-			}
-
-			log.info(type + ": " + resource.getRepositoryUrl() + resource.getResourceName() + " (" + len
-					+ throughput + ")");
-		}
-	}
-
-	@Override
 	public void transferFailed(TransferEvent event) {
-		transferCompleted(event);
-
 		if (!(event.getException() instanceof MetadataNotFoundException)) {
 			if (log.isDebugEnabled())
 				log.debug(event.getException().getMessage(), event.getException());
 		}
-	}
-
-	private void transferCompleted(TransferEvent event) {
-		downloads.remove(event.getResource());
-
-		StringBuilder buffer = new StringBuilder(64);
-		pad(buffer, lastLength);
-		buffer.append('\r');
-		log.info(buffer.toString());
 	}
 
 	public void transferCorrupted(TransferEvent event) {

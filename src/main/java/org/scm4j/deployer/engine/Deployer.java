@@ -139,8 +139,8 @@ class Deployer {
 			downloader.getProductFile(art.toString());
 			requiredProduct = downloader.getProduct();
 		}
-		if (deployedProducts.get(coords) != null) {
-			productDescription = deployedProducts.get(coords);
+		productDescription = deployedProducts.get(coords);
+		if (productDescription != null && !productDescription.getProductVersion().equals("")) {
 			String deployedVersion = productDescription.getProductVersion();
 			if (deployedVersion.equals(version)) {
 				log.info(productName + " already installed!");

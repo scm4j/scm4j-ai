@@ -10,7 +10,7 @@ public class ConsoleRepositoryListener
 
 	public void artifactInstalling(RepositoryEvent event) {
 		if (!event.getArtifact().getExtension().equals("pom"))
-			log.info("Installing " + event.getArtifact() + " to " + event.getFile());
+			log.debug("Installing " + event.getArtifact() + " to " + event.getFile());
 	}
 
 	public void artifactDownloading(RepositoryEvent event) {

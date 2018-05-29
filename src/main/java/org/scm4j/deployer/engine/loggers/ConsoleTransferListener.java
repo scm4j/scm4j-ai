@@ -39,7 +39,7 @@ public class ConsoleTransferListener
 
 		if (record != null && !record.equals(buffer.toString()) && !event.getResource().getResourceName()
 				.endsWith("pom") && toMB(Long.valueOf(record)) < 1)
-			log.info(buffer.toString());
+			log.debug(buffer.toString());
 
 		record = buffer.toString();
 	}

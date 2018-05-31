@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class ConsoleTransferListener
+public class TransferListener
 		extends AbstractTransferListener {
 	private static final int MB = 1048576;
 	private static final int KB = 102400;

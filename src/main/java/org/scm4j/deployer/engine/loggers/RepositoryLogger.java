@@ -17,7 +17,8 @@ public class RepositoryLogger
 	public void artifactDownloading(RepositoryEvent event) {
 		if (!event.getArtifact().getExtension().equals("pom")) {
 			Artifact art = event.getArtifact();
-			log.info("Downloading " + art.getArtifactId() + "-" + art.getVersion() + " from ");
+			log.info("Downloading " + art.getArtifactId() + "-" + art.getVersion() + " from " + event.getRepository()
+					.getId());
 		}
 	}
 

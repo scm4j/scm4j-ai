@@ -17,7 +17,13 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Data
 class ProductList {
@@ -82,13 +88,12 @@ class ProductList {
 	private void downloadProductsVersions() throws IOException {
 		versionsYml = new File(localRepo, VERSIONS_ARTIFACT_ID);
 		productsVersions = new HashMap<>();
-		for (String product : products.values()) {
+		for (Map.Entry<String, String> product : products.entrySet()) {
 			Set<String> vers = new HashSet<>();
-			String artifactId = StringUtils.substringAfter(product, ":");
 			for (ArtifactoryReader reader : repos) {
-				vers.addAll(reader.getProductVersions(StringUtils.substringBefore(product, ":"), artifactId));
+				vers.addAll(reader.getProductVersions(product.getValue()));
 			}
-			productsVersions.put(artifactId, vers);
+			productsVersions.put(product.getKey(), vers);
 		}
 		Utils.writeYaml(productsVersions, versionsYml);
 	}
@@ -106,19 +111,19 @@ class ProductList {
 	}
 
 	@SuppressWarnings("unchecked")
-	void refreshProductVersions(String groupId, String artifactId) throws IOException {
+	void refreshProductVersions(String groupIdAndArtifactId) throws IOException {
 		productsVersions = Utils.readYml(versionsYml);
 		if (productsVersions == null) {
 			productsVersions = new HashMap<>();
 		}
 		Set<String> vers = new TreeSet<>();
 		for (ArtifactoryReader reader : repos) {
-			vers.addAll(reader.getProductVersions(groupId, artifactId));
+			vers.addAll(reader.getProductVersions(groupIdAndArtifactId));
 		}
 		if (vers.isEmpty()) {
-			throw new ENoMetadata(artifactId + " metadata don't find in all known repos");
+			throw new ENoMetadata(groupIdAndArtifactId + " metadata don't find in all known repos");
 		} else {
-			productsVersions.put(artifactId, vers);
+			productsVersions.put(StringUtils.substringAfter(groupIdAndArtifactId, ":"), vers);
 			Utils.writeYaml(productsVersions, versionsYml);
 		}
 	}

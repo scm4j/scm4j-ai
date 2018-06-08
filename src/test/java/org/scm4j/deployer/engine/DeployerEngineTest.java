@@ -2,7 +2,11 @@ package org.scm4j.deployer.engine;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IDeploymentContext;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
@@ -15,9 +19,21 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.scm4j.deployer.api.DeploymentResult.ALREADY_INSTALLED;
 import static org.scm4j.deployer.api.DeploymentResult.OK;
 
@@ -277,14 +293,13 @@ public class DeployerEngineTest {
 	public void testDeploy() {
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		DeploymentResult dr = de.deploy(UNTILL_ARTIFACT_ID, "124.5");
-		assertEquals(dr.getProductCoords(), UNTILL_COORDS);
+		String groupAndArtifactId = TEST_UNTILL_GROUP_ID + ":" + UNTILL_ARTIFACT_ID;
+		assertEquals(dr.getProductCoords(), groupAndArtifactId);
 		assertEquals(dr, OK);
 		dr = de.deploy(UNTILL_ARTIFACT_ID, "124.5");
 		assertEquals(dr, ALREADY_INSTALLED);
-		Map<String, Object> yaml = de.listDeployedProducts();
-		ProductDescription prod = (ProductDescription) yaml.get(UNTILL_COORDS);
-		assertEquals(prod.getDeploymentPath(), de.getDownloader().getProduct().getProductStructure().getDefaultDeploymentPath());
-		assertEquals(prod.getProductVersion(), "124.5");
+		Map<String, Boolean> deployedVersion = de.listDeployedProducts(UNTILL_ARTIFACT_ID);
+		assertTrue(deployedVersion.get("124.5"));
 	}
 
 	@Test

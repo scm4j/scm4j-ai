@@ -11,7 +11,6 @@ import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,13 +49,13 @@ public class ArtifactoryReader {
 		return new ArtifactoryReader(repoUrl, null, null);
 	}
 
-	List<String> getProductVersions(String groupId, String artifactId) throws IOException {
+	List<String> getProductVersions(String groupIdAndArtifactId) throws IOException {
 		MetadataXpp3Reader reader = new MetadataXpp3Reader();
-		URL url = getProductMetaDataURL(groupId, artifactId, METADATA_FILE_NAME);
+		URL url = getProductMetaDataURL(groupIdAndArtifactId, METADATA_FILE_NAME);
 		try {
 			return readVersions(url, reader);
 		} catch (FileNotFoundException e) {
-			url = getProductMetaDataURL(groupId, artifactId, LOCAL_METADATA_FILE_NAME);
+			url = getProductMetaDataURL(groupIdAndArtifactId, LOCAL_METADATA_FILE_NAME);
 			try {
 				return readVersions(url, reader);
 			} catch (FileNotFoundException e1) {
@@ -84,8 +83,8 @@ public class ArtifactoryReader {
 	@SneakyThrows
 	String getProductListReleaseVersion() {
 		@Cleanup
-		InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID,
-				ProductList.PRODUCT_LIST_ARTIFACT_ID, METADATA_FILE_NAME));
+		InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID + ":"
+				+ ProductList.PRODUCT_LIST_ARTIFACT_ID, METADATA_FILE_NAME));
 		MetadataXpp3Reader reader = new MetadataXpp3Reader();
 		Metadata meta = reader.read(is);
 		Versioning vers = meta.getVersioning();
@@ -108,8 +107,10 @@ public class ArtifactoryReader {
 	}
 
 	@SneakyThrows
-	private URL getProductMetaDataURL(String groupId, String artifactId, String metadataName) {
-		return new URL(new URL(this.url, groupId.replace('.', File.separatorChar) + "/" + artifactId + "/"),
+	private URL getProductMetaDataURL(String groupIdAndArtifactId, String metadataName) {
+		String[] arr = groupIdAndArtifactId.split(":");
+		String groupId = arr[0].replace('.', '/');
+		return new URL(new URL(this.url, groupId + "/" + arr[1] + "/"),
 				metadataName);
 	}
 

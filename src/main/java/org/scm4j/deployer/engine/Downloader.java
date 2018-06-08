@@ -147,7 +147,7 @@ class Downloader implements IDownloader {
 		if (!products.contains(groupId + ":" + artifactId)) return null;
 		for (ArtifactoryReader repo : productList.getRepos()) {
 			try {
-				if (!repo.getProductVersions(groupId, artifactId).contains(version)) continue;
+				if (!repo.getProductVersions(groupId + ":" + artifactId).contains(version)) continue;
 			} catch (Exception e) {
 				continue;
 			}

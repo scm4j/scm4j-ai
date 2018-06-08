@@ -125,7 +125,7 @@ class Deployer {
 	@SuppressWarnings("unchecked")
 	DeploymentResult deploy(Artifact art) {
 		DeploymentResult res;
-		String coords = String.format("%s:%s:%s", art.getGroupId(), art.getArtifactId(), art.getExtension());
+		String coords = String.format("%s:%s", art.getGroupId(), art.getArtifactId());
 		String artifactId = art.getArtifactId();
 		String version = art.getVersion();
 		String productName = artifactId + "-" + version;
@@ -148,7 +148,8 @@ class Deployer {
 				res.setProductCoords(coords);
 				return res;
 			}
-			deployedProduct = createDeployedProduct(coords, deployedVersion, productDescription);
+			deployedProduct = createDeployedProduct(coords + ":" + art.getExtension(), deployedVersion,
+					productDescription);
 		} else if (version.isEmpty()) {
 			log.info(productName + " isn't installed!");
 			res = OK;

@@ -107,22 +107,13 @@ public final class Utils {
 		throw new RuntimeException();
 	}
 
-	public static String getGroupId(Downloader downloader, String simpleName) {
-		String key = downloader.getProductList().getProducts().keySet().stream()
-				.filter(s -> s.toLowerCase().equals(simpleName.toLowerCase()))
-				.limit(1)
-				.findFirst().orElse("");
-		if (key.isEmpty()) {
-			throw new EProductNotFound("Can't find product in product list");
-		} else {
-			String groupIdAndArtifactId = downloader.getProductList().getProducts().get(key);
-			return StringUtils.substringBefore(groupIdAndArtifactId.toLowerCase(), ":");
-		}
-	}
-
 	public static Artifact initializeArtifact(Downloader downloader, String artifactId, String version) {
-		String groupId = getGroupId(downloader, artifactId);
-		return new DefaultArtifact(groupId, artifactId, "jar", version);
+		String groupAndArtifactId = downloader.getProductList().getProducts().getOrDefault(artifactId, "");
+		if (groupAndArtifactId.isEmpty()) {
+			throw new EProductNotFound("Can't find product in product list");
+		}
+		String[] arr = groupAndArtifactId.split(":");
+		return new DefaultArtifact(arr[0], arr[1], "jar", version);
 	}
 
 	@SneakyThrows

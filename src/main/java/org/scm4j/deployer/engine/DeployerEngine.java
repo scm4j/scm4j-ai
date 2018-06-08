@@ -8,7 +8,13 @@ import org.scm4j.deployer.api.IProductDeployer;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 @Data
 public class DeployerEngine implements IProductDeployer {
@@ -24,16 +30,16 @@ public class DeployerEngine implements IProductDeployer {
 	}
 
 	@Override
-	public DeploymentResult deploy(String artifactId, String version) {
+	public DeploymentResult deploy(String simpleName, String version) {
 		listProducts();
-		Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
+		Artifact artifact = Utils.initializeArtifact(downloader, simpleName, version);
 		return deployer.deploy(artifact);
 	}
 
 	@Override
-	public void download(String artifactId, String version) {
+	public void download(String simpleName, String version) {
 		listProducts();
-		Artifact artifact = Utils.initializeArtifact(downloader, artifactId, version);
+		Artifact artifact = Utils.initializeArtifact(downloader, simpleName, version);
 		downloader.getProductWithDependency(artifact.toString());
 	}
 
@@ -53,34 +59,50 @@ public class DeployerEngine implements IProductDeployer {
 	}
 
 	@Override
-	public Map<String, Boolean> listProductVersions(String artifactId) {
+	public Map<String, Boolean> listProductVersions(String simpleName) {
 		Optional<Set<String>> versions = Optional.ofNullable
-				(downloader.getProductList().readProductVersions(artifactId).get(artifactId));
+				(downloader.getProductList().readProductVersions(simpleName).get(simpleName));
 		Map<String, Boolean> downloadedVersions = new LinkedHashMap<>();
 		versions.ifPresent(strings -> strings.forEach
-				(version -> downloadedVersions.put(version, versionExists(artifactId, version))));
+				(version -> downloadedVersions.put(version, versionDownloaded(simpleName, version))));
 		return downloadedVersions;
 	}
 
-	private boolean versionExists(String artifactId, String version) {
-		String groupId = Utils.getGroupId(downloader, artifactId);
-		File productVersionFolder = new File(downloader.getWorkingRepository(), Utils.coordsToFolderStructure(groupId,
-				artifactId, version));
+	private boolean versionDownloaded(String simpleName, String version) {
+		String groupIdAndArtId = downloader.getProductList().getProducts().getOrDefault(simpleName, "");
+		String[] arr = groupIdAndArtId.split(":");
+		File productVersionFolder = new File(downloader.getPortableRepository(), Utils.coordsToFolderStructure(arr[0],
+				arr[1], version));
+		if (!productVersionFolder.exists())
+			productVersionFolder = new File(downloader.getWorkingRepository(), Utils.coordsToFolderStructure(arr[0],
+					arr[1], version));
 		return productVersionFolder.exists();
 	}
 
 	@Override
-	public Map<String, Boolean> refreshProductVersions(String artifactId) {
+	public Map<String, Boolean> refreshProductVersions(String simpleName) {
 		try {
-			downloader.getProductList().refreshProductVersions(Utils.getGroupId(downloader, artifactId), artifactId);
+			String groupIdAndArtId = downloader.getProductList().getProducts().getOrDefault(simpleName, "");
+			downloader.getProductList().refreshProductVersions(groupIdAndArtId);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		return listProductVersions(artifactId);
+		return listProductVersions(simpleName);
 	}
 
 	@Override
-	public Map<String, Object> listDeployedProducts() {
-		return deployer.listDeployedProducts();
+	public Map<String, Boolean> listDeployedProducts(String simpleName) {
+		HashMap<String, Boolean> deployed = new HashMap<>();
+		Map<String, Object> deployedProducts = deployer.listDeployedProducts();
+		String groupIdAndArtId = downloader.getProductList().getProducts().getOrDefault(simpleName, "");
+		ProductDescription desc = (ProductDescription) deployedProducts.getOrDefault(groupIdAndArtId,
+				null);
+		if (desc == null) {
+			return deployed;
+		} else {
+			String version = desc.getProductVersion();
+			deployed.put(version, true);
+			return deployed;
+		}
 	}
 }

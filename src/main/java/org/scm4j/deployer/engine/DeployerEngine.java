@@ -82,8 +82,7 @@ public class DeployerEngine implements IProductDeployer {
 	@Override
 	public Map<String, Boolean> refreshProductVersions(String simpleName) {
 		try {
-			String groupIdAndArtId = downloader.getProductList().getProducts().getOrDefault(simpleName, "");
-			downloader.getProductList().refreshProductVersions(groupIdAndArtId);
+			downloader.getProductList().refreshProductVersions(simpleName);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

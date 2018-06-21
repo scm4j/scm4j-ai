@@ -102,6 +102,8 @@ public class ArtifactoryReader {
 			if (userName != null && password != null)
 				con.setRequestProperty("Authorization", "Basic "
 						+ Base64.encodeBase64String((userName + ":" + password).getBytes()));
+			if (con.getResponseCode() == 401)
+				throw new FileNotFoundException();
 			return con.getInputStream();
 		}
 	}

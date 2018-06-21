@@ -4,7 +4,6 @@ import lombok.Cleanup;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
@@ -105,25 +104,27 @@ class ProductList {
 		} catch (NullPointerException e) {
 			throw new EProductListEntryNotFound("Can't find product list");
 		}
-		if (productsVersions == null) productsVersions = new HashMap<>();
+		if (productsVersions == null)
+			productsVersions = new HashMap<>();
 		new TreeSet<>().addAll(productsVersions.getOrDefault(artifactId, new TreeSet<>()));
 		return productsVersions;
 	}
 
 	@SuppressWarnings("unchecked")
-	void refreshProductVersions(String groupIdAndArtifactId) throws IOException {
+	void refreshProductVersions(String simpleName) throws IOException {
+		String groupIdAndArtId = getProducts().getOrDefault(simpleName, "");
 		productsVersions = Utils.readYml(versionsYml);
 		if (productsVersions == null) {
 			productsVersions = new HashMap<>();
 		}
 		Set<String> vers = new TreeSet<>();
 		for (ArtifactoryReader reader : repos) {
-			vers.addAll(reader.getProductVersions(groupIdAndArtifactId));
+			vers.addAll(reader.getProductVersions(groupIdAndArtId));
 		}
 		if (vers.isEmpty()) {
-			throw new ENoMetadata(groupIdAndArtifactId + " metadata don't find in all known repos");
+			throw new ENoMetadata(simpleName + " metadata don't find in all known repos");
 		} else {
-			productsVersions.put(StringUtils.substringAfter(groupIdAndArtifactId, ":"), vers);
+			productsVersions.put(simpleName, vers);
 			Utils.writeYaml(productsVersions, versionsYml);
 		}
 	}

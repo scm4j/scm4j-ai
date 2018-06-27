@@ -13,7 +13,7 @@ This component automates installation (deployment) of products which are represe
 - `product`: jar-artifact whose main class has public method `getProductStructure` which returns  `product structure`
 - `product structure`: lists `component's` and `dependent products` if they are exists
 - `dependent products`: without which it is impossible to install the current product
-- `component`: represented by  artifact coordinates and one or few `deployment procedure`
+- `component`: represented by  artifact coordinates (`<groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>`) and one or few `deployment procedure`
 - `deployment procedure`: lists `actions`
 - `action`: represented by `component deployer` class and `params`
 - `component deployer`: is instantiated during `deployment procedure`, action paremeters are passed using `init` method

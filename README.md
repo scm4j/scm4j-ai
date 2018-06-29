@@ -43,8 +43,9 @@ Scenarious are represeneted by methods of `DeployerEngine`
 
 # Deployment
 
-- Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT, INCOMPATIBLE_API_VERSION, ALREADY_INSTALLED, FAILED
+- Deployment result: OK, NEWER_VERSION_EXISTS, NEED_REBOOT(only for Inno Setup .exe who provide param /restartexitcode={value}), REEBOOT_CONTINUE, INCOMPATIBLE_API_VERSION, ALREADY_INSTALLED, FAILED
 - INCOMPATIBLE_API_VERSION: Product should depend on `deployer-api` which is compatible with one used by engine
+- NEED_REBOOT: Only for Inno Setup .exe who provide param /restartexitcode=$restartexitcode. It means that installation succesfully but PC need to restart before work with installed `product`
 - DP - deployed product. Contains IProductStructure, Coords, and deployment URL
 - RP - required product
 
@@ -55,22 +56,18 @@ Steps
 - Install dependencies (If product has `dependency products`)
   - all `dependency products` are installed recursively
   - if one of `dependency products` installation fails - `DP` installation fails
-  - if `dependency product` installation returns `NEED_REBOOT` - `DP` returns `NEED_REBOOT`
+  - if `dependency product` installation returns `REBOOT_CONTINUE` - `DP` returns `REBOOT_CONTINUE`
 - If `DP`.version equals to `RP`.version then `ALREADY_INSTALLED` is returned
 - If `DP`.version greater then `RP`.version then `NEWER_VERSION_EXISTS` is returned
 - Stop `DP`
   - `DP` deployers and components are downloaded
   - All `DP` components are stopped in reverse order
-  - If `stop` fails all `DP`-components are `disabled`,`NEED_REBOOT` is returned and all already deployed components undeploy
+  - If `stop` fails all `DP`-components are `disabled`,`REBOOT_CONTINUE` returns
 - Deployment
   - Components which does not exist anymore are undeployed, updated components redeployed (stop/undeploy/deploy), new components deployed
 - Start
   - All components started
 - If `portable folder` is specified it is implicitly used as a main repository (before all repos listed in `product list`)
-
-## Error Handling
-
-If error occurs during component deployment previously deployed components are stopped and undeployed (NEED_REBOOT is ignored), FAILED is returned
 
 # Self-upgrade
 

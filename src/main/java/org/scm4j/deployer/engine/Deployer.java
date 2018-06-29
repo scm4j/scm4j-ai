@@ -22,6 +22,7 @@ import org.scm4j.deployer.api.IProductStructure;
 import org.scm4j.deployer.api.ProductStructure;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import static org.scm4j.deployer.api.DeploymentResult.INCOMPATIBLE_API_VERSION;
 import static org.scm4j.deployer.api.DeploymentResult.NEED_REBOOT;
 import static org.scm4j.deployer.api.DeploymentResult.NEWER_VERSION_EXISTS;
 import static org.scm4j.deployer.api.DeploymentResult.OK;
+import static org.scm4j.deployer.api.DeploymentResult.REBOOT_CONTINUE;
 import static org.scm4j.deployer.engine.Deployer.Command.DEPLOY;
 import static org.scm4j.deployer.engine.Deployer.Command.START;
 import static org.scm4j.deployer.engine.Deployer.Command.STOP;
@@ -56,18 +58,20 @@ class Deployer {
 		deployedProductsFile = new File(workingFolder, DEPLOYED_PRODUCTS);
 	}
 
-	private static DeploymentResult compareVersionWithLegacyVersion(String version, String legacyVersion,
-	                                                                String productName, String coords) {
+	private static DeploymentResult compareVersionWithDeployedVersion(String version, String legacyVersion,
+	                                                                  String productName, String coords) {
 		DeploymentResult res = OK;
-		DefaultArtifactVersion vers = new DefaultArtifactVersion(version);
-		DefaultArtifactVersion legacyVers = new DefaultArtifactVersion(legacyVersion);
-		if (vers.compareTo(legacyVers) == 0) {
-			log.info(productName + " already installed!");
-			res = ALREADY_INSTALLED;
-		}
-		if (vers.compareTo(legacyVers) < 0) {
-			log.info(productName + " newer version exist");
-			res = NEWER_VERSION_EXISTS;
+		if (!version.isEmpty()) {
+			DefaultArtifactVersion vers = new DefaultArtifactVersion(version);
+			DefaultArtifactVersion legacyVers = new DefaultArtifactVersion(legacyVersion);
+			if (vers.compareTo(legacyVers) == 0) {
+				log.info(productName + " already installed!");
+				res = ALREADY_INSTALLED;
+			}
+			if (vers.compareTo(legacyVers) < 0) {
+				log.info(productName + " newer version exist");
+				res = NEWER_VERSION_EXISTS;
+			}
 		}
 		res.setProductCoords(coords);
 		return res;
@@ -142,10 +146,8 @@ class Deployer {
 		productDescription = deployedProducts.get(coords);
 		if (productDescription != null && !productDescription.getProductVersion().equals("")) {
 			String deployedVersion = productDescription.getProductVersion();
-			if (deployedVersion.equals(version)) {
-				log.info(productName + " already installed!");
-				res = ALREADY_INSTALLED;
-				res.setProductCoords(coords);
+			res = compareVersionWithDeployedVersion(version, deployedVersion, productName, coords);
+			if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
 				return res;
 			}
 			deployedProduct = createDeployedProduct(coords + ":" + art.getExtension(), deployedVersion,
@@ -158,7 +160,7 @@ class Deployer {
 		} else if (requiredProduct instanceof ILegacyProduct) {
 			deployedProduct = ((ILegacyProduct) requiredProduct).queryLegacyDeployedProduct();
 			if (deployedProduct != null) {
-				res = compareVersionWithLegacyVersion(version, deployedProduct.getProductVersion(), productName, coords);
+				res = compareVersionWithDeployedVersion(version, deployedProduct.getProductVersion(), productName, coords);
 				if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
 					deploymentPath = deployedProduct.getDeploymentPath();
 					writeProductDescriptionInDeployedProductsYaml(coords, deployedProduct.getProductVersion());
@@ -279,47 +281,72 @@ class Deployer {
 	private DeploymentResult applyCommand(IComponent component, Command command) {
 		List<IComponentDeployer> deployers = component.getDeploymentProcedure().getComponentDeployers();
 		DeploymentResult res;
-		List<IComponentDeployer> successfulDeployers = new ArrayList<>();
-		for (IComponentDeployer deployer : deployers) {
+		Artifact coords = component.getArtifactCoords();
+		String artifactId = coords.getArtifactId();
+		for (int i = 0; i < deployers.size(); i++) {
+			IComponentDeployer deployer = deployers.get(i);
+			File currentDeployerLog = new File(System.getProperty("java.io.tmpdir"), artifactId + "-"
+					+ coords.getVersion() + "-" + deployer.getClass().getSimpleName() + "-" + i + ".txt");
+			int rebootCount = 0;
+			if (currentDeployerLog.exists()) {
+				rebootCount = readRebootCount(currentDeployerLog);
+			}
 			DeploymentContext context;
-			if (component.getArtifactCoords().getArtifactId().equals("legacyComponent"))
+			if (artifactId.equals("legacyComponent"))
 				context = new DeploymentContext("legacyProduct");
 			else
-				context = downloader.getContextByArtifactId(component.getArtifactCoords().getArtifactId());
+				context = downloader.getContextByArtifactId(artifactId);
 			context.setDeploymentPath(deploymentPath);
 			deployer.init(context);
 			switch (command) {
-				case DEPLOY:
-					res = deployer.deploy();
-					break;
-				case UNDEPLOY:
-					res = deployer.undeploy();
-					break;
-				case STOP:
-					res = deployer.stop();
-					break;
-				case START:
-					res = deployer.start();
-					break;
-				default:
-					throw new IllegalArgumentException();
+			case DEPLOY:
+				res = deployer.deploy();
+				break;
+			case UNDEPLOY:
+				res = deployer.undeploy();
+				break;
+			case STOP:
+				res = deployer.stop();
+				break;
+			case START:
+				res = deployer.start();
+				break;
+			default:
+				throw new IllegalArgumentException();
 			}
-			if (command == DEPLOY && (res == FAILED || res == NEED_REBOOT)) {
-				if (log.isDebugEnabled())
-					log.debug(deployer.getClass().getSimpleName() + " failed");
-				successfulDeployers = Lists.reverse(successfulDeployers);
-				for (IComponentDeployer undeployer : successfulDeployers) {
-					undeployer.undeploy();
-					if (log.isDebugEnabled())
-						log.debug(undeployer.getClass().getSimpleName() + " successfully undeployed");
-				}
+			if (res == FAILED || res == NEED_REBOOT) {
 				return res;
 			}
-			if (log.isDebugEnabled())
-				log.debug(deployer.getClass().getSimpleName() + " done");
-			successfulDeployers.add(deployer);
+			if (res == REBOOT_CONTINUE) {
+				if (rebootCount == 2) {
+					log.error("Component deployer ask for reboot but it's third reboot for this deployer");
+					return FAILED;
+				} else {
+					writeRebootCount(currentDeployerLog, rebootCount);
+				}
+			}
+			log.trace(deployer.getClass().getSimpleName() + " done");
 		}
 		return OK;
+	}
+
+	private void writeRebootCount(File fileWithRebootCounts, int rebootCount) {
+		try {
+			FileUtils.writeStringToFile(fileWithRebootCounts, Integer.toString(rebootCount), "UTF-8");
+		} catch (IOException e) {
+			log.warn("Can't create file to write reboots count cause of " + e.toString());
+		}
+	}
+
+	private int readRebootCount(File fileWithRebootCounts) {
+		try {
+			return Integer.valueOf(FileUtils.readFileToString(fileWithRebootCounts, "UTF-8"));
+		} catch (IOException e) {
+			log.warn("Can't write reboot count from reboot count file cause of " + e.toString());
+			return 0;
+		} finally {
+			FileUtils.deleteQuietly(fileWithRebootCounts);
+		}
 	}
 
 	@SuppressWarnings("unchecked")

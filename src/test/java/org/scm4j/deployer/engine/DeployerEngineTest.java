@@ -213,7 +213,8 @@ public class DeployerEngineTest {
 		List<String> list = de.listProducts();
 		assertEquals(list, Collections.singletonList("some"));
 		//reload product list
-		assertEquals(de.refreshProducts(), Collections.singletonList(UNTILL_ARTIFACT_ID));
+		List<String> refreshProducts = de.refreshProducts();
+		assertEquals(refreshProducts, Collections.singletonList(UNTILL_ARTIFACT_ID));
 	}
 
 	@Test
@@ -309,10 +310,10 @@ public class DeployerEngineTest {
 		assertEquals(dr, OK);
 		dr = de.deploy(UNTILL_ARTIFACT_ID, "124.5");
 		assertEquals(dr, OK);
-		assertEquals(OkDeployer.getCount(), 1);
+		assertEquals(1, OkDeployer.getCount());
 		dr = de.deploy(UNTILL_ARTIFACT_ID, null);
 		assertEquals(dr, OK);
-		assertEquals(OkDeployer.getCount(), 0);
+		assertEquals(0, OkDeployer.getCount());
 	}
 
 	@Test

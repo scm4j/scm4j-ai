@@ -5,13 +5,25 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.scm4j.deployer.api.*;
+import org.scm4j.deployer.api.DeployedProduct;
+import org.scm4j.deployer.api.DeploymentContext;
+import org.scm4j.deployer.api.DeploymentResult;
+import org.scm4j.deployer.api.IComponent;
+import org.scm4j.deployer.api.IDownloader;
+import org.scm4j.deployer.api.IProduct;
+import org.scm4j.deployer.api.IProductStructure;
 import org.scm4j.deployer.engine.Deployer.Command;
 import org.scm4j.deployer.engine.deployers.FailedDeployer;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
 import org.scm4j.deployer.engine.deployers.RebootDeployer;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
-import org.scm4j.deployer.engine.products.*;
+import org.scm4j.deployer.engine.products.DependentProduct;
+import org.scm4j.deployer.engine.products.EmptyProduct;
+import org.scm4j.deployer.engine.products.FailProduct;
+import org.scm4j.deployer.engine.products.ImmutableProduct;
+import org.scm4j.deployer.engine.products.LegacyProduct;
+import org.scm4j.deployer.engine.products.OkProduct;
+import org.scm4j.deployer.engine.products.RebootProduct;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -19,10 +31,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
-import static org.scm4j.deployer.api.DeploymentResult.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.scm4j.deployer.api.DeploymentResult.ALREADY_INSTALLED;
+import static org.scm4j.deployer.api.DeploymentResult.FAILED;
+import static org.scm4j.deployer.api.DeploymentResult.NEED_REBOOT;
+import static org.scm4j.deployer.api.DeploymentResult.NEWER_VERSION_EXISTS;
+import static org.scm4j.deployer.api.DeploymentResult.OK;
 import static org.scm4j.deployer.engine.Deployer.Command.DEPLOY;
 import static org.scm4j.deployer.engine.Deployer.Command.UNDEPLOY;
 
@@ -87,11 +106,9 @@ public class DeployerTest {
 		dr = dep.compareAndDeployProducts(failProduct, prod, "ok", "1.0");
 		assertEquals(FAILED, dr);
 		assertEquals(1, FailedDeployer.getCount());
-		assertEquals(0, OkDeployer.getCount());
 		dr = dep.compareAndDeployProducts(rebootProduct, prod, "ok", "1.0");
 		assertEquals(NEED_REBOOT, dr);
 		assertEquals(1, RebootDeployer.getCount());
-		assertEquals(0, OkDeployer.getCount());
 	}
 
 	private IDownloader mockDeploymentContext() {
@@ -158,7 +175,7 @@ public class DeployerTest {
 
 		String snapshot = "-SNAPSHOT";
 		dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + higherVersion + snapshot));
-		assertEquals(OK, dr);
+		assertEquals(NEWER_VERSION_EXISTS, dr);
 		assertEquals(higherVersion, FileUtils.readFileToString(latest, "UTF-8"));
 
 		higherVersion = String.valueOf(Float.valueOf(higherVersion) + 1.0);
@@ -178,7 +195,7 @@ public class DeployerTest {
 		pd1.setProductVersion("1.0");
 		pd1.setDeploymentPath("C:/");
 		pd1.setDeploymentTime(System.currentTimeMillis());
-		assertTrue(pd.equals(pd1));
+		assertEquals(pd, pd1);
 	}
 
 	@Test

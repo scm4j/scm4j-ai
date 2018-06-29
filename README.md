@@ -38,7 +38,7 @@ Scenarious are represeneted by methods of `DeployerEngine`
 - `listProductVersions`: gets data from offline cache (products-versions.yml)
 - `refreshProductVersions`: refreshes offline cache
 - `download`: downloads given product
-- `deploy`: deploys given product
+- `deploy`: deploys given product. Downgrade disabled. To downgrade `product` need undeploy `product` and install older version 
 - `listDeployedProducts`: lists all deployed product from `deployed-products.yml`
 
 # Deployment

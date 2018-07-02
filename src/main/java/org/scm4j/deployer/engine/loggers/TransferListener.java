@@ -29,7 +29,8 @@ public class TransferListener
 			long total = entry.getKey().getContentLength();
 			long complete = entry.getValue();
 
-			buffer.append(getStatus(complete, total)).append("  ");
+			if (toMB(total) > 1)
+				buffer.append(getStatus(complete, total)).append("  ");
 		}
 
 		int pad = lastLength - buffer.length();
@@ -38,7 +39,7 @@ public class TransferListener
 		buffer.append('\r');
 
 		if (record != null && !record.equals(buffer.toString()) && !event.getResource().getResourceName()
-				.endsWith("pom") && toMB(Long.valueOf(record)) > 1)
+				.endsWith("pom"))
 			log.info(buffer.toString());
 
 		record = buffer.toString();

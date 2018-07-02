@@ -38,8 +38,8 @@ public class TransferListener
 		buffer.append('\r');
 
 		if (record != null && !record.equals(buffer.toString()) && !event.getResource().getResourceName()
-				.endsWith("pom") && toMB(Long.valueOf(record)) < 1)
-			log.debug(buffer.toString());
+				.endsWith("pom") && toMB(Long.valueOf(record)) > 1)
+			log.info(buffer.toString());
 
 		record = buffer.toString();
 	}

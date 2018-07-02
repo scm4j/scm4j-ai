@@ -173,7 +173,6 @@ class Downloader implements IDownloader {
 		loader = URLClassLoader.newInstance(urls);
 	}
 
-	//TODO think about not download deps if artifact is't jar
 	@SneakyThrows
 	private List<Artifact> resolveDependencies(List<Artifact> artifacts) {
 		List<Artifact> components = new ArrayList<>();

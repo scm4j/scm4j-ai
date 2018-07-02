@@ -197,7 +197,8 @@ class Deployer {
 		String productName = artifactId + "-" + version;
 		if (!requiredProduct.getDependentProducts().isEmpty()) {
 			res = deployDependent(requiredProduct);
-			if (res == FAILED || res == NEED_REBOOT || res == INCOMPATIBLE_API_VERSION) return res;
+			if (res == FAILED || res == NEED_REBOOT || res == INCOMPATIBLE_API_VERSION)
+				return res;
 		}
 		Map<Command, List<IComponent>> changedComponents;
 		if (deployedProduct != null) {
@@ -207,9 +208,11 @@ class Deployer {
 			deploymentPath = deployedProduct.getDeploymentPath();
 			deployedComponents = Lists.reverse(deployedComponents);
 			res = doCommands(deployedComponents, STOP);
-			if (res != OK) return res;
+			if (res != OK)
+				return res;
 			res = doCommands(changedComponents.getOrDefault(UNDEPLOY, Collections.emptyList()), UNDEPLOY);
-			if (res != OK) return res;
+			if (res != OK)
+				return res;
 		} else {
 			changedComponents = compareProductStructures(requiredProduct.getProductStructure(), ProductStructure.createEmptyStructure());
 			deploymentPath = requiredProduct.getProductStructure().getDefaultDeploymentPath();
@@ -220,9 +223,11 @@ class Deployer {
 		if (!changedComponents.get(DEPLOY).isEmpty()) {
 			componentForDeploy = changedComponents.get(DEPLOY);
 			res = deployComponents(componentForDeploy);
-			if (res != OK) return res;
+			if (res != OK)
+				return res;
 			res = doCommands(requiredProduct.getProductStructure().getComponents(), START);
-			if (res != OK) return res;
+			if (res != OK)
+				return res;
 			log.info(productName + " successfully deployed");
 			return res;
 		} else {

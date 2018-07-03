@@ -179,6 +179,8 @@ class Downloader implements IDownloader {
 		session = Utils.newRepositorySystemSession(system, TMP_REPOSITORY);
 		List<String> urls = productList.getRepos().stream().map(ArtifactoryReader::toString).collect(Collectors.toList());
 		urls.add(0, portableRepository.toURI().toURL().toString());
+		if (!portableRepository.equals(workingRepository))
+			urls.add(0, workingRepository.toURI().toURL().toString());
 		List<RemoteRepository> remoteRepos = new ArrayList<>();
 		urls.forEach(url -> {
 			RemoteRepository rep = new RemoteRepository.Builder(url, "default", url)
@@ -247,7 +249,8 @@ class Downloader implements IDownloader {
 		} else {
 			res = downloadProduct(groupId, artifactId, version, extension, classifier, res);
 			if (res == null)
-				throw new EProductNotFound(Utils.coordsToFileName(artifactId, version, extension) + " is not found in all known repositories");
+				throw new EProductNotFound(Utils.coordsToFileName(artifactId, version, extension)
+						+ " is not found in all known repositories");
 		}
 		product.getProductStructure();
 		loader.close();

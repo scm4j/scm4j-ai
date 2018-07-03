@@ -305,7 +305,7 @@ class Deployer {
 							+ " deployment failed");
 					return FAILED;
 				} else {
-					writeRebootCount(currentDeployerLog, rebootCount);
+					writeRebootCount(currentDeployerLog, ++rebootCount);
 					return res;
 				}
 			}

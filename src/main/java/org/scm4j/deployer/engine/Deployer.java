@@ -222,7 +222,7 @@ class Deployer {
 		List<IComponent> componentForDeploy;
 		if (!changedComponents.get(DEPLOY).isEmpty()) {
 			componentForDeploy = changedComponents.get(DEPLOY);
-			res = deployComponents(componentForDeploy);
+			res = doCommands(componentForDeploy, DEPLOY);
 			if (res != OK)
 				return res;
 			res = doCommands(requiredProduct.getProductStructure().getComponents(), START);
@@ -247,29 +247,6 @@ class Deployer {
 		return res;
 	}
 
-	private DeploymentResult deployComponents(List<IComponent> components) {
-		DeploymentResult res = null;
-		List<IComponent> deployedComponents = new ArrayList<>();
-		for (IComponent component : components) {
-			res = applyCommand(component, DEPLOY);
-			if (res == FAILED || res == NEED_REBOOT) {
-				if (log.isDebugEnabled())
-					log.debug(component.getArtifactCoords().getArtifactId() + " failed");
-				deployedComponents = Lists.reverse(deployedComponents);
-				for (IComponent deployedComponent : deployedComponents) {
-					applyCommand(deployedComponent, UNDEPLOY);
-					if (log.isDebugEnabled())
-						log.debug(deployedComponent.getArtifactCoords().getArtifactId() + " successfully undeployed");
-				}
-				return res;
-			}
-			if (log.isDebugEnabled())
-				log.debug(component.getArtifactCoords().getArtifactId() + " successfully deployed");
-			deployedComponents.add(component);
-		}
-		return res;
-	}
-
 	private DeploymentResult deployDependent(IProduct product) {
 		List<Artifact> dependents = product.getDependentProducts().stream()
 				.map(DefaultArtifact::new)
@@ -277,7 +254,7 @@ class Deployer {
 		DeploymentResult res = OK;
 		for (Artifact dependent : dependents) {
 			res = deploy(dependent);
-			if (res == FAILED || res == NEED_REBOOT)
+			if (res == FAILED || res == NEED_REBOOT || res == REBOOT_CONTINUE)
 				return res;
 		}
 		return res;
@@ -324,10 +301,12 @@ class Deployer {
 			}
 			if (res == REBOOT_CONTINUE) {
 				if (rebootCount == 2) {
-					log.error("Component deployer ask for reboot but it's third reboot for this deployer");
+					log.error("Component deployer ask for reboot but it's third reboot for this deployer,"
+							+ " deployment failed");
 					return FAILED;
 				} else {
 					writeRebootCount(currentDeployerLog, rebootCount);
+					return res;
 				}
 			}
 			log.trace(deployer.getClass().getSimpleName() + " done");

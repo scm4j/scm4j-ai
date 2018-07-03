@@ -326,9 +326,10 @@ class Deployer {
 
 	private int readRebootCount(File fileWithRebootCounts) {
 		try {
-			return Integer.valueOf(FileUtils.readFileToString(fileWithRebootCounts, "UTF-8"));
+			String countString = FileUtils.readFileToString(fileWithRebootCounts, "UTF-8");
+			return Integer.valueOf(countString);
 		} catch (IOException e) {
-			log.warn("Can't write reboot count from reboot count file cause of " + e.toString());
+			log.warn("Can't read from reboot count file cause of " + e.toString());
 			return 0;
 		} finally {
 			FileUtils.deleteQuietly(fileWithRebootCounts);

@@ -171,7 +171,7 @@ class Deployer {
 			deployedProduct = null;
 		}
 		downloader.loadProductDependency(new File(workingFolder, "repository"));
-		res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version);
+		res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version, coords);
 		res.setProductCoords(coords);
 		if (res != OK) return res;
 		writeProductDescriptionInDeployedProductsYaml(coords, version);
@@ -192,7 +192,7 @@ class Deployer {
 	}
 
 	DeploymentResult compareAndDeployProducts(IProduct requiredProduct, IDeployedProduct deployedProduct,
-	                                          String artifactId, String version) {
+	                                          String artifactId, String version, String coords) {
 		DeploymentResult res;
 		String productName = artifactId + "-" + version;
 		if (!requiredProduct.getDependentProducts().isEmpty()) {
@@ -213,6 +213,8 @@ class Deployer {
 			res = doCommands(changedComponents.getOrDefault(UNDEPLOY, Collections.emptyList()), UNDEPLOY);
 			if (res != OK)
 				return res;
+			else
+				writeProductDescriptionInDeployedProductsYaml(coords, "");
 		} else {
 			changedComponents = compareProductStructures(requiredProduct.getProductStructure(), ProductStructure.createEmptyStructure());
 			deploymentPath = requiredProduct.getProductStructure().getDefaultDeploymentPath();

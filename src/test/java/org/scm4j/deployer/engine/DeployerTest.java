@@ -98,15 +98,15 @@ public class DeployerTest {
 		DeployedProduct prod = createDeployedProduct();
 		IProduct failProduct = new FailProduct();
 		IProduct rebootProduct = new RebootProduct();
-		DeploymentResult dr = dep.compareAndDeployProducts(okProduct, null, "ok", "1.0");
+		DeploymentResult dr = dep.compareAndDeployProducts(okProduct, null, "ok", "1.0", "");
 		assertEquals("file://C:/unTill", dep.getDeploymentPath());
 		assertEquals(OK, dr);
-		dr = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0");
+		dr = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0", "");
 		assertEquals(OK, dr);
-		dr = dep.compareAndDeployProducts(failProduct, prod, "ok", "1.0");
+		dr = dep.compareAndDeployProducts(failProduct, prod, "ok", "1.0", "");
 		assertEquals(FAILED, dr);
 		assertEquals(1, FailedDeployer.getCount());
-		dr = dep.compareAndDeployProducts(rebootProduct, prod, "ok", "1.0");
+		dr = dep.compareAndDeployProducts(rebootProduct, prod, "ok", "1.0", "");
 		assertEquals(NEED_REBOOT, dr);
 		assertEquals(1, RebootDeployer.getCount());
 	}
@@ -130,10 +130,10 @@ public class DeployerTest {
 		DeployedProduct prod = createDeployedProduct();
 		DependentProduct depProd = new DependentProduct();
 		Deployer dep = new Deployer(new File(DeployerEngineTest.getTestDir()), downloader);
-		DeploymentResult res = dep.compareAndDeployProducts(depProd, null, "ok", "1.0");
+		DeploymentResult res = dep.compareAndDeployProducts(depProd, null, "ok", "1.0", "");
 		assertEquals(OK, res);
 		assertEquals(6, OkDeployer.getCount());
-		res = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0");
+		res = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0", "");
 		assertEquals(OK, res);
 		assertEquals(3, OkDeployer.getCount());
 	}

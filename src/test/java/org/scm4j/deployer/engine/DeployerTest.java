@@ -93,7 +93,7 @@ public class DeployerTest {
 	@Test
 	public void testDeploy() {
 		IDownloader downloader = mockDeploymentContext();
-		Deployer dep = new Deployer(new File("C:/"), downloader);
+		Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
 		IProduct okProduct = new OkProduct();
 		DeployedProduct prod = createDeployedProduct();
 		IProduct failProduct = new FailProduct();

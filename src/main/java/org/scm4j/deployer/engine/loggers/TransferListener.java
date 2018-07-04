@@ -37,10 +37,10 @@ public class TransferListener
 		lastLength = buffer.length();
 		pad(buffer, pad);
 		buffer.append('\r');
-
-		if (record != null && !record.equals(buffer.toString()) && !event.getResource().getResourceName()
-				.endsWith("pom"))
-			log.info(buffer.toString());
+		//TODO if Mb will be needed
+//		if (record != null && !record.equals(buffer.toString()) && !event.getResource().getResourceName()
+//				.endsWith("pom"))
+//			log.info(buffer.toString());
 
 		record = buffer.toString();
 	}

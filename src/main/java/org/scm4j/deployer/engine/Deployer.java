@@ -165,7 +165,8 @@ class Deployer {
 					deploymentPath = deployedProduct.getDeploymentPath();
 					writeProductDescriptionInDeployedProductsYaml(coords, deployedProduct.getProductVersion());
 				}
-				if (res != OK) return res;
+				if (res != OK)
+					return res;
 			}
 		} else {
 			deployedProduct = null;
@@ -173,11 +174,14 @@ class Deployer {
 		downloader.loadProductDependency(new File(workingFolder, "repository"));
 		res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version, coords);
 		res.setProductCoords(coords);
-		if (res != OK) return res;
-		writeProductDescriptionInDeployedProductsYaml(coords, version);
-		if (requiredProduct instanceof IImmutable)
-			writeLatestFileForImmutableProduct(requiredProduct, version);
-		return res;
+		if (res == OK || res == NEED_REBOOT) {
+			writeProductDescriptionInDeployedProductsYaml(coords, version);
+			if (requiredProduct instanceof IImmutable)
+				writeLatestFileForImmutableProduct(requiredProduct, version);
+			return res;
+		} else {
+			return res;
+		}
 	}
 
 	private DeployedProduct createDeployedProduct(String coords, String deployedVersion,

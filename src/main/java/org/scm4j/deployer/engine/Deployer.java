@@ -215,10 +215,10 @@ class Deployer {
 			if (res != OK)
 				return res;
 			res = doCommands(changedComponents.getOrDefault(UNDEPLOY, Collections.emptyList()), UNDEPLOY);
+			if (res == OK || res == REBOOT_CONTINUE)
+				writeProductDescriptionInDeployedProductsYaml(coords, "");
 			if (res != OK)
 				return res;
-			else
-				writeProductDescriptionInDeployedProductsYaml(coords, "");
 		} else {
 			changedComponents = compareProductStructures(requiredProduct.getProductStructure(), ProductStructure.createEmptyStructure());
 			deploymentPath = requiredProduct.getProductStructure().getDefaultDeploymentPath();

@@ -133,6 +133,7 @@ class Deployer {
 		String artifactId = art.getArtifactId();
 		String version = art.getVersion();
 		String productName = artifactId + "-" + version;
+		log.info("product to deploy " + productName);
 		Map<String, ProductDescription> deployedProducts = Utils.readYml(deployedProductsFile);
 		DeployedProduct deployedProduct;
 		IProduct requiredProduct;
@@ -144,7 +145,8 @@ class Deployer {
 			requiredProduct = downloader.getProduct();
 		}
 		productDescription = deployedProducts.get(coords);
-		if (productDescription != null && !productDescription.getProductVersion().equals("")) {
+		if (productDescription != null && !productDescription.getProductVersion().isEmpty()) {
+			log.info("product description of deployed product is " + productDescription.toString());
 			String deployedVersion = productDescription.getProductVersion();
 			res = compareVersionWithDeployedVersion(version, deployedVersion, productName, coords);
 			if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
@@ -158,10 +160,14 @@ class Deployer {
 			res.setProductCoords(coords);
 			return res;
 		} else if (requiredProduct instanceof ILegacyProduct) {
+			log.info("required product is legacy product, trying to compare");
 			deployedProduct = ((ILegacyProduct) requiredProduct).queryLegacyDeployedProduct();
 			if (deployedProduct != null) {
+				log.info("legacy version is " + deployedProduct.getProductVersion() + " and deployment path is "
+						+ deployedProduct.getDeploymentPath());
 				res = compareVersionWithDeployedVersion(version, deployedProduct.getProductVersion(), productName, coords);
 				if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
+					log.info("legacy product already " + res.toString());
 					deploymentPath = deployedProduct.getDeploymentPath();
 					writeProductDescriptionInDeployedProductsYaml(coords, deployedProduct.getProductVersion());
 				}
@@ -200,25 +206,35 @@ class Deployer {
 		DeploymentResult res;
 		String productName = artifactId + "-" + version;
 		if (!requiredProduct.getDependentProducts().isEmpty()) {
+			log.info("dependent product are " + requiredProduct.getDependentProducts());
 			res = deployDependent(requiredProduct);
-			if (res == FAILED || res == NEED_REBOOT || res == INCOMPATIBLE_API_VERSION)
+			if (res == FAILED || res == NEED_REBOOT || res == INCOMPATIBLE_API_VERSION || res == REBOOT_CONTINUE) {
+				log.info("deploy dependent result is " + res.toString());
 				return res;
+			}
 		}
 		Map<Command, List<IComponent>> changedComponents;
-		if (deployedProduct != null) {
+		if (deployedProduct != null && !(requiredProduct instanceof IImmutable)) {
 			List<IComponent> deployedComponents = deployedProduct.getProductStructure().getComponents();
 			changedComponents = compareProductStructures(requiredProduct.getProductStructure(),
 					deployedProduct.getProductStructure());
+			log.info("changed components are " + changedComponents);
 			deploymentPath = deployedProduct.getDeploymentPath();
 			deployedComponents = Lists.reverse(deployedComponents);
 			res = doCommands(deployedComponents, STOP);
-			if (res != OK)
+			if (res != OK) {
+				log.info("stop deployed product result is " + res);
 				return res;
+			}
+			log.info("changed components successfully stopped");
 			res = doCommands(changedComponents.getOrDefault(UNDEPLOY, Collections.emptyList()), UNDEPLOY);
-			if (res != OK)
+			if (res != OK) {
+				log.info("undeploy deployed product result is " + res);
 				return res;
-			else
+			} else {
+				log.info("changed components successfully undeployed");
 				writeProductDescriptionInDeployedProductsYaml(coords, "");
+			}
 		} else {
 			changedComponents = compareProductStructures(requiredProduct.getProductStructure(), ProductStructure.createEmptyStructure());
 			deploymentPath = requiredProduct.getProductStructure().getDefaultDeploymentPath();
@@ -227,10 +243,13 @@ class Deployer {
 			deploymentPath = requiredProduct.getProductStructure().getDefaultDeploymentPath() + "/" + version;
 		List<IComponent> componentForDeploy;
 		if (!changedComponents.get(DEPLOY).isEmpty()) {
+			log.info("components for deploy is " + changedComponents.toString());
 			componentForDeploy = changedComponents.get(DEPLOY);
 			res = doCommands(componentForDeploy, DEPLOY);
-			if (res != OK)
+			if (res != OK) {
+				log.info("changed components deploy result is " + res.toString());
 				return res;
+			}
 			res = doCommands(requiredProduct.getProductStructure().getComponents(), START);
 			if (res != OK)
 				return res;
@@ -302,6 +321,7 @@ class Deployer {
 			default:
 				throw new IllegalArgumentException();
 			}
+			log.info("result of " + deployer + ' ' + command + " is " + res);
 			if (res == FAILED || res == NEED_REBOOT) {
 				return res;
 			}
@@ -323,6 +343,7 @@ class Deployer {
 	private void writeRebootCount(File fileWithRebootCounts, int rebootCount) {
 		try {
 			FileUtils.writeStringToFile(fileWithRebootCounts, Integer.toString(rebootCount), "UTF-8");
+			log.info("reboot count is " + rebootCount + " and written to file " + fileWithRebootCounts.getPath());
 		} catch (IOException e) {
 			log.warn("Can't create file to write reboots count cause of " + e.toString());
 		}
@@ -331,6 +352,7 @@ class Deployer {
 	private int readRebootCount(File fileWithRebootCounts) {
 		try {
 			String countString = FileUtils.readFileToString(fileWithRebootCounts, "UTF-8");
+			log.info("reboot count is " + countString);
 			return Integer.valueOf(countString);
 		} catch (IOException e) {
 			log.warn("Can't read from reboot count file cause of " + e.toString());

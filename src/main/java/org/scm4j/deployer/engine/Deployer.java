@@ -152,8 +152,12 @@ class Deployer {
 			if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
 				return res;
 			}
-			deployedProduct = createDeployedProduct(coords + ":" + art.getExtension(), deployedVersion,
-					productDescription);
+			if (requiredProduct instanceof IImmutable) {
+				deployedProduct = null;
+			} else {
+				deployedProduct = createDeployedProduct(coords + ":" + art.getExtension(), deployedVersion,
+						productDescription);
+			}
 		} else if (version.isEmpty()) {
 			log.info(productName + " isn't installed!");
 			res = OK;

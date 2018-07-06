@@ -4,7 +4,6 @@ import lombok.Cleanup;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.model.Model;
@@ -15,9 +14,6 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.graph.DependencyFilter;
-import org.eclipse.aether.installation.InstallRequest;
-import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactRequest;
@@ -25,9 +21,7 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResolutionException;
-import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
-import org.eclipse.aether.util.filter.DependencyFilterUtils;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.IComponent;
 import org.scm4j.deployer.api.IDeploymentContext;
@@ -50,15 +44,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Data
 @Slf4j
 class Downloader implements IDownloader {
 
-	static final File TMP_REPOSITORY = new File(System.getProperty("java.io.tmpdir"), "scm4j-ai-tmp" +
-			UUID.randomUUID());
 	private static final String REPOSITORY_FOLDER_NAME = "repository";
 	private static final String API_NAME = "scm4j-deployer-api";
 	private final Map<String, IDeploymentContext> depCtx;
@@ -130,21 +121,17 @@ class Downloader implements IDownloader {
 	@Override
 	@SneakyThrows
 	public void loadProductDependency(File repository) {
-		List<Artifact> artifacts = componentsToArtifacts();
-		artifacts = resolveDependencies(artifacts);
-		saveComponents(artifacts, repository);
-		FileUtils.deleteDirectory(TMP_REPOSITORY);
+		List<Artifact> artifacts = product.getProductStructure().getComponents().stream()
+				.map(IComponent::getArtifactCoords)
+				.collect(Collectors.toList());
+		resolveDependencies(artifacts, repository);
 	}
 
-	private void saveProduct(List<Artifact> artifacts, File repository, File productFile) {
-		artifacts = saveComponents(artifacts, repository);
-		instantiateClassLoader(artifacts);
-		loadProduct(productFile);
-	}
-
-	private File downloadProduct(String groupId, String artifactId, String version, String extension, String classifier, File productFile) {
+	private File downloadProduct(String groupId, String artifactId, String version, String extension, String classifier,
+	                             File productFile) {
 		Collection<String> products = productList.getProducts().values();
-		if (!products.contains(groupId + ":" + artifactId)) return null;
+		if (!products.contains(groupId + ":" + artifactId))
+			return null;
 		for (ArtifactoryReader repo : productList.getRepos()) {
 			try {
 				if (!repo.getProductVersions(groupId + ":" + artifactId).contains(version)) continue;
@@ -152,8 +139,10 @@ class Downloader implements IDownloader {
 				continue;
 			}
 			List<Artifact> artifacts = resolveDependencies(
-					Collections.singletonList(new DefaultArtifact(groupId, artifactId, classifier, extension, version)));
-			saveProduct(artifacts, portableRepository, productFile);
+					Collections.singletonList(new DefaultArtifact(groupId, artifactId, classifier, extension, version)),
+					portableRepository);
+			instantiateClassLoader(artifacts);
+			loadProduct(productFile);
 			return productFile;
 		}
 		return null;
@@ -174,9 +163,9 @@ class Downloader implements IDownloader {
 	}
 
 	@SneakyThrows
-	private List<Artifact> resolveDependencies(List<Artifact> artifacts) {
+	private List<Artifact> resolveDependencies(List<Artifact> artifacts, File repository) {
 		List<Artifact> components = new ArrayList<>();
-		session = Utils.newRepositorySystemSession(system, TMP_REPOSITORY);
+		session = Utils.newRepositorySystemSession(system, repository);
 		List<String> urls = productList.getRepos().stream().map(ArtifactoryReader::toString).collect(Collectors.toList());
 		urls.add(0, portableRepository.toURI().toURL().toString());
 		if (!portableRepository.equals(workingRepository))
@@ -193,36 +182,34 @@ class Downloader implements IDownloader {
 			List<Artifact> deps;
 			try {
 				if (artifact.getExtension().equals("jar"))
-					deps = resolveJar(remoteRepos, artifact);
+					deps = resolveJar(remoteRepos, artifact, repository);
 				else
-					deps = resolveNotJar(remoteRepos, artifact);
+					deps = resolveNotJar(remoteRepos, artifact, repository);
 				depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, deps));
 				components.addAll(deps);
 			} catch (DependencyResolutionException | ArtifactResolutionException e) {
-				FileUtils.deleteQuietly(TMP_REPOSITORY);
 				throw new RuntimeException(e);
 			}
 		}
 		return components;
 	}
 
-	private List<Artifact> resolveJar(List<RemoteRepository> repos, Artifact art) throws DependencyResolutionException {
-		DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
+	private List<Artifact> resolveJar(List<RemoteRepository> repos, Artifact art, File repo) throws DependencyResolutionException {
 		CollectRequest collectRequest = new CollectRequest();
-		collectRequest.setRoot(new Dependency(art, JavaScopes.COMPILE));
+		collectRequest.setRoot(new Dependency(art, null));
 		collectRequest.setRepositories(repos);
-		DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, filter);
+		DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, null);
 		List<ArtifactResult> artifactResults = system.resolveDependencies(session, dependencyRequest).getArtifactResults();
 		List<Artifact> deps = new ArrayList<>();
 		artifactResults.forEach(artifactResult -> {
 			Artifact artifact = artifactResult.getArtifact();
-			artifact = fileSetter(artifact, workingRepository);
+			artifact = fileSetter(artifact, repo);
 			deps.add(artifact);
 		});
 		return deps;
 	}
 
-	private List<Artifact> resolveNotJar(List<RemoteRepository> repos, Artifact art) throws ArtifactResolutionException {
+	private List<Artifact> resolveNotJar(List<RemoteRepository> repos, Artifact art, File repo) throws ArtifactResolutionException {
 		ArtifactRequest req = new ArtifactRequest();
 		req.setRepositories(repos);
 		req.setArtifact(new SubArtifact(art, "", "pom"));
@@ -230,7 +217,7 @@ class Downloader implements IDownloader {
 		req.setArtifact(art);
 		ArtifactResult res = system.resolveArtifact(session, req);
 		art = res.getArtifact();
-		art = fileSetter(art, workingRepository);
+		art = fileSetter(art, repo);
 		return Collections.singletonList(art);
 	}
 
@@ -243,8 +230,10 @@ class Downloader implements IDownloader {
 		File res = new File(portableRepository, fileRelativePath);
 		if (res.exists()) {
 			List<Artifact> artifacts = resolveDependencies(
-					Collections.singletonList(new DefaultArtifact(groupId, artifactId, classifier, extension, version)));
-			saveProduct(artifacts, workingRepository, res);
+					Collections.singletonList(new DefaultArtifact(groupId, artifactId, classifier, extension, version)),
+					workingRepository);
+			instantiateClassLoader(artifacts);
+			loadProduct(res);
 			res = new File(workingRepository, fileRelativePath);
 		} else {
 			res = downloadProduct(groupId, artifactId, version, extension, classifier, res);
@@ -254,38 +243,7 @@ class Downloader implements IDownloader {
 		}
 		product.getProductStructure();
 		loader.close();
-		FileUtils.deleteDirectory(TMP_REPOSITORY);
 		return res;
-	}
-
-	private List<Artifact> saveComponents(List<Artifact> artifacts, File repository) {
-		try {
-			session = Utils.newRepositorySystemSession(system, repository);
-			InstallRequest installRequest = new InstallRequest();
-			for (Artifact artifact : artifacts) {
-				artifact = fileSetter(artifact, TMP_REPOSITORY);
-				Artifact pomArtifact = new SubArtifact(artifact, "", "pom");
-				pomArtifact = pomArtifact.setFile(new File(TMP_REPOSITORY, Utils.coordsToRelativeFilePath(artifact.getGroupId(),
-						artifact.getArtifactId(), artifact.getVersion(), ".pom", "")));
-				installRequest.addArtifact(artifact).addArtifact(pomArtifact);
-			}
-			system.install(session, installRequest);
-		} catch (InstallationException e) {
-			FileUtils.deleteQuietly(TMP_REPOSITORY);
-			throw new RuntimeException(e);
-		}
-		artifacts = artifacts.stream().map(art -> fileSetter(art, repository)).collect(Collectors.toList());
-		return artifacts;
-	}
-
-	private List<Artifact> componentsToArtifacts() {
-		return getComponents().stream()
-				.map(IComponent::getArtifactCoords)
-				.collect(Collectors.toList());
-	}
-
-	private List<IComponent> getComponents() {
-		return product.getProductStructure().getComponents();
 	}
 
 	private String readProductApiVersion(File productFile) {
@@ -339,7 +297,6 @@ class Downloader implements IDownloader {
 		} else {
 			if (loader != null)
 				loader.close();
-			FileUtils.deleteQuietly(TMP_REPOSITORY);
 			throw new EIncompatibleApiVersion("Can't load " + productFile.getName() + " class to classpath");
 		}
 	}

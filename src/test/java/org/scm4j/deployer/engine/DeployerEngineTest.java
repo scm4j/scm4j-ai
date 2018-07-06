@@ -178,7 +178,7 @@ public class DeployerEngineTest {
 		File coordsToFileinArtifactory = new File(env.getArtifactory2Folder(), relativePath);
 		assertTrue(FileUtils.contentEquals(testFile, coordsToFileinArtifactory));
 		testFile = new File(de.getDownloader().getPortableRepository(), Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID, ublArtifactId,
-				"22.2", "war", null));
+				"22.2", ".war", null));
 		assertTrue(testFile.exists());
 		assertEquals(FileUtils.readFileToString(testFile, Charset.forName("UTF-8")), TEST_UBL_22_2_CONTENT);
 		testFile = new File(de.getDownloader().getPortableRepository(), Utils.coordsToRelativeFilePath(TEST_AXIS_GROUP_ID,

@@ -274,7 +274,7 @@ public class DeployerEngineTest {
 	public void testCollectDeploymentContext() {
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		de.download(UNTILL_ARTIFACT_ID, "123.4");
-		IDeploymentContext ctx = de.getDownloader().getDepCtx().get("UBL");
+		IDeploymentContext ctx = de.getDownloader().getDepCtx().get("UBL22.2");
 		assertEquals(ctx.getMainArtifact(), "UBL");
 		assertTrue(ctx.getArtifacts().containsKey("UBL"));
 		assertFalse(ctx.getArtifacts().containsKey("axis"));

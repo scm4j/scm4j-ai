@@ -117,9 +117,9 @@ public class DeployerTest {
 		String ubl = "UBL";
 		String axis = "axis";
 		String jooq = "jooq";
-		when(downloader.getContextByArtifactId(ubl)).thenReturn(new DeploymentContext(ubl));
-		when(downloader.getContextByArtifactId(axis)).thenReturn(new DeploymentContext(axis));
-		when(downloader.getContextByArtifactId(jooq)).thenReturn(new DeploymentContext(jooq));
+		when(downloader.getContextByArtifactIdAndVersion(ubl, "22.2")).thenReturn(new DeploymentContext(ubl));
+		when(downloader.getContextByArtifactIdAndVersion(axis, "1.4")).thenReturn(new DeploymentContext(axis));
+		when(downloader.getContextByArtifactIdAndVersion(jooq, "3.1.0")).thenReturn(new DeploymentContext(jooq));
 		return downloader;
 	}
 

@@ -58,22 +58,18 @@ class Deployer {
 		deployedProductsFile = new File(workingFolder, DEPLOYED_PRODUCTS);
 	}
 
-	private static DeploymentResult compareVersionWithDeployedVersion(String version, String legacyVersion,
-	                                                                  String productName, String coords) {
+	private static DeploymentResult compareVersionWithDeployedVersion(String version, String legacyVersion) {
 		DeploymentResult res = OK;
 		if (!version.isEmpty()) {
 			DefaultArtifactVersion vers = new DefaultArtifactVersion(version);
 			DefaultArtifactVersion legacyVers = new DefaultArtifactVersion(legacyVersion);
 			if (vers.compareTo(legacyVers) == 0) {
-				log.info(productName + " already installed!");
 				res = ALREADY_INSTALLED;
 			}
 			if (vers.compareTo(legacyVers) < 0) {
-				log.info(productName + " newer version exist");
 				res = NEWER_VERSION_EXISTS;
 			}
 		}
-		res.setProductCoords(coords);
 		return res;
 	}
 
@@ -128,60 +124,57 @@ class Deployer {
 
 	@SuppressWarnings("unchecked")
 	DeploymentResult deploy(Artifact art) {
-		DeploymentResult res;
 		String coords = String.format("%s:%s", art.getGroupId(), art.getArtifactId());
+		DeploymentResult res = OK;
 		String artifactId = art.getArtifactId();
 		String version = art.getVersion();
 		String productName = artifactId + "-" + version;
 		log.info("product to deploy " + productName);
 		Map<String, ProductDescription> deployedProducts = Utils.readYml(deployedProductsFile);
-		DeployedProduct deployedProduct;
+		IDeployedProduct deployedProduct;
 		IProduct requiredProduct;
-		ProductDescription productDescription;
+		ProductDescription productDescription = deployedProducts.get(coords);
+		String deployedVersion = null;
 		if (version.isEmpty()) {
-			requiredProduct = ProductStructure::createEmptyStructure;
+			if (productDescription == null) {
+				log.info(productName + " isn't installed!");
+				res.setProductCoords(coords);
+				return res;
+			} else {
+				requiredProduct = ProductStructure::createEmptyStructure;
+			}
 		} else {
 			downloader.getProductFile(art.toString());
 			requiredProduct = downloader.getProduct();
 		}
-		productDescription = deployedProducts.get(coords);
-		if (productDescription != null && !productDescription.getProductVersion().isEmpty()) {
-			log.info("product description of deployed product is " + productDescription.toString());
-			String deployedVersion = productDescription.getProductVersion();
-			res = compareVersionWithDeployedVersion(version, deployedVersion, productName, coords);
-			if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
-				return res;
+		if (productDescription != null) {
+			deployedVersion = productDescription.getProductVersion();
+			if (deployedVersion != null) {
+				log.info("product description of deployed product is " + productDescription.toString());
+				deployedVersion = productDescription.getProductVersion();
+				res = compareVersionWithDeployedVersion(version, deployedVersion);
+				if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
+					res.setProductCoords(coords);
+					return res;
+				}
 			}
-			if (requiredProduct instanceof IImmutable) {
-				deployedProduct = null;
-			} else {
-				deployedProduct = createDeployedProduct(coords + ":" + art.getExtension(), deployedVersion,
-						productDescription);
-			}
-		} else if (version.isEmpty()) {
-			log.info(productName + " isn't installed!");
-			res = OK;
-			res.setProductCoords(coords);
-			return res;
-		} else if (requiredProduct instanceof ILegacyProduct) {
+		}
+		if (requiredProduct instanceof ILegacyProduct && productDescription == null) {
 			log.info("required product is legacy product, trying to compare");
 			deployedProduct = ((ILegacyProduct) requiredProduct).queryLegacyDeployedProduct();
 			if (deployedProduct != null) {
-				log.info("legacy version is " + deployedProduct.getProductVersion() + " and deployment path is "
-						+ deployedProduct.getDeploymentPath());
-				res = compareVersionWithDeployedVersion(version, deployedProduct.getProductVersion(), productName, coords);
-				if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
-					log.info("legacy product already " + res.toString());
-					deploymentPath = deployedProduct.getDeploymentPath();
-					writeProductDescriptionInDeployedProductsYaml(coords, deployedProduct.getProductVersion());
-				}
-				if (res != OK)
+				deployedVersion = deployedProduct.getProductVersion();
+				res = handleLegacyDeployedProduct(version, deployedVersion, deployedProduct);
+				if (res != OK) {
+					writeProductDescriptionInDeployedProductsYaml(coords, deployedVersion);
+					log.info("legacy product " + res.toString());
+					res.setProductCoords(coords);
 					return res;
+				}
 			}
-		} else {
-			deployedProduct = null;
 		}
 		downloader.loadProductDependency(new File(workingFolder, "repository"));
+		deployedProduct = createDeployedProduct(coords, deployedVersion, productDescription);
 		res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version, coords);
 		res.setProductCoords(coords);
 		if (res == OK || res == NEED_REBOOT) {
@@ -194,15 +187,31 @@ class Deployer {
 		}
 	}
 
-	private DeployedProduct createDeployedProduct(String coords, String deployedVersion,
-	                                              ProductDescription productDescription) {
-		DeployedProduct deployedProduct = new DeployedProduct();
-		deployedProduct.setProductVersion(deployedVersion);
-		deployedProduct.setDeploymentPath(productDescription.getDeploymentPath());
-		downloader.getProductFile(coords + ":" + productDescription.getProductVersion());
-		IProductStructure ps = downloader.getProduct().getProductStructure();
-		deployedProduct.setProductStructure(ps);
-		return deployedProduct;
+	private DeploymentResult handleLegacyDeployedProduct(String currentVersion, String deployedVersion,
+	                                                     IDeployedProduct deployedProduct) {
+		log.info("legacy version is " + deployedVersion + " and deployment path is "
+				+ deployedProduct.getDeploymentPath());
+		DeploymentResult res = compareVersionWithDeployedVersion(currentVersion, deployedVersion);
+		if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
+			log.info("legacy product already " + res.toString());
+			deploymentPath = deployedProduct.getDeploymentPath();
+		}
+		return res;
+	}
+
+	private IDeployedProduct createDeployedProduct(String coords, String deployedVersion,
+	                                               ProductDescription productDescription) {
+		if (deployedVersion == null || productDescription == null) {
+			return null;
+		} else {
+			DeployedProduct deployedProduct = new DeployedProduct();
+			deployedProduct.setProductVersion(deployedVersion);
+			deployedProduct.setDeploymentPath(productDescription.getDeploymentPath());
+			downloader.getProductFile(coords + ":" + productDescription.getProductVersion());
+			IProductStructure ps = downloader.getProduct().getProductStructure();
+			deployedProduct.setProductStructure(ps);
+			return deployedProduct;
+		}
 	}
 
 	DeploymentResult compareAndDeployProducts(IProduct requiredProduct, IDeployedProduct deployedProduct,
@@ -306,7 +315,7 @@ class Deployer {
 			if (artifactId.equals("legacyComponent"))
 				context = new DeploymentContext("legacyProduct");
 			else
-				context = downloader.getContextByArtifactId(artifactId);
+				context = downloader.getContextByArtifactIdAndVersion(artifactId, coords.getVersion());
 			context.setDeploymentPath(deploymentPath);
 			deployer.init(context);
 			switch (command) {

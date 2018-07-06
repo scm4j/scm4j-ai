@@ -8,6 +8,7 @@ import org.scm4j.deployer.api.IProductDeployer;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -33,7 +34,16 @@ public class DeployerEngine implements IProductDeployer {
 	public DeploymentResult deploy(String simpleName, String version) {
 		listProducts();
 		Artifact artifact = Utils.initializeArtifact(downloader, simpleName, version);
-		return deployer.deploy(artifact);
+		DeploymentResult res = deployer.deploy(artifact);
+		URLClassLoader loader = downloader.getLoader();
+		if (loader != null) {
+			try {
+				loader.close();
+			} catch (IOException e) {
+				//No problem
+			}
+		}
+		return res;
 	}
 
 	@Override
@@ -41,6 +51,14 @@ public class DeployerEngine implements IProductDeployer {
 		listProducts();
 		Artifact artifact = Utils.initializeArtifact(downloader, simpleName, version);
 		downloader.getProductWithDependency(artifact.toString());
+		URLClassLoader loader = downloader.getLoader();
+		if (loader != null) {
+			try {
+				loader.close();
+			} catch (IOException e) {
+				//No problem
+			}
+		}
 	}
 
 	@Override

@@ -185,7 +185,7 @@ class Downloader implements IDownloader {
 					deps = resolveJar(remoteRepos, artifact, repository);
 				else
 					deps = resolveNotJar(remoteRepos, artifact, repository);
-				depCtx.put(artifact.getArtifactId(), getDeploymentContext(artifact, deps));
+				depCtx.put(artifact.getArtifactId() + artifact.getVersion(), getDeploymentContext(artifact, deps));
 				components.addAll(deps);
 			} catch (DependencyResolutionException | ArtifactResolutionException e) {
 				throw new RuntimeException(e);
@@ -242,7 +242,6 @@ class Downloader implements IDownloader {
 						+ " is not found in all known repositories");
 		}
 		product.getProductStructure();
-		loader.close();
 		return res;
 	}
 
@@ -303,7 +302,7 @@ class Downloader implements IDownloader {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends IDeploymentContext> T getContextByArtifactId(String artifactId) {
-		return (T) depCtx.get(artifactId);
+	public <T extends IDeploymentContext> T getContextByArtifactIdAndVersion(String artifactId, String version) {
+		return (T) depCtx.get(artifactId + version);
 	}
 }

@@ -149,7 +149,7 @@ class Deployer {
 		}
 		if (productDescription != null) {
 			deployedVersion = productDescription.getProductVersion();
-			if (deployedVersion != null) {
+			if (deployedVersion != null && !deployedVersion.isEmpty()) {
 				log.info("product description of deployed product is " + productDescription.toString());
 				deployedVersion = productDescription.getProductVersion();
 				res = compareVersionWithDeployedVersion(version, deployedVersion);
@@ -201,7 +201,7 @@ class Deployer {
 
 	private IDeployedProduct createDeployedProduct(String coords, String deployedVersion,
 	                                               ProductDescription productDescription) {
-		if (deployedVersion == null || productDescription == null) {
+		if (deployedVersion == null || deployedVersion.isEmpty() || productDescription == null) {
 			return null;
 		} else {
 			DeployedProduct deployedProduct = new DeployedProduct();

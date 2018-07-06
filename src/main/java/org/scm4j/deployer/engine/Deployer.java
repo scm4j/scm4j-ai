@@ -209,6 +209,7 @@ class Deployer {
 			deployedProduct.setDeploymentPath(productDescription.getDeploymentPath());
 			downloader.getProductFile(coords + ":" + productDescription.getProductVersion());
 			IProductStructure ps = downloader.getProduct().getProductStructure();
+			downloader.loadProductDependency(new File(workingFolder, "repository"));
 			deployedProduct.setProductStructure(ps);
 			return deployedProduct;
 		}

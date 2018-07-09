@@ -9,9 +9,18 @@ import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -57,9 +66,6 @@ class ArtifactoryWriter {
 	private Metadata getProductListArtifactMetadata() {
 		Metadata metaData = createArtifactMetadata(ProductList.PRODUCT_LIST_GROUP_ID,
 				ProductList.PRODUCT_LIST_ARTIFACT_ID);
-		Set<String> versions = new HashSet<>(metaData.getVersioning().getVersions());
-		versions.add(PRODUCT_LIST_DEFAULT_VERSION);
-		versions.add(PRODUCT_LIST_VERSION);
 		metaData.getVersioning().setRelease(PRODUCT_LIST_DEFAULT_VERSION);
 		return metaData;
 	}
@@ -74,7 +80,7 @@ class ArtifactoryWriter {
 	}
 
 	void installArtifact(String groupId, String artifactId, String version, String extension,
-						 String content, File productListLocation) {
+	                     String content, File productListLocation) {
 		try {
 			File artifactRoot = new File(artifactoryFolder, Utils.coordsToFolderStructure(groupId, artifactId));
 			writeArtifact(artifactId, version, extension, content, artifactRoot);
@@ -107,9 +113,10 @@ class ArtifactoryWriter {
 		Manifest mf = new Manifest();
 		mf.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
 		mf.getMainAttributes().put(Attributes.Name.MAIN_CLASS, className);
-		File testProduct = new File(getClass().getClassLoader().getResource(TEST_CLASS + className + ".class").getFile());
+		File testProduct = new File(getClass().getClassLoader().getResource(
+				TEST_CLASS + className + ".class").getFile());
 		try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(artifactFile), mf);
-			 BufferedInputStream bin = new BufferedInputStream(new FileInputStream(testProduct))) {
+		     BufferedInputStream bin = new BufferedInputStream(new FileInputStream(testProduct))) {
 			JarEntry entry = new JarEntry(className + ".class");
 			entry.setTime(testProduct.lastModified());
 			jos.putNextEntry(entry);

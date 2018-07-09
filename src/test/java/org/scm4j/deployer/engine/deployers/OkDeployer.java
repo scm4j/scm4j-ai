@@ -12,10 +12,6 @@ public class OkDeployer implements IComponentDeployer {
 		return count;
 	}
 
-	public static void setCount(int count) {
-		OkDeployer.count = count;
-	}
-
 	public static void zeroCount() {
 		count = 0;
 	}

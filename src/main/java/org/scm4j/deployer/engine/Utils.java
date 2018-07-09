@@ -50,7 +50,7 @@ public final class Utils {
 	}
 
 	public static String coordsToRelativeFilePath(String groupId, String artifactId, String version, String extension,
-												  String classifier) {
+	                                              String classifier) {
 		if (classifier != null && !classifier.equals(""))
 			classifier = "-" + classifier;
 		else

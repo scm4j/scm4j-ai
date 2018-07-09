@@ -129,7 +129,7 @@ public class DeployerTest {
 		when(downloader.getProduct()).thenReturn(new OkProduct());
 		DeployedProduct prod = createDeployedProduct();
 		DependentProduct depProd = new DependentProduct();
-		Deployer dep = new Deployer(new File(DeployerEngineTest.getTestDir()), downloader);
+		Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
 		DeploymentResult res = dep.compareAndDeployProducts(depProd, null, "ok", "1.0", "");
 		assertEquals(OK, res);
 		assertEquals(6, OkDeployer.getCount());

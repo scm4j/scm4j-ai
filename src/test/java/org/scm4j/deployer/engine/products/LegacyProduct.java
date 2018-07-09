@@ -1,6 +1,11 @@
 package org.scm4j.deployer.engine.products;
 
-import org.scm4j.deployer.api.*;
+import org.scm4j.deployer.api.DeployedProduct;
+import org.scm4j.deployer.api.IDeployedProduct;
+import org.scm4j.deployer.api.ILegacyProduct;
+import org.scm4j.deployer.api.IProduct;
+import org.scm4j.deployer.api.IProductStructure;
+import org.scm4j.deployer.api.ProductStructure;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
 
 public class LegacyProduct implements IProduct, ILegacyProduct {

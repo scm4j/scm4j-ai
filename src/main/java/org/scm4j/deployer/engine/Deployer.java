@@ -135,19 +135,30 @@ class Deployer {
 		IProduct requiredProduct;
 		ProductDescription productDescription = deployedProducts.get(coords);
 		String deployedVersion = null;
-		if (version.isEmpty()) {
-			if (productDescription == null) {
+		if (productDescription == null) {
+			if (version.isEmpty()) {
 				log.info(productName + " isn't installed!");
 				res.setProductCoords(coords);
 				return res;
-			} else {
-				requiredProduct = ProductStructure::createEmptyStructure;
 			}
-		} else {
 			downloader.getProductFile(art.toString());
 			requiredProduct = downloader.getProduct();
-		}
-		if (productDescription != null) {
+			if (requiredProduct instanceof ILegacyProduct) {
+				log.info("required product is legacy product, trying to compare");
+				deployedProduct = ((ILegacyProduct) requiredProduct).queryLegacyDeployedProduct();
+				if (deployedProduct != null) {
+					deployedVersion = deployedProduct.getProductVersion();
+					res = handleLegacyDeployedProduct(version, deployedVersion, deployedProduct);
+					if (res != OK) {
+						writeProductDescriptionInDeployedProductsYaml(coords, deployedVersion);
+						log.info("legacy product " + res.toString());
+						res.setProductCoords(coords);
+						return res;
+					}
+				}
+			}
+			downloader.loadProductDependency(new File(workingFolder, Downloader.REPOSITORY_FOLDER_NAME));
+		} else {
 			deployedVersion = productDescription.getProductVersion();
 			if (deployedVersion != null && !deployedVersion.isEmpty()) {
 				log.info("product description of deployed product is " + productDescription.toString());
@@ -158,22 +169,14 @@ class Deployer {
 					return res;
 				}
 			}
-		}
-		if (requiredProduct instanceof ILegacyProduct && productDescription == null) {
-			log.info("required product is legacy product, trying to compare");
-			deployedProduct = ((ILegacyProduct) requiredProduct).queryLegacyDeployedProduct();
-			if (deployedProduct != null) {
-				deployedVersion = deployedProduct.getProductVersion();
-				res = handleLegacyDeployedProduct(version, deployedVersion, deployedProduct);
-				if (res != OK) {
-					writeProductDescriptionInDeployedProductsYaml(coords, deployedVersion);
-					log.info("legacy product " + res.toString());
-					res.setProductCoords(coords);
-					return res;
-				}
+			if (version.isEmpty()) {
+				requiredProduct = ProductStructure::createEmptyStructure;
+			} else {
+				downloader.getProductFile(art.toString());
+				requiredProduct = downloader.getProduct();
+				downloader.loadProductDependency(new File(workingFolder, Downloader.REPOSITORY_FOLDER_NAME));
 			}
 		}
-		downloader.loadProductDependency(new File(workingFolder, "repository"));
 		deployedProduct = createDeployedProduct(coords, deployedVersion, productDescription);
 		res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version, coords);
 		res.setProductCoords(coords);

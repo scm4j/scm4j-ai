@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 @Slf4j
 class Downloader implements IDownloader {
 
-	private static final String REPOSITORY_FOLDER_NAME = "repository";
+	public static final String REPOSITORY_FOLDER_NAME = "repository";
 	private static final String API_NAME = "scm4j-deployer-api";
 	private final Map<String, IDeploymentContext> depCtx;
 	private final ProductList productList;

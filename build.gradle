@@ -5,6 +5,7 @@ plugins {
     id 'maven'
     id 'eclipse'
     id 'idea'
+	id 'org.scm4j.releaser.scm4j-releaser-gradle-plugin' version '0.2.0'
 }
 
 configurations.compile {
@@ -23,7 +24,6 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 group = 'org.scm4j'
-version = file('version').text.trim()
 
 ext.generatedResourcesDir = new File(buildDir, 'generated/resources')
 ext.apiVersionFile = new File(generatedResourcesDir, 'org/scm4j/deployer/engine/scm4j-deployer-api-version')
@@ -43,15 +43,6 @@ test {
 }
 
 dependencies {
-
-    def s = '[ \t]*', w = '[^:#@\\s]+?'
-    (file('mdeps').text =~ /(?m)^$s($w):($w):($w)?(:$w)?(@$w)?$s(?:#$s($w)?$s)?$/).each {
-        match, group, name, version, classifier, ext, configuration ->
-            add(configuration ?: 'compile', "$group:$name:${version ?: 'latest.integration'}${classifier ?: ''}${ext ?: ''}", {
-                changing = true
-            })
-    }
-
     compile 'com.google.guava:guava:20.0'
     compile 'org.apache.httpcomponents:httpclient:4.5.3'
     compile 'commons-io:commons-io:2.5'

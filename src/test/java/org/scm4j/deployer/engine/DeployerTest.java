@@ -49,7 +49,7 @@ public class DeployerTest {
 
 	private static DeployedProduct createDeployedProduct() {
 		DeployedProduct prod = new DeployedProduct();
-		prod.setDeploymentPath("C:/");
+		prod.setDeploymentPath(DeployerEngineTest.TEST_DIR);
 		prod.setProductVersion("1.0");
 		prod.setProductStructure(new OkProduct().getProductStructure());
 		return prod;
@@ -69,8 +69,8 @@ public class DeployerTest {
 	@Test
 	public void testCompareProductStructures() {
 		Downloader downloader = mock(Downloader.class);
-		Deployer dep = new Deployer(new File("C:/"), downloader);
-		assertEquals(new File("C:/"), dep.getWorkingFolder());
+		Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
+		assertEquals(new File(DeployerEngineTest.TEST_DIR), dep.getWorkingFolder());
 		IProductStructure okStructure = new OkProduct().getProductStructure();
 		IProductStructure failStructure = new FailProduct().getProductStructure();
 		IProductStructure rebootStructure = new RebootProduct().getProductStructure();
@@ -99,7 +99,7 @@ public class DeployerTest {
 		IProduct failProduct = new FailProduct();
 		IProduct rebootProduct = new RebootProduct();
 		DeploymentResult dr = dep.compareAndDeployProducts(okProduct, null, "ok", "1.0", "");
-		assertEquals("file://C:/unTill", dep.getDeploymentPath());
+		assertEquals(DeployerEngineTest.TEST_DIR, dep.getDeploymentPath());
 		assertEquals(OK, dr);
 		dr = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0", "");
 		assertEquals(OK, dr);
@@ -188,12 +188,12 @@ public class DeployerTest {
 	public void testProductDescriptionEquals() throws Exception {
 		ProductDescription pd = new ProductDescription();
 		pd.setProductVersion("1.0");
-		pd.setDeploymentPath("C:/");
+		pd.setDeploymentPath(DeployerEngineTest.TEST_DIR);
 		pd.setDeploymentTime(System.currentTimeMillis());
 		Thread.sleep(1);
 		ProductDescription pd1 = new ProductDescription();
 		pd1.setProductVersion("1.0");
-		pd1.setDeploymentPath("C:/");
+		pd1.setDeploymentPath(DeployerEngineTest.TEST_DIR);
 		pd1.setDeploymentTime(System.currentTimeMillis());
 		assertEquals(pd, pd1);
 	}
@@ -203,7 +203,7 @@ public class DeployerTest {
 	public void testIncompatibleApi() {
 		IDownloader downloader = mock(IDownloader.class);
 		doThrow((EIncompatibleApiVersion.class)).when(downloader).getProductFile(anyString());
-		Deployer dep = new Deployer(new File("C:/"), downloader);
+		Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
 		try {
 			dep.deploy(new DefaultArtifact("x:y:z:1.0"));
 			fail();

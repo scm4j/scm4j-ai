@@ -259,7 +259,10 @@ class Deployer {
 		if (requiredProduct instanceof IImmutable)
 			deploymentPath = requiredProduct.getProductStructure().getDefaultDeploymentPath() + "/" + version;
 		List<IComponent> componentForDeploy;
+		File deploymentPathFile = new File(deploymentPath);
 		if (!changedComponents.get(DEPLOY).isEmpty()) {
+			if (!deploymentPathFile.exists())
+				deploymentPathFile.mkdirs();
 			log.info("components for deploy is " + changedComponents.toString());
 			componentForDeploy = changedComponents.get(DEPLOY);
 			res = doCommands(componentForDeploy, DEPLOY);

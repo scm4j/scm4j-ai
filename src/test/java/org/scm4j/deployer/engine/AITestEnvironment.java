@@ -1,11 +1,8 @@
 package org.scm4j.deployer.engine;
 
 import org.apache.commons.io.FileUtils;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -13,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class AITestEnvironment {
+class AITestEnvironment {
 
 	private File baseTestFolder;
 	private File envFolder;
@@ -52,25 +49,18 @@ public class AITestEnvironment {
 	@SuppressWarnings("unchecked")
 	private void writeReposInProductList(String version) throws IOException {
 		File productListFile = new File(artifactory1Folder, Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
-				ProductList.PRODUCT_LIST_ARTIFACT_ID, version, ".yml", null));
+				ProductList.PRODUCT_LIST_ARTIFACT_ID, version, ".json", null));
 		if (!productListFile.exists()) {
 			productListFile.getParentFile().mkdirs();
 			productListFile.createNewFile();
 		}
-		DumperOptions options = new DumperOptions();
-		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-		Yaml yaml = new Yaml(options);
 		Map productList = new HashMap<>();
 		List<String> repos = new ArrayList<>();
 		repos.add(artifactory1Url);
 		repos.add(artifactory2Url);
 		productList.put(ProductList.PRODUCTS, new HashMap<>());
 		productList.put(ProductList.REPOSITORIES, repos);
-		String yamlOutput = yaml.dump(productList);
-		FileWriter fw = new FileWriter(productListFile);
-		fw.write(yamlOutput);
-		fw.flush();
-		fw.close();
+		Utils.writeJson(productList, productListFile);
 	}
 
 	public File getBaseTestFolder() {

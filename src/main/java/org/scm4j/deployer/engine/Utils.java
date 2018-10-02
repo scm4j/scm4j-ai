@@ -1,7 +1,9 @@
 package org.scm4j.deployer.engine;
 
+import com.google.gson.GsonBuilder;
 import lombok.Cleanup;
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -20,12 +22,11 @@ import org.eclipse.aether.util.artifact.DefaultArtifactTypeRegistry;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import org.scm4j.deployer.engine.loggers.RepositoryLogger;
 import org.scm4j.deployer.engine.loggers.TransferListener;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.jar.Attributes;
@@ -116,26 +117,46 @@ public final class Utils {
 		return new DefaultArtifact(arr[0], arr[1], "jar", version);
 	}
 
+//	@SneakyThrows
+//	public static void writeYaml(Map entry, File output) {
+//		@Cleanup
+//		FileWriter writer = new FileWriter(output);
+//		DumperOptions options = new DumperOptions();
+//		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+//		Yaml yaml = new Yaml(options);
+//		String yamlOutput = yaml.dump(entry);
+//		writer.write(yamlOutput);
+//	}
+//
+//	@SneakyThrows
+//	public static Map readYml(File input) throws NullPointerException {
+//		if (input.exists()) {
+//			@Cleanup
+//			FileReader reader = new FileReader(input);
+//			Yaml yaml = new Yaml();
+//			return yaml.loadAs(reader, HashMap.class);
+//		} else {
+//			return new HashMap<>();
+//		}
+//	}
+
 	@SneakyThrows
-	public static void writeYaml(Map entry, File output) {
+	public static void writeJson(Object obj, File file) {
 		@Cleanup
-		FileWriter writer = new FileWriter(output);
-		DumperOptions options = new DumperOptions();
-		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-		Yaml yaml = new Yaml(options);
-		String yamlOutput = yaml.dump(entry);
-		writer.write(yamlOutput);
+		FileWriter writer = new FileWriter(file);
+		new GsonBuilder().setPrettyPrinting().create().toJson(obj, writer);
 	}
 
 	@SneakyThrows
-	public static Map readYml(File input) throws NullPointerException {
-		if (input.exists()) {
-			@Cleanup
-			FileReader reader = new FileReader(input);
-			Yaml yaml = new Yaml();
-			return yaml.loadAs(reader, HashMap.class);
-		} else {
-			return new HashMap<>();
+	public static Map readJson(File file, Type type) {
+		Map result;
+		try {
+			result = new GsonBuilder().setPrettyPrinting().create()
+					.fromJson(FileUtils.readFileToString(file, "UTF-8"),
+							type);
+		} catch (FileNotFoundException e) {
+			result = new HashMap<>();
 		}
+		return result;
 	}
 }

@@ -1,6 +1,9 @@
 package org.scm4j.deployer.engine;
 
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +26,8 @@ import org.scm4j.deployer.api.ProductStructure;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Type;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,15 +51,20 @@ import static org.scm4j.deployer.engine.Deployer.Command.UNDEPLOY;
 @Data
 class Deployer {
 
-	private static final String DEPLOYED_PRODUCTS = "deployed-products.yml";
+	private static final String DEPLOYED_PRODUCTS = "deployed-products.json";
 	private final IDownloader downloader;
 	private final File workingFolder;
 	private final File deployedProductsFile;
 	private String deploymentPath;
+	private Gson gson;
+	private Type deployedProductsType;
 
 	Deployer(File workingFolder, IDownloader downloader) {
 		this.workingFolder = workingFolder;
 		this.downloader = downloader;
+		this.gson = new GsonBuilder().setPrettyPrinting().create();
+		this.deployedProductsType = new TypeToken<Map<String, ProductDescription>>() {
+		}.getType();
 		deployedProductsFile = new File(workingFolder, DEPLOYED_PRODUCTS);
 	}
 
@@ -107,22 +117,24 @@ class Deployer {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void writeProductDescriptionInDeployedProductsYaml(String coords, String version) {
+	@SneakyThrows
+	private void writeProductDescriptionInDeployedProductsJson(String coords, String version) {
 		ProductDescription productDescription = createProductDescription(version);
-		Map<String, ProductDescription> deployedProducts = Utils.readYml(deployedProductsFile);
+		Map<String, ProductDescription> deployedProducts = Utils.readJson(deployedProductsFile, deployedProductsType);
 		deployedProducts.put(coords, productDescription);
-		Utils.writeYaml(deployedProducts, deployedProductsFile);
+		Utils.writeJson(deployedProducts, deployedProductsFile);
 	}
 
 	private ProductDescription createProductDescription(String version) {
 		ProductDescription newProduct = new ProductDescription();
 		newProduct.setProductVersion(version);
 		newProduct.setDeploymentPath(deploymentPath);
-		newProduct.setDeploymentTime(System.currentTimeMillis());
+		newProduct.setDeploymentTime(LocalDateTime.now());
 		return newProduct;
 	}
 
 	@SuppressWarnings("unchecked")
+	@SneakyThrows
 	DeploymentResult deploy(Artifact art) {
 		String coords = String.format("%s:%s", art.getGroupId(), art.getArtifactId());
 		DeploymentResult res = OK;
@@ -130,7 +142,7 @@ class Deployer {
 		String version = art.getVersion();
 		String productName = artifactId + "-" + version;
 		log.info("product to deploy " + productName);
-		Map<String, ProductDescription> deployedProducts = Utils.readYml(deployedProductsFile);
+		Map<String, ProductDescription> deployedProducts = Utils.readJson(deployedProductsFile, deployedProductsType);
 		IDeployedProduct deployedProduct;
 		IProduct requiredProduct;
 		ProductDescription productDescription = deployedProducts.get(coords);
@@ -150,7 +162,7 @@ class Deployer {
 					deployedVersion = deployedProduct.getProductVersion();
 					res = handleLegacyDeployedProduct(version, deployedVersion, deployedProduct);
 					if (res != OK) {
-						writeProductDescriptionInDeployedProductsYaml(coords, deployedVersion);
+						writeProductDescriptionInDeployedProductsJson(coords, deployedVersion);
 						log.info("legacy product " + res.toString());
 						res.setProductCoords(coords);
 						return res;
@@ -181,7 +193,7 @@ class Deployer {
 		res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version, coords);
 		res.setProductCoords(coords);
 		if (res == OK || res == NEED_REBOOT) {
-			writeProductDescriptionInDeployedProductsYaml(coords, version);
+			writeProductDescriptionInDeployedProductsJson(coords, version);
 			if (requiredProduct instanceof IImmutable)
 				writeLatestFileForImmutableProduct(requiredProduct, version);
 			return res;
@@ -250,7 +262,7 @@ class Deployer {
 				return res;
 			} else {
 				log.info("changed components successfully undeployed");
-				writeProductDescriptionInDeployedProductsYaml(coords, "");
+				writeProductDescriptionInDeployedProductsJson(coords, "");
 			}
 		} else {
 			changedComponents = compareProductStructures(requiredProduct.getProductStructure(), ProductStructure.createEmptyStructure());
@@ -383,8 +395,8 @@ class Deployer {
 	}
 
 	@SuppressWarnings("unchecked")
-	Map<String, Object> listDeployedProducts() {
-		return (Map<String, Object>) Utils.readYml(new File(workingFolder, DEPLOYED_PRODUCTS));
+	Map<String, ProductDescription> listDeployedProducts() {
+		return Utils.readJson(new File(workingFolder, DEPLOYED_PRODUCTS), deployedProductsType);
 	}
 
 	enum Command {DEPLOY, UNDEPLOY, STOP, START}

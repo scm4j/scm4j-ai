@@ -110,9 +110,9 @@ public class DeployerEngine implements IProductDeployer {
 	@Override
 	public Map<String, Boolean> listDeployedProducts(String simpleName) {
 		HashMap<String, Boolean> deployed = new HashMap<>();
-		Map<String, Object> deployedProducts = deployer.listDeployedProducts();
+		Map<String, ProductDescription> deployedProducts = deployer.listDeployedProducts();
 		String groupIdAndArtId = downloader.getProductList().getProducts().getOrDefault(simpleName, "");
-		ProductDescription desc = (ProductDescription) deployedProducts.getOrDefault(groupIdAndArtId,
+		ProductDescription desc = deployedProducts.getOrDefault(groupIdAndArtId,
 				null);
 		if (desc == null) {
 			return deployed;

@@ -26,6 +26,7 @@ import org.scm4j.deployer.engine.products.OkProduct;
 import org.scm4j.deployer.engine.products.RebootProduct;
 
 import java.io.File;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -189,12 +190,12 @@ public class DeployerTest {
 		ProductDescription pd = new ProductDescription();
 		pd.setProductVersion("1.0");
 		pd.setDeploymentPath(DeployerEngineTest.TEST_DIR);
-		pd.setDeploymentTime(System.currentTimeMillis());
+		pd.setDeploymentTime(LocalDateTime.now());
 		Thread.sleep(1);
 		ProductDescription pd1 = new ProductDescription();
 		pd1.setProductVersion("1.0");
 		pd1.setDeploymentPath(DeployerEngineTest.TEST_DIR);
-		pd1.setDeploymentTime(System.currentTimeMillis());
+		pd1.setDeploymentTime(LocalDateTime.now());
 		assertEquals(pd, pd1);
 	}
 
@@ -215,4 +216,61 @@ public class DeployerTest {
 			assertEquals("message", e.getMessage());
 		}
 	}
+
+//	@Test
+//	public void testYaml() {
+//		Representer representer = new Representer();
+//		representer.addClassTag(org.scm4j.deployer.engine.ProductDescription.class, Tag. MAP);
+//		Yaml yaml = new Yaml(representer);
+//		ProductDescription pd = new ProductDescription();
+//		pd.setDeploymentPath("a");
+//		pd.setDeploymentTime(123L);
+//		pd.setProductVersion("123.0");
+//		String dump = yaml.dumpAs(pd, Tag.MAP, null);
+//		Map<String, String> map = new HashMap<>();
+//		map.put("abc", dump);
+//		String str = yaml.dumpAs(map, Tag.MAP, DumperOptions.FlowStyle.BLOCK);
+//		System.out.println(str);
+//		Map<String, String> newMap = yaml.loadAs(str, Map.class);
+//		Map<String, Hello> helloMap = new HashMap<>();
+//		for (Map.Entry<String, String> entry : newMap.entrySet()) {
+//			helloMap.put(entry.getKey(), yaml.loadAs(entry.getValue(), Hello.class));
+//		}
+//		System.out.println(newMap);
+//		Hello hello = helloMap.get("abc");
+//		System.out.println(hello.toString());
+//	}
+//
+//	static class Hello {
+//		public long deploymentTime;
+//		public String deploymentPath;
+//		public String productVersion;
+//
+//		@Override
+//		public String toString() {
+//			return "Hello{"
+//					+ " a=" + deploymentTime
+//					+ ", b='" + deploymentPath + '\''
+//					+ ", c='" + productVersion + '\''
+//					+ '}';
+//		}
+//	}
+//
+//	@Test
+//	public void testYaml2() {
+//		ProductDescription pd = new ProductDescription();
+//		pd.setDeploymentPath("a");
+//		pd.setDeploymentTime(123L);
+//		pd.setProductVersion("123.0");
+//		Representer representer = new Representer();
+//		representer.addClassTag(org.scm4j.deployer.engine.ProductDescription.class, Tag.MAP);
+//		Yaml yaml = new Yaml(representer);
+//		Map<String, ProductDescription> map = new HashMap<>();
+//		map.put("abc", pd);
+//		String str = yaml.dump(map);
+//		System.out.println(str);
+//		map = yaml.loadAs(str, Map.class);
+//		pd = map.get("abc");
+//		System.out.println(pd.toString());
+//	}
 }

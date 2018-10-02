@@ -6,4 +6,8 @@ public class EProductListEntryNotFound extends RuntimeException {
 	public EProductListEntryNotFound(String message) {
 		super(message);
 	}
+
+	public EProductListEntryNotFound(Throwable cause) {
+		super(cause);
+	}
 }

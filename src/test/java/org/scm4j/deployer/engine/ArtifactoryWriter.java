@@ -6,20 +6,13 @@ import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
@@ -32,7 +25,6 @@ class ArtifactoryWriter {
 	static final String PRODUCT_LIST_VERSION = "1.2.0";
 	private static final String TEST_POMS = "org/scm4j/deployer/engine/poms/";
 	private static final String TEST_CLASS = "org/scm4j/deployer/engine/testclasses/";
-	private static Yaml YAML;
 	private final File artifactoryFolder;
 
 	ArtifactoryWriter(File artifactoryFolder) {
@@ -133,7 +125,7 @@ class ArtifactoryWriter {
 	private void appendProductList(String groupId, String artifactId, File productListLocation) throws Exception {
 		File remoteProductListFileLocation = new File(productListLocation,
 				Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
-						ProductList.PRODUCT_LIST_ARTIFACT_ID, PRODUCT_LIST_DEFAULT_VERSION, ".yml", null));
+						ProductList.PRODUCT_LIST_ARTIFACT_ID, PRODUCT_LIST_DEFAULT_VERSION, ".json", null));
 		Map products = getProductListContent(remoteProductListFileLocation);
 		if (!((Map) products.get(ProductList.PRODUCTS)).keySet().contains(groupId + ":" + artifactId)) {
 			((Map) products.get(ProductList.PRODUCTS)).put(artifactId, groupId + ":" + artifactId);
@@ -143,31 +135,12 @@ class ArtifactoryWriter {
 		}
 	}
 
-	private void writeProductListContent(Map products, File remoteProductListFileLocation)
-			throws Exception {
-		DumperOptions options = new DumperOptions();
-		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-		YAML = new Yaml(options);
-		String yamlOutput = YAML.dump(products);
-		try (FileWriter fw = new FileWriter(remoteProductListFileLocation)) {
-			fw.write(yamlOutput);
-		}
+	private void writeProductListContent(Map products, File remoteProductListFileLocation) {
+		Utils.writeJson(products, remoteProductListFileLocation);
 	}
 
-	@SuppressWarnings("unchecked")
 	private Map getProductListContent(File remoteProductListFileLocation) {
-		try (FileReader reader = new FileReader(remoteProductListFileLocation)) {
-			YAML = new Yaml();
-			Map res = YAML.loadAs(reader, HashMap.class);
-			if (res == null) {
-				res = new HashMap<>();
-				res.put((ProductList.PRODUCTS), new HashMap<>());
-				res.put(ProductList.REPOSITORIES, new ArrayList<>());
-			}
-			return res;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		return Utils.readJson(remoteProductListFileLocation, Map.class);
 	}
 
 	private void appendMetadata(String groupId, String artifactId, String version, File artifactRoot)

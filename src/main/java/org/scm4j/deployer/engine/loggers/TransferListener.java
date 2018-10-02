@@ -16,7 +16,6 @@ public class TransferListener
 	private static final int KB = 102400;
 	private final Map<TransferResource, Long> downloads = new ConcurrentHashMap<>();
 	private int lastLength;
-	private String record;
 
 	@Override
 	public void transferProgressed(TransferEvent event) {
@@ -42,7 +41,7 @@ public class TransferListener
 //				.endsWith("pom"))
 //			log.info(buffer.toString());
 
-		record = buffer.toString();
+		String record = buffer.toString();
 	}
 
 	private String getStatus(long complete, long total) {

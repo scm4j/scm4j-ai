@@ -12,11 +12,8 @@ import org.scm4j.deployer.api.IDeploymentContext;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
 import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -49,9 +46,9 @@ public class DeployerEngineTest {
 	private static final String UNTILL_ARTIFACT_ID = "unTill";
 	private static final String RELATIVE_UNTILL_PATH = Utils.coordsToRelativeFilePath(TEST_UNTILL_GROUP_ID,
 			UNTILL_ARTIFACT_ID, "123.4", "jar", null);
-	private static AITestEnvironment env = new AITestEnvironment();
-	private static String ublArtifactId = "UBL";
-	private static String axisJaxrpcArtifact = "axis-jaxrpc";
+	private static final AITestEnvironment env = new AITestEnvironment();
+	private static final String ublArtifactId = "UBL";
+	private static final String axisJaxrpcArtifact = "axis-jaxrpc";
 
 	@AfterClass
 	public static void after() throws IOException {
@@ -100,7 +97,7 @@ public class DeployerEngineTest {
 		assertNotNull(versions);
 		assertTrue(versions.containsAll(Arrays.asList(
 				"123.4", "124.5")));
-		assertTrue(versions.size() == 2);
+		assertEquals(2, versions.size());
 	}
 
 	@Test
@@ -154,9 +151,10 @@ public class DeployerEngineTest {
 
 	@Test
 	public void testLoadRepos() throws Exception {
-		Downloader loader = new Downloader(null, env.getEnvFolder(), env.getArtifactory1Url());
-		loader.getProductList().readFromProductList();
-		List<ArtifactoryReader> repos = loader.getProductList().getRepos();
+		DeployerEngine loader = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
+		ProductList list = loader.getDownloader().getProductList();
+		list.readFromProductList();
+		List<ArtifactoryReader> repos = list.getRepos();
 		assertNotNull(repos);
 		repos.containsAll(Arrays.asList(
 				StringUtils.appendIfMissing(env.getArtifactory1Url(), "/"),
@@ -204,7 +202,7 @@ public class DeployerEngineTest {
 		map.put("some", "stuff");
 		entry.put(ProductList.PRODUCTS, map);
 		entry.put(ProductList.REPOSITORIES, new ArrayList<>(Collections.singletonList("file://some repos")));
-		Utils.writeYaml(entry, new File(de.getDownloader().getProductList().getLocalProductList().toString()));
+		Utils.writeJson(entry, new File(de.getDownloader().getProductList().getLocalProductList().toString()));
 		List<String> list = de.listProducts();
 		assertEquals(list, Collections.singletonList("some"));
 		//reload product list
@@ -224,13 +222,7 @@ public class DeployerEngineTest {
 		Map<String, Set<String>> entry = new HashMap<>();
 		entry.put(UNTILL_ARTIFACT_ID, new HashSet<>(Collections.singletonList("777")));
 		entry.put("haha", new HashSet<>(Collections.singletonList("1234")));
-		try (FileWriter writer = new FileWriter(new File(de.getDownloader().getProductList().getVersionsYml().toString()))) {
-			DumperOptions options = new DumperOptions();
-			options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-			Yaml yaml = new Yaml(options);
-			String yamlOtput = yaml.dump(entry);
-			writer.write(yamlOtput);
-		}
+		Utils.writeJson(entry, new File(de.getDownloader().getProductList().getVersionsJson().toString()));
 		testMap.clear();
 		testMap.put("777", false);
 		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
@@ -245,7 +237,7 @@ public class DeployerEngineTest {
 		de.download(UNTILL_ARTIFACT_ID, "123.4");
 		testMap.replace("123.4", false, true);
 		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
-		FileUtils.forceDelete(de.getDownloader().getProductList().getVersionsYml());
+		FileUtils.forceDelete(de.getDownloader().getProductList().getVersionsJson());
 		testMap.clear();
 		File metadataFolder1 = new File(env.getArtifactory1Folder(), Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, UNTILL_ARTIFACT_ID));
 		File metadataFolder2 = new File(env.getArtifactory2Folder(), Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, UNTILL_ARTIFACT_ID));

@@ -17,7 +17,6 @@ import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IComponent;
 import org.scm4j.deployer.api.IComponentDeployer;
 import org.scm4j.deployer.api.IDeployedProduct;
-import org.scm4j.deployer.api.IDownloader;
 import org.scm4j.deployer.api.IImmutable;
 import org.scm4j.deployer.api.ILegacyProduct;
 import org.scm4j.deployer.api.IProduct;
@@ -27,7 +26,7 @@ import org.scm4j.deployer.api.ProductStructure;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,14 +51,14 @@ import static org.scm4j.deployer.engine.Deployer.Command.UNDEPLOY;
 class Deployer {
 
 	private static final String DEPLOYED_PRODUCTS = "deployed-products.json";
-	private final IDownloader downloader;
+	private final Downloader downloader;
 	private final File workingFolder;
 	private final File deployedProductsFile;
 	private String deploymentPath;
 	private Gson gson;
 	private Type deployedProductsType;
 
-	Deployer(File workingFolder, IDownloader downloader) {
+	Deployer(File workingFolder, Downloader downloader) {
 		this.workingFolder = workingFolder;
 		this.downloader = downloader;
 		this.gson = new GsonBuilder().setPrettyPrinting().create();
@@ -118,24 +117,17 @@ class Deployer {
 
 	@SuppressWarnings("unchecked")
 	@SneakyThrows
-	private void writeProductDescriptionInDeployedProductsJson(String coords, String version) {
-		ProductDescription productDescription = createProductDescription(version);
+	private void writeProductDescriptionInDeployedProductsJson(String coords, String simpleName, String version) {
+		ProductDescription productDescription = new ProductDescription(simpleName, Instant.now().toString(), deploymentPath,
+				version);
 		Map<String, ProductDescription> deployedProducts = Utils.readJson(deployedProductsFile, deployedProductsType);
 		deployedProducts.put(coords, productDescription);
 		Utils.writeJson(deployedProducts, deployedProductsFile);
 	}
 
-	private ProductDescription createProductDescription(String version) {
-		ProductDescription newProduct = new ProductDescription();
-		newProduct.setProductVersion(version);
-		newProduct.setDeploymentPath(deploymentPath);
-		newProduct.setDeploymentTime(LocalDateTime.now());
-		return newProduct;
-	}
-
 	@SuppressWarnings("unchecked")
 	@SneakyThrows
-	DeploymentResult deploy(Artifact art) {
+	DeploymentResult deploy(Artifact art, String simpleName) {
 		String coords = String.format("%s:%s", art.getGroupId(), art.getArtifactId());
 		DeploymentResult res = OK;
 		String artifactId = art.getArtifactId();
@@ -162,7 +154,7 @@ class Deployer {
 					deployedVersion = deployedProduct.getProductVersion();
 					res = handleLegacyDeployedProduct(version, deployedVersion, deployedProduct);
 					if (res != OK) {
-						writeProductDescriptionInDeployedProductsJson(coords, deployedVersion);
+						writeProductDescriptionInDeployedProductsJson(coords, simpleName, deployedVersion);
 						log.info("legacy product " + res.toString());
 						res.setProductCoords(coords);
 						return res;
@@ -190,10 +182,10 @@ class Deployer {
 			}
 		}
 		deployedProduct = createDeployedProduct(coords, deployedVersion, productDescription);
-		res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version, coords);
+		res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version, coords, simpleName);
 		res.setProductCoords(coords);
 		if (res == OK || res == NEED_REBOOT) {
-			writeProductDescriptionInDeployedProductsJson(coords, version);
+			writeProductDescriptionInDeployedProductsJson(coords, simpleName, version);
 			if (requiredProduct instanceof IImmutable)
 				writeLatestFileForImmutableProduct(requiredProduct, version);
 			return res;
@@ -231,7 +223,7 @@ class Deployer {
 	}
 
 	DeploymentResult compareAndDeployProducts(IProduct requiredProduct, IDeployedProduct deployedProduct,
-	                                          String artifactId, String version, String coords) {
+	                                          String artifactId, String version, String coords, String simpleName) {
 		DeploymentResult res;
 		String productName = artifactId + "-" + version;
 		if (!requiredProduct.getDependentProducts().isEmpty()) {
@@ -262,7 +254,7 @@ class Deployer {
 				return res;
 			} else {
 				log.info("changed components successfully undeployed");
-				writeProductDescriptionInDeployedProductsJson(coords, "");
+				writeProductDescriptionInDeployedProductsJson(coords, simpleName, "");
 			}
 		} else {
 			changedComponents = compareProductStructures(requiredProduct.getProductStructure(), ProductStructure.createEmptyStructure());
@@ -309,8 +301,13 @@ class Deployer {
 				.map(DefaultArtifact::new)
 				.collect(Collectors.toList());
 		DeploymentResult res = OK;
+		Map<String, String> products = downloader.getProductList().getProducts();
 		for (Artifact dependent : dependents) {
-			res = deploy(dependent);
+			String simpleName = products.entrySet().stream()
+					.filter(e -> e.getValue().equals(dependent.getGroupId() + ":" + dependent.getArtifactId()))
+					.map(Map.Entry::getKey)
+					.findFirst().orElseThrow(() -> new RuntimeException("Wrong dependent product!"));
+			res = deploy(dependent, simpleName);
 			if (res == FAILED || res == NEED_REBOOT || res == REBOOT_CONTINUE)
 				return res;
 		}

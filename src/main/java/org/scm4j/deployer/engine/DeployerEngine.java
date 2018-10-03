@@ -34,7 +34,7 @@ public class DeployerEngine implements IProductDeployer {
 	public DeploymentResult deploy(String simpleName, String version) {
 		listProducts();
 		Artifact artifact = Utils.initializeArtifact(downloader, simpleName, version);
-		DeploymentResult res = deployer.deploy(artifact);
+		DeploymentResult res = deployer.deploy(artifact, simpleName);
 		URLClassLoader loader = downloader.getLoader();
 		if (loader != null) {
 			try {

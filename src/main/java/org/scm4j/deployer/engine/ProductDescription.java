@@ -4,15 +4,14 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.time.LocalDateTime;
-
 @Data
 @ToString
 @EqualsAndHashCode(exclude = "deploymentTime")
 public class ProductDescription {
 
-	private LocalDateTime deploymentTime;
-	private String deploymentPath;
-	private String productVersion;
+	private final String productName;
+	private final String deploymentTime;
+	private final String deploymentPath;
+	private final String productVersion;
 
 }

@@ -9,7 +9,6 @@ import org.scm4j.deployer.api.DeployedProduct;
 import org.scm4j.deployer.api.DeploymentContext;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IComponent;
-import org.scm4j.deployer.api.IDownloader;
 import org.scm4j.deployer.api.IProduct;
 import org.scm4j.deployer.api.IProductStructure;
 import org.scm4j.deployer.engine.Deployer.Command;
@@ -26,9 +25,10 @@ import org.scm4j.deployer.engine.products.OkProduct;
 import org.scm4j.deployer.engine.products.RebootProduct;
 
 import java.io.File;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -93,28 +93,28 @@ public class DeployerTest {
 
 	@Test
 	public void testDeploy() {
-		IDownloader downloader = mockDeploymentContext();
+		Downloader downloader = mockDeploymentContext();
 		Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
 		IProduct okProduct = new OkProduct();
 		DeployedProduct prod = createDeployedProduct();
 		IProduct failProduct = new FailProduct();
 		IProduct rebootProduct = new RebootProduct();
-		DeploymentResult dr = dep.compareAndDeployProducts(okProduct, null, "ok", "1.0", "");
+		DeploymentResult dr = dep.compareAndDeployProducts(okProduct, null, "ok", "1.0", "", "");
 		assertEquals(DeployerEngineTest.TEST_DIR, dep.getDeploymentPath());
 		assertEquals(OK, dr);
-		dr = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0", "");
+		dr = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0", "", "");
 		assertEquals(OK, dr);
-		dr = dep.compareAndDeployProducts(failProduct, prod, "ok", "1.0", "");
+		dr = dep.compareAndDeployProducts(failProduct, prod, "ok", "1.0", "", "");
 		assertEquals(FAILED, dr);
 		assertEquals(1, FailedDeployer.getCount());
-		dr = dep.compareAndDeployProducts(rebootProduct, prod, "ok", "1.0", "");
+		dr = dep.compareAndDeployProducts(rebootProduct, prod, "ok", "1.0", "", "");
 		assertEquals(NEED_REBOOT, dr);
 		assertEquals(1, RebootDeployer.getCount());
 	}
 
-	private IDownloader mockDeploymentContext() {
+	private Downloader mockDeploymentContext() {
 		OkDeployer.zeroCount();
-		IDownloader downloader = mock(IDownloader.class);
+		Downloader downloader = mock(Downloader.class);
 		String ubl = "UBL";
 		String axis = "axis";
 		String jooq = "jooq";
@@ -126,87 +126,88 @@ public class DeployerTest {
 
 	@Test
 	public void testDeployDependent() {
-		IDownloader downloader = mockDeploymentContext();
+		Downloader downloader = mockDeploymentContext();
+		ProductList pl = mock(ProductList.class);
+		Map<String, String> products = new HashMap<>();
+		products.put("", "eu.untill:UBL");
+		when(pl.getProducts()).thenReturn(products);
+		when(downloader.getProductList()).thenReturn(pl);
 		when(downloader.getProduct()).thenReturn(new OkProduct());
 		DeployedProduct prod = createDeployedProduct();
 		DependentProduct depProd = new DependentProduct();
 		Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
-		DeploymentResult res = dep.compareAndDeployProducts(depProd, null, "ok", "1.0", "");
+		DeploymentResult res = dep.compareAndDeployProducts(depProd, null, "ok", "1.0",
+				"", "abc");
 		assertEquals(OK, res);
 		assertEquals(6, OkDeployer.getCount());
-		res = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0", "");
+		res = dep.compareAndDeployProducts(new EmptyProduct(), prod, "ok", "1.0", "", "");
 		assertEquals(OK, res);
 		assertEquals(3, OkDeployer.getCount());
 	}
 
 	@Test
 	public void testLegacyProduct() throws Exception {
-		IDownloader downloader = mockDeploymentContext();
+		Downloader downloader = mockDeploymentContext();
 		when(downloader.getProduct()).thenReturn(new LegacyProduct());
 		Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
-		DeploymentResult dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + LegacyProduct.LEGACY_VERSION));
+		DeploymentResult dr = dep.deploy(new DefaultArtifact(
+				"eu.untill:unTill:jar:" + LegacyProduct.LEGACY_VERSION), "");
 		assertEquals(ALREADY_INSTALLED, dr);
 		after();
 		before();
 		dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" +
-				(Float.valueOf(LegacyProduct.LEGACY_VERSION) + 1)));
+				(Float.valueOf(LegacyProduct.LEGACY_VERSION) + 1)), "");
 		assertEquals(OK, dr);
 		after();
 		before();
 		dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" +
-				(Float.valueOf(LegacyProduct.LEGACY_VERSION) - 1)));
+				(Float.valueOf(LegacyProduct.LEGACY_VERSION) - 1)), "");
 		assertEquals(NEWER_VERSION_EXISTS, dr);
 	}
 
 	@Test
 	public void testImmutableProduct() throws Exception {
 		String immutableVersion = "123.0";
-		IDownloader downloader = mockDeploymentContext();
+		Downloader downloader = mockDeploymentContext();
 		when(downloader.getProduct()).thenReturn(new ImmutableProduct());
 		Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
 		File latest = new File(DeployerEngineTest.TEST_DIR, "latest");
-		DeploymentResult dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + immutableVersion));
+		DeploymentResult dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + immutableVersion), "");
 		assertEquals(OK, dr);
 		assertEquals(immutableVersion, FileUtils.readFileToString(latest, "UTF-8"));
 
 		String higherVersion = String.valueOf(Float.valueOf(immutableVersion) + 1.0);
-		dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + higherVersion));
+		dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + higherVersion), "");
 		assertEquals(OK, dr);
 		assertEquals(higherVersion, FileUtils.readFileToString(latest, "UTF-8"));
 
 		String snapshot = "-SNAPSHOT";
-		dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + higherVersion + snapshot));
+		dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + higherVersion + snapshot), "");
 		assertEquals(NEWER_VERSION_EXISTS, dr);
 		assertEquals(higherVersion, FileUtils.readFileToString(latest, "UTF-8"));
 
 		higherVersion = String.valueOf(Float.valueOf(higherVersion) + 1.0);
-		dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + higherVersion + snapshot));
+		dr = dep.deploy(new DefaultArtifact("eu.untill:unTill:jar:" + higherVersion + snapshot), "");
 		assertEquals(OK, dr);
 		assertEquals(higherVersion + snapshot, FileUtils.readFileToString(latest, "UTF-8"));
 	}
 
 	@Test
 	public void testProductDescriptionEquals() throws Exception {
-		ProductDescription pd = new ProductDescription();
-		pd.setProductVersion("1.0");
-		pd.setDeploymentPath(DeployerEngineTest.TEST_DIR);
-		pd.setDeploymentTime(LocalDateTime.now());
+		ProductDescription pd = new ProductDescription("", Instant.now().toString(), DeployerEngineTest.TEST_DIR, "1.0");
 		Thread.sleep(1);
-		ProductDescription pd1 = new ProductDescription();
-		pd1.setProductVersion("1.0");
-		pd1.setDeploymentPath(DeployerEngineTest.TEST_DIR);
-		pd1.setDeploymentTime(LocalDateTime.now());
+		ProductDescription pd1 = new ProductDescription("", Instant.now().toString(), DeployerEngineTest.TEST_DIR, "1.0");
 		assertEquals(pd, pd1);
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
 	public void testIncompatibleApi() {
-		IDownloader downloader = mock(IDownloader.class);
+		Downloader downloader = mock(Downloader.class);
 		doThrow((EIncompatibleApiVersion.class)).when(downloader).getProductFile(anyString());
 		Deployer dep = new Deployer(new File(DeployerEngineTest.TEST_DIR), downloader);
 		try {
-			dep.deploy(new DefaultArtifact("x:y:z:1.0"));
+			dep.deploy(new DefaultArtifact("x:y:z:1.0"), "");
 			fail();
 		} catch (EIncompatibleApiVersion e) {
 		}
@@ -217,60 +218,4 @@ public class DeployerTest {
 		}
 	}
 
-//	@Test
-//	public void testYaml() {
-//		Representer representer = new Representer();
-//		representer.addClassTag(org.scm4j.deployer.engine.ProductDescription.class, Tag. MAP);
-//		Yaml yaml = new Yaml(representer);
-//		ProductDescription pd = new ProductDescription();
-//		pd.setDeploymentPath("a");
-//		pd.setDeploymentTime(123L);
-//		pd.setProductVersion("123.0");
-//		String dump = yaml.dumpAs(pd, Tag.MAP, null);
-//		Map<String, String> map = new HashMap<>();
-//		map.put("abc", dump);
-//		String str = yaml.dumpAs(map, Tag.MAP, DumperOptions.FlowStyle.BLOCK);
-//		System.out.println(str);
-//		Map<String, String> newMap = yaml.loadAs(str, Map.class);
-//		Map<String, Hello> helloMap = new HashMap<>();
-//		for (Map.Entry<String, String> entry : newMap.entrySet()) {
-//			helloMap.put(entry.getKey(), yaml.loadAs(entry.getValue(), Hello.class));
-//		}
-//		System.out.println(newMap);
-//		Hello hello = helloMap.get("abc");
-//		System.out.println(hello.toString());
-//	}
-//
-//	static class Hello {
-//		public long deploymentTime;
-//		public String deploymentPath;
-//		public String productVersion;
-//
-//		@Override
-//		public String toString() {
-//			return "Hello{"
-//					+ " a=" + deploymentTime
-//					+ ", b='" + deploymentPath + '\''
-//					+ ", c='" + productVersion + '\''
-//					+ '}';
-//		}
-//	}
-//
-//	@Test
-//	public void testYaml2() {
-//		ProductDescription pd = new ProductDescription();
-//		pd.setDeploymentPath("a");
-//		pd.setDeploymentTime(123L);
-//		pd.setProductVersion("123.0");
-//		Representer representer = new Representer();
-//		representer.addClassTag(org.scm4j.deployer.engine.ProductDescription.class, Tag.MAP);
-//		Yaml yaml = new Yaml(representer);
-//		Map<String, ProductDescription> map = new HashMap<>();
-//		map.put("abc", pd);
-//		String str = yaml.dump(map);
-//		System.out.println(str);
-//		map = yaml.loadAs(str, Map.class);
-//		pd = map.get("abc");
-//		System.out.println(pd.toString());
-//	}
 }

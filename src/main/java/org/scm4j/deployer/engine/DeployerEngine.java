@@ -10,8 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -77,28 +77,14 @@ public class DeployerEngine implements IProductDeployer {
 	}
 
 	@Override
-	public Map<String, Boolean> listProductVersions(String simpleName) {
+	public List<String> listProductVersions(String simpleName) {
 		Optional<Set<String>> versions = Optional.ofNullable
 				(downloader.getProductList().readProductVersions(simpleName).get(simpleName));
-		Map<String, Boolean> downloadedVersions = new LinkedHashMap<>();
-		versions.ifPresent(strings -> strings.forEach
-				(version -> downloadedVersions.put(version, versionDownloaded(simpleName, version))));
-		return downloadedVersions;
-	}
-
-	private boolean versionDownloaded(String simpleName, String version) {
-		String groupIdAndArtId = downloader.getProductList().getProducts().getOrDefault(simpleName, "");
-		String[] arr = groupIdAndArtId.split(":");
-		File productVersionFolder = new File(downloader.getPortableRepository(), Utils.coordsToFolderStructure(arr[0],
-				arr[1], version));
-		if (!productVersionFolder.exists())
-			productVersionFolder = new File(downloader.getWorkingRepository(), Utils.coordsToFolderStructure(arr[0],
-					arr[1], version));
-		return productVersionFolder.exists();
+		return new ArrayList<>(versions.orElse(Collections.emptySet()));
 	}
 
 	@Override
-	public Map<String, Boolean> refreshProductVersions(String simpleName) {
+	public List<String> refreshProductVersions(String simpleName) {
 		try {
 			downloader.getProductList().refreshProductVersions(simpleName);
 		} catch (IOException e) {
@@ -108,18 +94,13 @@ public class DeployerEngine implements IProductDeployer {
 	}
 
 	@Override
-	public Map<String, Boolean> listDeployedProducts(String simpleName) {
-		HashMap<String, Boolean> deployed = new HashMap<>();
+	public Map<String, String> mapDeployedProducts(String simpleName) {
+		Map<String, String> deployed = new HashMap<>();
 		Map<String, ProductDescription> deployedProducts = deployer.listDeployedProducts();
-		String groupIdAndArtId = downloader.getProductList().getProducts().getOrDefault(simpleName, "");
-		ProductDescription desc = deployedProducts.getOrDefault(groupIdAndArtId,
-				null);
-		if (desc == null) {
-			return deployed;
-		} else {
-			String version = desc.getProductVersion();
-			deployed.put(version, true);
-			return deployed;
+		for (Map.Entry<String, ProductDescription> product : deployedProducts.entrySet()) {
+			ProductDescription desc = product.getValue();
+			deployed.put(desc.getProductName(), desc.getProductVersion());
 		}
+		return deployed;
 	}
 }

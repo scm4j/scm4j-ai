@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -93,7 +92,7 @@ public class DeployerEngineTest {
 	public void testGetVersions() {
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		de.listProducts();
-		Set<String> versions = de.listProductVersions(UNTILL_ARTIFACT_ID).keySet();
+		List<String> versions = de.listProductVersions(UNTILL_ARTIFACT_ID);
 		assertNotNull(versions);
 		assertTrue(versions.containsAll(Arrays.asList(
 				"123.4", "124.5")));
@@ -214,31 +213,30 @@ public class DeployerEngineTest {
 	public void testDownloadAndRefreshProductsVersions() throws Exception {
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		de.listProducts();
-		Map<String, Boolean> testMap = new LinkedHashMap<>();
-		testMap.put("123.4", false);
-		testMap.put("124.5", false);
-		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
+		List<String> testList = new ArrayList<>();
+		testList.add("124.5");
+		testList.add("123.4");
+		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testList);
 		//changing product versions
 		Map<String, Set<String>> entry = new HashMap<>();
 		entry.put(UNTILL_ARTIFACT_ID, new HashSet<>(Collections.singletonList("777")));
 		entry.put("haha", new HashSet<>(Collections.singletonList("1234")));
 		Utils.writeJson(entry, new File(de.getDownloader().getProductList().getVersionsJson().toString()));
-		testMap.clear();
-		testMap.put("777", false);
-		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
+		testList.clear();
+		testList.add("777");
+		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testList);
 		//reload version of specific product
-		testMap.clear();
-		testMap.put("123.4", false);
-		testMap.put("124.5", false);
-		assertEquals(de.refreshProductVersions(UNTILL_ARTIFACT_ID), testMap);
+		testList.clear();
+		testList.add("123.4");
+		testList.add("124.5");
+		assertEquals(de.refreshProductVersions(UNTILL_ARTIFACT_ID), testList);
 		de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		de.listProducts();
-		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
+		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testList);
 		de.download(UNTILL_ARTIFACT_ID, "123.4");
-		testMap.replace("123.4", false, true);
-		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
+		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testList);
 		FileUtils.forceDelete(de.getDownloader().getProductList().getVersionsJson());
-		testMap.clear();
+		testList.clear();
 		File metadataFolder1 = new File(env.getArtifactory1Folder(), Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, UNTILL_ARTIFACT_ID));
 		File metadataFolder2 = new File(env.getArtifactory2Folder(), Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, UNTILL_ARTIFACT_ID));
 		FileUtils.moveFileToDirectory(new File(metadataFolder1, ArtifactoryReader.METADATA_FILE_NAME), env.getEnvFolder(), false);
@@ -247,7 +245,7 @@ public class DeployerEngineTest {
 		FileUtils.deleteDirectory(new File(env.getEnvFolder(), "repository"));
 		de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		de.listProducts();
-		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testMap);
+		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testList);
 		try {
 			de.refreshProductVersions(UNTILL_ARTIFACT_ID);
 			fail();
@@ -286,8 +284,8 @@ public class DeployerEngineTest {
 		assertEquals(dr, OK);
 		dr = de.deploy(UNTILL_ARTIFACT_ID, "124.5");
 		assertEquals(dr, ALREADY_INSTALLED);
-		Map<String, Boolean> deployedVersion = de.listDeployedProducts(UNTILL_ARTIFACT_ID);
-		assertTrue(deployedVersion.get("124.5"));
+		Map<String, String> deployedVersion = de.mapDeployedProducts(UNTILL_ARTIFACT_ID);
+		assertEquals(deployedVersion.get(UNTILL_ARTIFACT_ID), "124.5");
 	}
 
 	@Test

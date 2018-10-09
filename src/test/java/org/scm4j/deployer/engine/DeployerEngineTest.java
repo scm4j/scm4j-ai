@@ -284,7 +284,7 @@ public class DeployerEngineTest {
 		assertEquals(dr, OK);
 		dr = de.deploy(UNTILL_ARTIFACT_ID, "124.5");
 		assertEquals(dr, ALREADY_INSTALLED);
-		Map<String, String> deployedVersion = de.mapDeployedProducts(UNTILL_ARTIFACT_ID);
+		Map<String, String> deployedVersion = de.mapDeployedProducts();
 		assertEquals(deployedVersion.get(UNTILL_ARTIFACT_ID), "124.5");
 	}
 

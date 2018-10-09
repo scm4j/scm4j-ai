@@ -94,7 +94,7 @@ public class DeployerEngine implements IProductDeployer {
 	}
 
 	@Override
-	public Map<String, String> mapDeployedProducts(String simpleName) {
+	public Map<String, String> mapDeployedProducts() {
 		Map<String, String> deployed = new HashMap<>();
 		Map<String, ProductDescription> deployedProducts = deployer.listDeployedProducts();
 		for (Map.Entry<String, ProductDescription> product : deployedProducts.entrySet()) {

@@ -135,10 +135,10 @@ class Deployer {
 		String productName = artifactId + "-" + version;
 		log.info("product to deploy " + productName);
 		Map<String, ProductDescription> deployedProducts = Utils.readJson(deployedProductsFile, deployedProductsType);
-		IDeployedProduct deployedProduct;
+		IDeployedProduct deployedProduct = null;
 		IProduct requiredProduct;
 		ProductDescription productDescription = deployedProducts.get(coords);
-		String deployedVersion = null;
+		String deployedVersion;
 		if (productDescription == null) {
 			if (version.isEmpty()) {
 				log.info(productName + " isn't installed!");
@@ -180,8 +180,8 @@ class Deployer {
 				requiredProduct = downloader.getProduct();
 				downloader.loadProductDependency(new File(workingFolder, Downloader.REPOSITORY_FOLDER_NAME));
 			}
+			deployedProduct = createDeployedProduct(coords, deployedVersion, productDescription);
 		}
-		deployedProduct = createDeployedProduct(coords, deployedVersion, productDescription);
 		res = compareAndDeployProducts(requiredProduct, deployedProduct, artifactId, version, coords, simpleName);
 		res.setProductCoords(coords);
 		if (res == OK || res == NEED_REBOOT) {

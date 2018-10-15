@@ -117,29 +117,6 @@ public final class Utils {
 		return new DefaultArtifact(arr[0], arr[1], "jar", version);
 	}
 
-//	@SneakyThrows
-//	public static void writeYaml(Map entry, File output) {
-//		@Cleanup
-//		FileWriter writer = new FileWriter(output);
-//		DumperOptions options = new DumperOptions();
-//		options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-//		Yaml yaml = new Yaml(options);
-//		String yamlOutput = yaml.dump(entry);
-//		writer.write(yamlOutput);
-//	}
-//
-//	@SneakyThrows
-//	public static Map readYml(File input) throws NullPointerException {
-//		if (input.exists()) {
-//			@Cleanup
-//			FileReader reader = new FileReader(input);
-//			Yaml yaml = new Yaml();
-//			return yaml.loadAs(reader, HashMap.class);
-//		} else {
-//			return new HashMap<>();
-//		}
-//	}
-
 	@SneakyThrows
 	public static void writeJson(Object obj, File file) {
 		@Cleanup

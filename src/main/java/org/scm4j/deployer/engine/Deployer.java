@@ -198,10 +198,10 @@ class Deployer {
 	                                                     IDeployedProduct deployedProduct) {
 		log.info("legacy version is " + deployedVersion + " and deployment path is "
 				+ deployedProduct.getDeploymentPath());
-		if (deployedVersion.isEmpty()) {
+		if (deployedVersion.contains(".A.")) {
 			log.info("Alfa version must be manually removed");
 			deploymentPath = deployedProduct.getDeploymentPath();
-			return NEWER_VERSION_EXISTS;
+			return ALREADY_INSTALLED;
 		}
 		DeploymentResult res = compareVersionWithDeployedVersion(currentVersion, deployedVersion);
 		if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {

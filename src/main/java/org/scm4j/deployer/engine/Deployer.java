@@ -1,8 +1,6 @@
 package org.scm4j.deployer.engine;
 
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -21,6 +19,7 @@ import org.scm4j.deployer.api.IImmutable;
 import org.scm4j.deployer.api.ILegacyProduct;
 import org.scm4j.deployer.api.IProduct;
 import org.scm4j.deployer.api.IProductStructure;
+import org.scm4j.deployer.api.ProductInfo;
 import org.scm4j.deployer.api.ProductStructure;
 
 import java.io.File;
@@ -54,17 +53,15 @@ class Deployer {
 	private final Downloader downloader;
 	private final File workingFolder;
 	private final File deployedProductsFile;
+	private final Type deployedProductsType;
 	private String deploymentPath;
-	private Gson gson;
-	private Type deployedProductsType;
 
 	Deployer(File workingFolder, Downloader downloader) {
 		this.workingFolder = workingFolder;
 		this.downloader = downloader;
-		this.gson = new GsonBuilder().setPrettyPrinting().create();
 		this.deployedProductsType = new TypeToken<Map<String, ProductDescription>>() {
 		}.getType();
-		deployedProductsFile = new File(workingFolder, DEPLOYED_PRODUCTS);
+		this.deployedProductsFile = new File(workingFolder, DEPLOYED_PRODUCTS);
 	}
 
 	private static DeploymentResult compareVersionWithDeployedVersion(String version, String legacyVersion) {
@@ -306,10 +303,11 @@ class Deployer {
 				.map(DefaultArtifact::new)
 				.collect(Collectors.toList());
 		DeploymentResult res = OK;
-		Map<String, String> products = downloader.getProductList().getProducts();
+		Map<String, ProductInfo> products = downloader.getProductList().getProducts();
 		for (Artifact dependent : dependents) {
 			String simpleName = products.entrySet().stream()
-					.filter(e -> e.getValue().equals(dependent.getGroupId() + ":" + dependent.getArtifactId()))
+					.filter(e -> e.getValue().getArtifactId().equals(
+							dependent.getGroupId() + ":" + dependent.getArtifactId()))
 					.map(Map.Entry::getKey)
 					.findFirst().orElseThrow(() -> new RuntimeException("Wrong dependent product!"));
 			res = deploy(dependent, simpleName);

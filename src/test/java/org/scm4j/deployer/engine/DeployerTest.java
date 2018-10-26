@@ -1,5 +1,6 @@
 package org.scm4j.deployer.engine;
 
+import com.google.gson.GsonBuilder;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.After;
@@ -11,6 +12,7 @@ import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IComponent;
 import org.scm4j.deployer.api.IProduct;
 import org.scm4j.deployer.api.IProductStructure;
+import org.scm4j.deployer.api.ProductInfo;
 import org.scm4j.deployer.engine.Deployer.Command;
 import org.scm4j.deployer.engine.deployers.FailedDeployer;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
@@ -128,8 +130,8 @@ public class DeployerTest {
 	public void testDeployDependent() {
 		Downloader downloader = mockDeploymentContext();
 		ProductList pl = mock(ProductList.class);
-		Map<String, String> products = new HashMap<>();
-		products.put("", "eu.untill:UBL");
+		Map<String, ProductInfo> products = new HashMap<>();
+		products.put("", new ProductInfo("eu.untill:UBL", false));
 		when(pl.getProducts()).thenReturn(products);
 		when(downloader.getProductList()).thenReturn(pl);
 		when(downloader.getProduct()).thenReturn(new OkProduct());
@@ -210,6 +212,7 @@ public class DeployerTest {
 			dep.deploy(new DefaultArtifact("x:y:z:1.0"), "");
 			fail();
 		} catch (EIncompatibleApiVersion e) {
+			//
 		}
 		try {
 			throw new EIncompatibleApiVersion("message");
@@ -218,4 +221,12 @@ public class DeployerTest {
 		}
 	}
 
+	@Test
+	public void sdfsadf() {
+		Map<String, ProductInfo> map = new HashMap<>();
+		map.put("a", new ProductInfo("b", false));
+		map.put("c", new ProductInfo("b", false));
+		ProductListEntry entry = new ProductListEntry(Collections.singletonList("b"), map);
+		System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(entry));
+	}
 }

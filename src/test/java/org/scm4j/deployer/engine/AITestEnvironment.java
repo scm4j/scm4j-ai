@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 class AITestEnvironment {
 
@@ -54,12 +53,11 @@ class AITestEnvironment {
 			productListFile.getParentFile().mkdirs();
 			productListFile.createNewFile();
 		}
-		Map productList = new HashMap<>();
+		ProductListEntry productList = new ProductListEntry(new ArrayList<>(), new HashMap<>());
 		List<String> repos = new ArrayList<>();
 		repos.add(artifactory1Url);
 		repos.add(artifactory2Url);
-		productList.put(ProductList.PRODUCTS, new HashMap<>());
-		productList.put(ProductList.REPOSITORIES, repos);
+		productList.getRepositories().addAll(repos);
 		Utils.writeJson(productList, productListFile);
 	}
 

@@ -19,6 +19,7 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.artifact.DefaultArtifactTypeRegistry;
+import org.scm4j.deployer.api.ProductInfo;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import org.scm4j.deployer.engine.loggers.RepositoryLogger;
 import org.scm4j.deployer.engine.loggers.TransferListener;
@@ -109,7 +110,8 @@ public final class Utils {
 	}
 
 	public static Artifact initializeArtifact(Downloader downloader, String artifactId, String version) {
-		String groupAndArtifactId = downloader.getProductList().getProducts().getOrDefault(artifactId, "");
+		String groupAndArtifactId = downloader.getProductList().getProducts().getOrDefault(artifactId,
+				new ProductInfo("", false)).getArtifactId();
 		if (groupAndArtifactId.isEmpty()) {
 			throw new EProductNotFound("Can't find product in product list");
 		}
@@ -125,15 +127,13 @@ public final class Utils {
 	}
 
 	@SneakyThrows
-	public static Map readJson(File file, Type type) {
-		Map result;
+	public static <V> Map<String, V> readJson(File file, Type type) {
 		try {
-			result = new GsonBuilder().setPrettyPrinting().create()
-					.fromJson(FileUtils.readFileToString(file, "UTF-8"),
-							type);
+			return new GsonBuilder().setPrettyPrinting().create()
+					.fromJson(FileUtils.readFileToString(file, "UTF-8"), type);
 		} catch (FileNotFoundException e) {
-			result = new HashMap<>();
+			return new HashMap<>();
 		}
-		return result;
 	}
+
 }

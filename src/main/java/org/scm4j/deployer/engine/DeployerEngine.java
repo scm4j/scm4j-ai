@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import org.eclipse.aether.artifact.Artifact;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IProductDeployer;
+import org.scm4j.deployer.api.ProductInfo;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,14 +65,14 @@ public class DeployerEngine implements IProductDeployer {
 	@Override
 	@SneakyThrows
 	@SuppressWarnings("unchecked")
-	public List<String> listProducts() {
-		Map<String, Map<String, String>> entry = downloader.getProductList().readFromProductList();
-		return new ArrayList<>(entry.get(ProductList.PRODUCTS).keySet());
+	public Map<String, ProductInfo> listProducts() {
+		ProductListEntry entry = downloader.getProductList().readFromProductList();
+		return entry.getProducts();
 	}
 
 	@Override
 	@SneakyThrows
-	public List<String> refreshProducts() {
+	public Map<String, ProductInfo> refreshProducts() {
 		downloader.getProductList().downloadProductList();
 		return listProducts();
 	}

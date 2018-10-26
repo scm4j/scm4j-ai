@@ -9,6 +9,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scm4j.deployer.api.DeploymentResult;
 import org.scm4j.deployer.api.IDeploymentContext;
+import org.scm4j.deployer.api.ProductInfo;
 import org.scm4j.deployer.engine.deployers.OkDeployer;
 import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
@@ -106,6 +107,7 @@ public class DeployerEngineTest {
 			de.download("xyz", "1234");
 			fail();
 		} catch (EProductNotFound e) {
+			//
 		}
 	}
 
@@ -116,6 +118,7 @@ public class DeployerEngineTest {
 			de.listProductVersions(UNTILL_ARTIFACT_ID);
 			fail();
 		} catch (EProductListEntryNotFound e) {
+			//
 		}
 	}
 
@@ -125,6 +128,7 @@ public class DeployerEngineTest {
 			new DeployerEngine(null, env.getEnvFolder(), "random URL");
 			fail();
 		} catch (Exception e) {
+			//
 		}
 	}
 
@@ -135,6 +139,7 @@ public class DeployerEngineTest {
 			de.download(UNTILL_ARTIFACT_ID, "xyz");
 			fail();
 		} catch (EProductNotFound e) {
+			//
 		}
 	}
 
@@ -194,19 +199,17 @@ public class DeployerEngineTest {
 	@SuppressWarnings("unchecked")
 	public void testDownloadAndRefreshProducts() {
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
-		assertEquals(de.listProducts(), Collections.singletonList(UNTILL_ARTIFACT_ID));
+		assertEquals(de.listProducts().keySet(), Collections.singleton(UNTILL_ARTIFACT_ID));
 		//changing product list
-		Map entry = new HashMap<>();
-		Map<String, String> map = new HashMap<>();
-		map.put("some", "stuff");
-		entry.put(ProductList.PRODUCTS, map);
-		entry.put(ProductList.REPOSITORIES, new ArrayList<>(Collections.singletonList("file://some repos")));
+		Map<String, ProductInfo> map = new HashMap<>();
+		map.put("some", new ProductInfo("stuff", false));
+		ProductListEntry entry = new ProductListEntry(Collections.singletonList("file://some repos"), map);
 		Utils.writeJson(entry, new File(de.getDownloader().getProductList().getLocalProductList().toString()));
-		List<String> list = de.listProducts();
-		assertEquals(list, Collections.singletonList("some"));
+		Set<String> list = de.listProducts().keySet();
+		assertEquals(list, Collections.singleton("some"));
 		//reload product list
-		List<String> refreshProducts = de.refreshProducts();
-		assertEquals(refreshProducts, Collections.singletonList(UNTILL_ARTIFACT_ID));
+		Set<String> refreshProducts = de.refreshProducts().keySet();
+		assertEquals(refreshProducts, Collections.singleton(UNTILL_ARTIFACT_ID));
 	}
 
 	@Test
@@ -250,6 +253,7 @@ public class DeployerEngineTest {
 			de.refreshProductVersions(UNTILL_ARTIFACT_ID);
 			fail();
 		} catch (RuntimeException e) {
+			//
 		}
 		FileUtils.moveFileToDirectory(new File(env.getEnvFolder(), ArtifactoryReader.METADATA_FILE_NAME), metadataFolder1, false);
 		FileUtils.moveFileToDirectory(new File(env.getArtifactory1Folder(), ArtifactoryReader.METADATA_FILE_NAME), metadataFolder2, false);
@@ -308,10 +312,12 @@ public class DeployerEngineTest {
 			de.listProducts();
 			fail();
 		} catch (Exception e) {
+			//
 		}
 		try {
 			de.refreshProducts();
 		} catch (Exception e) {
+			//
 		}
 	}
 
@@ -321,6 +327,7 @@ public class DeployerEngineTest {
 			Utils.getExportedClassName(env.getEnvFolder());
 			fail();
 		} catch (Exception e) {
+			//
 		}
 	}
 

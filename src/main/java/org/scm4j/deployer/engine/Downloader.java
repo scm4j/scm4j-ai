@@ -27,6 +27,7 @@ import org.scm4j.deployer.api.IComponent;
 import org.scm4j.deployer.api.IDeploymentContext;
 import org.scm4j.deployer.api.IDownloader;
 import org.scm4j.deployer.api.IProduct;
+import org.scm4j.deployer.api.ProductInfo;
 import org.scm4j.deployer.engine.exceptions.EIncompatibleApiVersion;
 import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 import org.scm4j.deployer.engine.exceptions.EProductNotFound;
@@ -129,7 +130,9 @@ class Downloader implements IDownloader {
 
 	private File downloadProduct(String groupId, String artifactId, String version, String extension, String classifier,
 	                             File productFile) {
-		Collection<String> products = productList.getProducts().values();
+		Collection<String> products = productList.getProducts().values().stream()
+				.map(ProductInfo::getArtifactId)
+				.collect(Collectors.toList());
 		if (!products.contains(groupId + ":" + artifactId))
 			return null;
 		for (ArtifactoryReader repo : productList.getRepos()) {

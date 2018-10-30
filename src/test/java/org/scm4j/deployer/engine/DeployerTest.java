@@ -1,6 +1,5 @@
 package org.scm4j.deployer.engine;
 
-import com.google.gson.GsonBuilder;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.After;
@@ -219,14 +218,5 @@ public class DeployerTest {
 		} catch (EIncompatibleApiVersion e) {
 			assertEquals("message", e.getMessage());
 		}
-	}
-
-	@Test
-	public void sdfsadf() {
-		Map<String, ProductInfo> map = new HashMap<>();
-		map.put("a", new ProductInfo("b", false));
-		map.put("c", new ProductInfo("b", false));
-		ProductListEntry entry = new ProductListEntry(Collections.singletonList("b"), map);
-		System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(entry));
 	}
 }

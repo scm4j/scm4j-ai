@@ -70,7 +70,7 @@ class ProductList {
 		String productListReleaseVersion = productListReader.getProductListReleaseVersion();
 		String productListPath = Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
 				productListReleaseVersion, ".json", null);
-		URL remoteProductListUrl = new URL(productListReader.getUrl(), productListPath.replace("\\", File.separator));
+		URL remoteProductListUrl = new URL(productListReader.getUrl(), productListPath.replace('\\', '/'));
 		localProductList = new File(localRepo, productListPath);
 		if (!localProductList.exists()) {
 			localProductList.getParentFile().mkdirs();

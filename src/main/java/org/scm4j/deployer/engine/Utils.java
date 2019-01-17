@@ -44,7 +44,7 @@ public final class Utils {
 	}
 
 	public static String coordsToFolderStructure(String groupId, String artifactId) {
-		return new File(groupId.replace(".", File.separator), artifactId).getPath();
+		return new File(groupId.replace('.', '/'), artifactId).getPath();
 	}
 
 	public static String coordsToFolderStructure(String groupId, String artifactId, String version) {

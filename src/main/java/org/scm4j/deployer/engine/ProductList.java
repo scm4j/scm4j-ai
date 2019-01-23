@@ -11,7 +11,6 @@ import org.apache.maven.artifact.repository.metadata.Versioning;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer;
 import org.scm4j.deployer.api.ProductInfo;
-import org.scm4j.deployer.engine.exceptions.ENoMetadata;
 import org.scm4j.deployer.engine.exceptions.EProductListEntryNotFound;
 
 import java.io.File;
@@ -21,12 +20,12 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Data
 class ProductList {
@@ -41,13 +40,13 @@ class ProductList {
 	private File localProductList;
 	private File versionsJson;
 	private ProductListEntry productListEntry;
-	private Map<String, Set<String>> productsVersions;
+	private Map<String, Map<String, Boolean>> productsVersions;
 	private Type versionsJsonType;
 
 	ProductList(File localRepo, ArtifactoryReader productListReader) {
 		this.localRepo = localRepo;
 		this.productListReader = productListReader;
-		this.versionsJsonType = new TypeToken<Map<String, Set<String>>>() {
+		this.versionsJsonType = new TypeToken<Map<String, Map<String, Boolean>>>() {
 		}.getType();
 	}
 
@@ -94,43 +93,41 @@ class ProductList {
 		products.putAll(fromEntry);
 	}
 
-	private void downloadProductsVersions() throws IOException {
+	void downloadProductsVersions() throws IOException {
 		versionsJson = new File(localRepo, VERSIONS_ARTIFACT_ID);
 		productsVersions = new HashMap<>();
 		for (Map.Entry<String, ProductInfo> product : products.entrySet()) {
-			Set<String> vers = new HashSet<>();
+			String appliedVersionsContent = Utils.readStringFromUrl(product.getValue().getAppliedVersionsUrl());
+			Map<String, Boolean> appliedVersions = new HashMap<>();
+			Set<String> versionsFromUrl = Arrays.stream(appliedVersionsContent.split("\n"))
+					.filter(s -> !s.startsWith("#"))
+					.filter(s -> !s.isEmpty())
+					.collect(Collectors.toSet());
 			for (ArtifactoryReader reader : repos) {
-				vers.addAll(reader.getProductVersions(product.getValue().getArtifactId()));
+				for (String vers : reader.getProductVersions(product.getValue().getArtifactId())) {
+					appliedVersions.put(vers, false);
+				}
 			}
-			productsVersions.put(product.getKey(), vers);
+			appliedVersions = appliedVersions.entrySet().stream()
+					.peek(e -> {
+						if (versionsFromUrl.contains(e.getKey())) {
+							e.setValue(true);
+						}
+					})
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+			productsVersions.put(product.getKey(), appliedVersions);
 		}
 		Utils.writeJson(productsVersions, versionsJson);
 	}
 
 	@SneakyThrows
-	Map<String, Set<String>> readProductVersions(String artifactId) {
+	Map<String, Boolean> readProductVersions(String artifactId) {
 		try {
 			productsVersions = Utils.readJson(versionsJson, versionsJsonType);
 		} catch (NullPointerException e) {
 			throw new EProductListEntryNotFound("Can't find product list");
 		}
-		new TreeSet<>().addAll(productsVersions.getOrDefault(artifactId, new TreeSet<>()));
-		return productsVersions;
-	}
-
-	void refreshProductVersions(String simpleName) throws IOException {
-		String groupIdAndArtId = getProducts().getOrDefault(simpleName, new ProductInfo("", false)).getArtifactId();
-		productsVersions = Utils.readJson(versionsJson, versionsJsonType);
-		Set<String> vers = new TreeSet<>();
-		for (ArtifactoryReader reader : repos) {
-			vers.addAll(reader.getProductVersions(groupIdAndArtId));
-		}
-		if (vers.isEmpty()) {
-			throw new ENoMetadata(simpleName + " metadata don't find in all known repos");
-		} else {
-			productsVersions.put(simpleName, vers);
-			Utils.writeJson(productsVersions, versionsJson);
-		}
+		return productsVersions.getOrDefault(artifactId, new HashMap<>());
 	}
 
 	@SneakyThrows

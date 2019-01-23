@@ -28,8 +28,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.lang.reflect.Type;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -111,7 +114,7 @@ public final class Utils {
 
 	public static Artifact initializeArtifact(Downloader downloader, String artifactId, String version) {
 		String groupAndArtifactId = downloader.getProductList().getProducts().getOrDefault(artifactId,
-				new ProductInfo("", false)).getArtifactId();
+				new ProductInfo("", "", false)).getArtifactId();
 		if (groupAndArtifactId.isEmpty()) {
 			throw new EProductNotFound("Can't find product in product list");
 		}
@@ -133,6 +136,18 @@ public final class Utils {
 					.fromJson(FileUtils.readFileToString(file, "UTF-8"), type);
 		} catch (FileNotFoundException e) {
 			return new HashMap<>();
+		}
+	}
+
+	@SneakyThrows
+	public static String readStringFromUrl(String requestURL) {
+		if (requestURL == null || requestURL.isEmpty()) {
+			return "";
+		}
+		try (Scanner scanner = new Scanner(new URL(requestURL).openStream(),
+				StandardCharsets.UTF_8.toString())) {
+			scanner.useDelimiter("\\A");
+			return scanner.hasNext() ? scanner.next() : "";
 		}
 	}
 

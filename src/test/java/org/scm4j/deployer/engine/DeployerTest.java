@@ -130,7 +130,7 @@ public class DeployerTest {
 		Downloader downloader = mockDeploymentContext();
 		ProductList pl = mock(ProductList.class);
 		Map<String, ProductInfo> products = new HashMap<>();
-		products.put("", new ProductInfo("eu.untill:UBL", false));
+		products.put("", new ProductInfo("eu.untill:UBL", "", false));
 		when(pl.getProducts()).thenReturn(products);
 		when(downloader.getProductList()).thenReturn(pl);
 		when(downloader.getProduct()).thenReturn(new OkProduct());
@@ -202,7 +202,6 @@ public class DeployerTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void testIncompatibleApi() {
 		Downloader downloader = mock(Downloader.class);
 		doThrow((EIncompatibleApiVersion.class)).when(downloader).getProductFile(anyString());

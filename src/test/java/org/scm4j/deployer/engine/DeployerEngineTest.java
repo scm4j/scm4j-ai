@@ -17,7 +17,6 @@ import org.scm4j.deployer.engine.exceptions.EProductNotFound;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -93,8 +92,7 @@ public class DeployerEngineTest {
 	public void testGetVersions() {
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		de.listProducts();
-		List<String> versions = de.listProductVersions(UNTILL_ARTIFACT_ID);
-		assertNotNull(versions);
+		Set<String> versions = de.listProductVersions(UNTILL_ARTIFACT_ID).keySet();
 		assertTrue(versions.containsAll(Arrays.asList(
 				"123.4", "124.5")));
 		assertEquals(2, versions.size());
@@ -196,13 +194,12 @@ public class DeployerEngineTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void testDownloadAndRefreshProducts() {
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		assertEquals(de.listProducts().keySet(), Collections.singleton(UNTILL_ARTIFACT_ID));
 		//changing product list
 		Map<String, ProductInfo> map = new HashMap<>();
-		map.put("some", new ProductInfo("stuff", false));
+		map.put("some", new ProductInfo("stuff", "", false));
 		ProductListEntry entry = new ProductListEntry(Collections.singletonList("file://some repos"), map);
 		Utils.writeJson(entry, new File(de.getDownloader().getProductList().getLocalProductList().toString()));
 		Set<String> list = de.listProducts().keySet();
@@ -216,30 +213,34 @@ public class DeployerEngineTest {
 	public void testDownloadAndRefreshProductsVersions() throws Exception {
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		de.listProducts();
-		List<String> testList = new ArrayList<>();
-		testList.add("124.5");
-		testList.add("123.4");
-		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testList);
+		Set<String> testSet = new HashSet<>();
+		testSet.add("124.5");
+		testSet.add("123.4");
+		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID).keySet(), testSet);
 		//changing product versions
-		Map<String, Set<String>> entry = new HashMap<>();
-		entry.put(UNTILL_ARTIFACT_ID, new HashSet<>(Collections.singletonList("777")));
-		entry.put("haha", new HashSet<>(Collections.singletonList("1234")));
+		Map<String, Map<String, Boolean>> entry = new HashMap<>();
+		Map<String, Boolean> entryEntry = new HashMap<>();
+		entryEntry.put("777", false);
+		Map<String, Boolean> entryEntry2 = new HashMap<>();
+		entryEntry2.put("1234", false);
+		entry.put(UNTILL_ARTIFACT_ID, entryEntry);
+		entry.put("haha", entryEntry2);
 		Utils.writeJson(entry, new File(de.getDownloader().getProductList().getVersionsJson().toString()));
-		testList.clear();
-		testList.add("777");
-		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testList);
+		testSet.clear();
+		testSet.add("777");
+		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID).keySet(), testSet);
 		//reload version of specific product
-		testList.clear();
-		testList.add("123.4");
-		testList.add("124.5");
-		assertEquals(de.refreshProductVersions(UNTILL_ARTIFACT_ID), testList);
+		testSet.clear();
+		testSet.add("123.4");
+		testSet.add("124.5");
+		assertEquals(de.refreshProductVersions(UNTILL_ARTIFACT_ID).keySet(), testSet);
 		de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		de.listProducts();
-		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testList);
+		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID).keySet(), testSet);
 		de.download(UNTILL_ARTIFACT_ID, "123.4");
-		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testList);
+		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID).keySet(), testSet);
 		FileUtils.forceDelete(de.getDownloader().getProductList().getVersionsJson());
-		testList.clear();
+		testSet.clear();
 		File metadataFolder1 = new File(env.getArtifactory1Folder(), Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, UNTILL_ARTIFACT_ID));
 		File metadataFolder2 = new File(env.getArtifactory2Folder(), Utils.coordsToFolderStructure(TEST_UNTILL_GROUP_ID, UNTILL_ARTIFACT_ID));
 		FileUtils.moveFileToDirectory(new File(metadataFolder1, ArtifactoryReader.METADATA_FILE_NAME), env.getEnvFolder(), false);
@@ -248,13 +249,9 @@ public class DeployerEngineTest {
 		FileUtils.deleteDirectory(new File(env.getEnvFolder(), "repository"));
 		de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		de.listProducts();
-		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID), testList);
-		try {
-			de.refreshProductVersions(UNTILL_ARTIFACT_ID);
-			fail();
-		} catch (RuntimeException e) {
-			//
-		}
+		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID).keySet(), testSet);
+		de.refreshProductVersions(UNTILL_ARTIFACT_ID);
+		assertEquals(de.listProductVersions(UNTILL_ARTIFACT_ID).keySet(), Collections.emptySet());
 		FileUtils.moveFileToDirectory(new File(env.getEnvFolder(), ArtifactoryReader.METADATA_FILE_NAME), metadataFolder1, false);
 		FileUtils.moveFileToDirectory(new File(env.getArtifactory1Folder(), ArtifactoryReader.METADATA_FILE_NAME), metadataFolder2, false);
 	}

@@ -10,13 +10,10 @@ import org.scm4j.deployer.api.ProductInfo;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 @Data
 public class DeployerEngine implements IProductDeployer {
@@ -64,7 +61,6 @@ public class DeployerEngine implements IProductDeployer {
 
 	@Override
 	@SneakyThrows
-	@SuppressWarnings("unchecked")
 	public Map<String, ProductInfo> listProducts() {
 		ProductListEntry entry = downloader.getProductList().readFromProductList();
 		return entry.getProducts();
@@ -78,16 +74,16 @@ public class DeployerEngine implements IProductDeployer {
 	}
 
 	@Override
-	public List<String> listProductVersions(String simpleName) {
-		Optional<Set<String>> versions = Optional.ofNullable
-				(downloader.getProductList().readProductVersions(simpleName).get(simpleName));
-		return new ArrayList<>(versions.orElse(Collections.emptySet()));
+	public Map<String, Boolean> listProductVersions(String simpleName) {
+		Optional<Map<String, Boolean>> versions = Optional.ofNullable
+				(downloader.getProductList().readProductVersions(simpleName));
+		return versions.orElse(Collections.emptyMap());
 	}
 
 	@Override
-	public List<String> refreshProductVersions(String simpleName) {
+	public Map<String, Boolean> refreshProductVersions(String simpleName) {
 		try {
-			downloader.getProductList().refreshProductVersions(simpleName);
+			downloader.getProductList().downloadProductsVersions();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

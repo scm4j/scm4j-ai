@@ -124,7 +124,6 @@ class ArtifactoryWriter {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private void appendProductList(String groupId, String artifactId, File productListLocation) throws Exception {
 		File remoteProductListFileLocation = new File(productListLocation,
 				Utils.coordsToRelativeFilePath(ProductList.PRODUCT_LIST_GROUP_ID,
@@ -133,9 +132,9 @@ class ArtifactoryWriter {
 		if (products == null)
 			products = new ProductListEntry(new ArrayList<>(), new HashMap<>());
 		if (!products.getProducts().values()
-				.contains(new ProductInfo(groupId + ":" + artifactId, false))) {
+				.contains(new ProductInfo(groupId + ":" + artifactId, "", false))) {
 			products.getProducts().put(artifactId,
-					new ProductInfo(groupId + ":" + artifactId, false));
+					new ProductInfo(groupId + ":" + artifactId, "", false));
 			remoteProductListFileLocation.delete();
 			remoteProductListFileLocation.createNewFile();
 			writeProductListContent(products, remoteProductListFileLocation);

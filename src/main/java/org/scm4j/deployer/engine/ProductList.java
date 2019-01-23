@@ -110,7 +110,7 @@ class ProductList {
 			}
 			appliedVersions = appliedVersions.entrySet().stream()
 					.peek(e -> {
-						if (versionsFromUrl.contains(e.getKey())) {
+						if (versionsFromUrl.contains(e.getKey()) || appliedVersionsContent.isEmpty()) {
 							e.setValue(true);
 						}
 					})

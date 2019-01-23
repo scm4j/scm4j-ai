@@ -11,7 +11,7 @@ Is represented by `product-list.json` file inside `product artifact`
 	"https://jitpack.io"
   ],
   "products": {
- "art1": {
+ 	"art1": {
 	  "artifactId": "scm4j:art-id1",
 	  "appliedVersionsUrl": "http://example.com",
 	  "hidden": false

@@ -1,27 +1,36 @@
-# product-list.yml
+# product-list.json
 
-Is represented by `product-list.yml` file inside `product artifact`
+Is represented by `product-list.json` file inside `product artifact`
 
-```yaml
- 
- # Map coordinates -> product display name
- products: 
-   com.company:product1: Product1 
-   com.company:product2: Product2
-   
- repositories:
-  - https://www.company.com/repo1
-  - https://www.company.com/repo2  
-  - http://central.maven.org/maven2
+```json
+
+{
+  "repositories": [
+    "https://dev.untill.com/artifactory/repo",
+	"http://central.maven.org/maven2",
+	"https://jitpack.io"
+  ],
+  "products": {
+ "art1": {
+	  "artifactId": "scm4j:art-id1",
+	  "appliedVersionsUrl": "http://example.com",
+	  "hidden": false
+	},
+	"art2": {
+	  "artifactId": "scm4j:art-id2",
+	  "appliedVersionsUrl": "",
+	  "hidden": true
+  }
+}
   
  ```
 
-# product-versions.yml
+# product-versions.json
 
 - cache of repository content
 - located in `portable folder` and  `working folder`
 
-# deployed-products.yml
+# deployed-products.json
 
 - located in `working folder`
 

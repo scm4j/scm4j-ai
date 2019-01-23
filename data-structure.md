@@ -6,7 +6,7 @@ Is represented by `product-list.json` file inside `product artifact`
 
 {
   "repositories": [
-    "https://dev.untill.com/artifactory/repo",
+        "https://dev.untill.com/artifactory/repo",
 	"http://central.maven.org/maven2",
 	"https://jitpack.io"
   ],
@@ -20,7 +20,7 @@ Is represented by `product-list.json` file inside `product artifact`
 	  "artifactId": "scm4j:art-id2",
 	  "appliedVersionsUrl": "",
 	  "hidden": true
-  }
+  	}
 }
   
  ```

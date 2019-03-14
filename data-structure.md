@@ -28,7 +28,7 @@ Is represented by `product-list.json` file inside `product artifact`
 # product-versions.json
 
 - cache of repository content
-- located in `portable folder` and  `working folder`
+- located in `working folder`
 
 # deployed-products.json
 

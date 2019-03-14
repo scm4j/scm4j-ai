@@ -80,8 +80,9 @@ class ProductList {
 				URL remoteProductListUrl = new URL(productListReader.getUrl(), productListPath.replace('\\', '/'));
 				in = remoteProductListUrl.openStream();
 			} catch (IOException e) {
-				//do nothing
+				continue;
 			}
+			break;
 		}
 		if (productListReleaseVersion == null || in == null) {
 			throw new EProductListEntryNotFound("Can't find product list entry!");

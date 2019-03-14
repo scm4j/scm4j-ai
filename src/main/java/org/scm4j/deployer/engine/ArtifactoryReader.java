@@ -80,19 +80,21 @@ public class ArtifactoryReader {
 		}
 	}
 
-	@SneakyThrows
-	String getProductListReleaseVersion() {
-		@Cleanup
-		InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID + ":"
-				+ ProductList.PRODUCT_LIST_ARTIFACT_ID, METADATA_FILE_NAME));
-		MetadataXpp3Reader reader = new MetadataXpp3Reader();
-		Metadata meta = reader.read(is);
-		Versioning vers = meta.getVersioning();
-		return vers.getRelease();
+	String getProductListReleaseVersion() throws IOException {
+		try {
+			@Cleanup
+			InputStream is = getContentStream(getProductMetaDataURL(ProductList.PRODUCT_LIST_GROUP_ID + ":"
+					+ ProductList.PRODUCT_LIST_ARTIFACT_ID, METADATA_FILE_NAME));
+			MetadataXpp3Reader reader = new MetadataXpp3Reader();
+			Metadata meta = reader.read(is);
+			Versioning vers = meta.getVersioning();
+			return vers.getRelease();
+		} catch (XmlPullParserException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	@SneakyThrows
-	private InputStream getContentStream(URL url) {
+	private InputStream getContentStream(URL url) throws IOException {
 		if (url.getProtocol().equals("file")) {
 			return url.openStream();
 		} else {

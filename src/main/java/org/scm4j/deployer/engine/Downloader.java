@@ -62,15 +62,14 @@ class Downloader implements IDownloader {
 	private URLClassLoader loader;
 	private IProduct product;
 
-	Downloader(File portableFolder, File workingFolder, String productListArtifactoryUrl) {
+	Downloader(File portableFolder, File workingFolder, String... productListArtifactoryUrls) {
 		this.workingRepository = new File(workingFolder, REPOSITORY_FOLDER_NAME);
 		this.portableRepository = new File(portableFolder, REPOSITORY_FOLDER_NAME);
 		if (!portableRepository.exists())
 			portableRepository.mkdirs();
 		if (!workingRepository.exists())
 			workingRepository.mkdirs();
-		ArtifactoryReader productListReader = ArtifactoryReader.getByUrl(productListArtifactoryUrl);
-		this.productList = new ProductList(portableRepository, productListReader);
+		this.productList = new ProductList(portableRepository, productListArtifactoryUrls);
 		this.system = Utils.newRepositorySystem();
 		this.depCtx = new HashMap<>();
 	}

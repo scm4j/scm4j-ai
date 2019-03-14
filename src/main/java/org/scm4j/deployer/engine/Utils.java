@@ -6,6 +6,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
+import org.eclipse.aether.ConfigurationProperties;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.artifact.Artifact;
@@ -82,6 +83,7 @@ public final class Utils {
 
 	public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system, File repository) {
 		DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
+		session.setConfigProperty(ConfigurationProperties.CONNECT_TIMEOUT, 60 * 1000);
 		DefaultArtifactTypeRegistry stereotypes = new DefaultArtifactTypeRegistry();
 		stereotypes.add(new DefaultArtifactType("pom"));
 		stereotypes.add(new DefaultArtifactType("maven-plugin", "jar", "", "java"));

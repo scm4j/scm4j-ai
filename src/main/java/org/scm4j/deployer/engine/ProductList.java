@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.ArrayList;
@@ -33,8 +34,9 @@ class ProductList {
 	public static final String PRODUCT_LIST_GROUP_ID = "org.scm4j.ai";
 	public static final String PRODUCT_LIST_ARTIFACT_ID = "product-list";
 	public static final String VERSIONS_ARTIFACT_ID = "products-versions.json";
-	private final ArtifactoryReader productListReader;
+	private final String[] productListArtifactoryUrls;
 	private final File localRepo;
+	private ArtifactoryReader productListReader;
 	private List<ArtifactoryReader> repos;
 	private Map<String, ProductInfo> products;
 	private File localProductList;
@@ -43,9 +45,9 @@ class ProductList {
 	private Map<String, Map<String, Boolean>> productsVersions;
 	private Type versionsJsonType;
 
-	ProductList(File localRepo, ArtifactoryReader productListReader) {
+	ProductList(File localRepo, String... productListArtifactoryUrls) {
 		this.localRepo = localRepo;
-		this.productListReader = productListReader;
+		this.productListArtifactoryUrls = productListArtifactoryUrls;
 		this.versionsJsonType = new TypeToken<Map<String, Map<String, Boolean>>>() {
 		}.getType();
 	}
@@ -65,17 +67,35 @@ class ProductList {
 		return productListEntry;
 	}
 
-	void downloadProductList() throws Exception {
-		String productListReleaseVersion = productListReader.getProductListReleaseVersion();
-		String productListPath = Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
-				productListReleaseVersion, ".json", null);
-		URL remoteProductListUrl = new URL(productListReader.getUrl(), productListPath.replace('\\', '/'));
-		localProductList = new File(localRepo, productListPath);
-		if (!localProductList.exists()) {
-			localProductList.getParentFile().mkdirs();
-			localProductList.createNewFile();
+	void downloadProductList() {
+		String productListReleaseVersion = null;
+		String productListPath = null;
+		InputStream in = null;
+		for (String productListArtifactoryUrl : productListArtifactoryUrls) {
+			try {
+				ArtifactoryReader productListReader = ArtifactoryReader.getByUrl(productListArtifactoryUrl);
+				productListReleaseVersion = productListReader.getProductListReleaseVersion();
+				productListPath = Utils.coordsToRelativeFilePath(PRODUCT_LIST_GROUP_ID, PRODUCT_LIST_ARTIFACT_ID,
+						productListReleaseVersion, ".json", null);
+				URL remoteProductListUrl = new URL(productListReader.getUrl(), productListPath.replace('\\', '/'));
+				in = remoteProductListUrl.openStream();
+			} catch (IOException e) {
+				//do nothing
+			}
 		}
-		FileUtils.copyURLToFile(remoteProductListUrl, localProductList);
+		if (productListReleaseVersion == null || in == null) {
+			throw new EProductListEntryNotFound("Can't find product list entry!");
+		}
+		localProductList = new File(localRepo, productListPath);
+		try {
+			if (!localProductList.exists()) {
+				localProductList.getParentFile().mkdirs();
+				localProductList.createNewFile();
+			}
+			FileUtils.copyInputStreamToFile(in, localProductList);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 		writeProductListMetadata(productListReleaseVersion);
 	}
 

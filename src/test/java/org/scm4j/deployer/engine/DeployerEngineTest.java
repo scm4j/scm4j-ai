@@ -304,6 +304,7 @@ public class DeployerEngineTest {
 
 	@Test
 	public void undeploy() {
+		OkDeployer.zeroCount();
 		DeployerEngine de = new DeployerEngine(null, env.getEnvFolder(), env.getArtifactory1Url());
 		DeploymentResult dr = de.deploy(UNTILL_ARTIFACT_ID, null);
 		assertEquals(dr, OK);

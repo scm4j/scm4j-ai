@@ -248,6 +248,7 @@ class Deployer {
 		}
 		Map<Command, List<IComponent>> changedComponents;
 		if (deployedProduct != null && !(requiredProduct instanceof IImmutable)) {
+			deploymentPath = deployedProduct.getDeploymentPath();
 			changedComponents = compareProductStructures(requiredProduct.getProductStructure(),
 					deployedProduct.getProductStructure());
 			log.info("changed components are " + changedComponents);

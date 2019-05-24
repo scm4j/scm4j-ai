@@ -228,6 +228,16 @@ class Deployer {
 	                                          String artifactId, String version, String coords, String simpleName) {
 		DeploymentResult res;
 		String productName = artifactId + "-" + version;
+		if (deployedProduct != null && !(requiredProduct instanceof IImmutable)) {
+			List<IComponent> deployedComponents = deployedProduct.getProductStructure().getComponents();
+			deployedComponents = Lists.reverse(deployedComponents);
+			deploymentPath = deployedProduct.getDeploymentPath();
+			res = doCommands(deployedComponents, STOP);
+			if (res != OK) {
+				log.info("stop deployed product result is " + res);
+				return res;
+			}
+		}
 		if (!requiredProduct.getDependentProducts().isEmpty()) {
 			log.info("dependent product are " + requiredProduct.getDependentProducts());
 			res = deployDependent(requiredProduct);
@@ -238,17 +248,9 @@ class Deployer {
 		}
 		Map<Command, List<IComponent>> changedComponents;
 		if (deployedProduct != null && !(requiredProduct instanceof IImmutable)) {
-			List<IComponent> deployedComponents = deployedProduct.getProductStructure().getComponents();
 			changedComponents = compareProductStructures(requiredProduct.getProductStructure(),
 					deployedProduct.getProductStructure());
 			log.info("changed components are " + changedComponents);
-			deploymentPath = deployedProduct.getDeploymentPath();
-			deployedComponents = Lists.reverse(deployedComponents);
-			res = doCommands(deployedComponents, STOP);
-			if (res != OK) {
-				log.info("stop deployed product result is " + res);
-				return res;
-			}
 			log.info("changed components successfully stopped");
 			res = doCommands(changedComponents.getOrDefault(UNDEPLOY, Collections.emptyList()), UNDEPLOY);
 			if (res != OK) {

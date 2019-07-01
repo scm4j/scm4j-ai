@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -74,7 +75,6 @@ class Deployer {
 			}
 			if (vers.compareTo(legacyVers) < 0) {
 				res = NEWER_VERSION_EXISTS;
-				res.setErrorMsg("Installed version is " + legacyVers);
 			}
 		}
 		return res;
@@ -152,6 +152,8 @@ class Deployer {
 					deployedVersion = deployedProduct.getProductVersion();
 					res = handleLegacyDeployedProduct(version, deployedVersion, deployedProduct);
 					if (res != OK) {
+						deployedVersion = StringUtils.substringBefore(deployedVersion, ".R.");
+						res.setErrorMsg("Installed version is " + deployedVersion);
 						writeProductDescriptionInDeployedProductsJson(coords, simpleName, deployedVersion);
 						log.info("legacy product " + res.toString());
 						res.setProductCoords(coords);
@@ -207,7 +209,7 @@ class Deployer {
 		DeploymentResult res = compareVersionWithDeployedVersion(currentVersion, deployedVersion);
 		if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
 			log.info("legacy product already " + res.toString());
-			deploymentPath = deployedProduct.getDeploymentPath();
+			deploymentPath = deployedProduct.getDeploymentPath().replace('\\', '/');
 		}
 		return res;
 	}

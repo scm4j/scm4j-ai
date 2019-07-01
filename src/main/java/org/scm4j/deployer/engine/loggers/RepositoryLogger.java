@@ -9,11 +9,6 @@ import org.eclipse.aether.artifact.Artifact;
 public class RepositoryLogger
 		extends AbstractRepositoryListener {
 
-	public void artifactInstalling(RepositoryEvent event) {
-		if (!event.getArtifact().getExtension().equals("pom"))
-			log.debug("Installing " + event.getArtifact() + " to " + event.getFile());
-	}
-
 	public void artifactDownloading(RepositoryEvent event) {
 		if (!event.getArtifact().getExtension().equals("pom")) {
 			Artifact art = event.getArtifact();

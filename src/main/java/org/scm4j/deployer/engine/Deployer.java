@@ -74,6 +74,7 @@ class Deployer {
 			}
 			if (vers.compareTo(legacyVers) < 0) {
 				res = NEWER_VERSION_EXISTS;
+				res.setErrorMsg("Installed version is " + legacyVers);
 			}
 		}
 		return res;
@@ -196,9 +197,12 @@ class Deployer {
 		log.info("legacy version is " + deployedVersion + " and deployment path is "
 				+ deployedProduct.getDeploymentPath());
 		if (deployedVersion.contains(".A.")) {
-			log.info("Alfa version must be manually removed");
+			String message = "Alfa version must be manually removed";
+			log.info(message);
 			deploymentPath = deployedProduct.getDeploymentPath();
-			return ALREADY_INSTALLED;
+			DeploymentResult dr = ALREADY_INSTALLED;
+			dr.setErrorMsg(message);
+			return dr;
 		}
 		DeploymentResult res = compareVersionWithDeployedVersion(currentVersion, deployedVersion);
 		if (res == ALREADY_INSTALLED || res == NEWER_VERSION_EXISTS) {
@@ -362,9 +366,12 @@ class Deployer {
 			}
 			if (res == REBOOT_CONTINUE) {
 				if (rebootCount == 2) {
-					log.error("Component deployer ask for reboot but it's third reboot for this deployer,"
-							+ " deployment failed");
-					return FAILED;
+					String message = "Component deployer ask for reboot but it's third reboot for this deployer,"
+							+ " deployment failed";
+					log.error(message);
+					DeploymentResult dr = FAILED;
+					dr.setErrorMsg(message);
+					return dr;
 				} else {
 					writeRebootCount(currentDeployerLog, ++rebootCount);
 					return res;
